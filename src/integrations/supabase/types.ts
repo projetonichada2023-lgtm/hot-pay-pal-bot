@@ -221,6 +221,7 @@ export type Database = {
           name: string
           price: number
           sales_count: number | null
+          telegram_group_id: string | null
           updated_at: string | null
           views_count: number | null
         }
@@ -236,6 +237,7 @@ export type Database = {
           name: string
           price: number
           sales_count?: number | null
+          telegram_group_id?: string | null
           updated_at?: string | null
           views_count?: number | null
         }
@@ -251,6 +253,7 @@ export type Database = {
           name?: string
           price?: number
           sales_count?: number | null
+          telegram_group_id?: string | null
           updated_at?: string | null
           views_count?: number | null
         }
