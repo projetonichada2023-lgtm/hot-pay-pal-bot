@@ -14,7 +14,183 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bot_settings: {
+        Row: {
+          auto_delivery: boolean | null
+          created_at: string | null
+          id: string
+          payment_instructions: string | null
+          success_message: string | null
+          updated_at: string | null
+          welcome_message: string | null
+        }
+        Insert: {
+          auto_delivery?: boolean | null
+          created_at?: string | null
+          id?: string
+          payment_instructions?: string | null
+          success_message?: string | null
+          updated_at?: string | null
+          welcome_message?: string | null
+        }
+        Update: {
+          auto_delivery?: boolean | null
+          created_at?: string | null
+          id?: string
+          payment_instructions?: string | null
+          success_message?: string | null
+          updated_at?: string | null
+          welcome_message?: string | null
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          phone: string | null
+          telegram_id: number
+          telegram_username: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          telegram_id: number
+          telegram_username?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          telegram_id?: number
+          telegram_username?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          amount: number
+          created_at: string | null
+          customer_id: string | null
+          delivered_at: string | null
+          id: string
+          paid_at: string | null
+          payment_id: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          pix_code: string | null
+          pix_qrcode: string | null
+          product_id: string | null
+          status: Database["public"]["Enums"]["order_status"] | null
+          telegram_message_id: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          customer_id?: string | null
+          delivered_at?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_id?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          pix_code?: string | null
+          pix_qrcode?: string | null
+          product_id?: string | null
+          status?: Database["public"]["Enums"]["order_status"] | null
+          telegram_message_id?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          customer_id?: string | null
+          delivered_at?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_id?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          pix_code?: string | null
+          pix_qrcode?: string | null
+          product_id?: string | null
+          status?: Database["public"]["Enums"]["order_status"] | null
+          telegram_message_id?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          file_url: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          is_hot: boolean | null
+          name: string
+          price: number
+          sales_count: number | null
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_hot?: boolean | null
+          name: string
+          price: number
+          sales_count?: number | null
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_hot?: boolean | null
+          name?: string
+          price?: number
+          sales_count?: number | null
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +199,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      order_status: "pending" | "paid" | "delivered" | "cancelled" | "refunded"
+      payment_method: "pix" | "card" | "boleto"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +327,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      order_status: ["pending", "paid", "delivered", "cancelled", "refunded"],
+      payment_method: ["pix", "card", "boleto"],
+    },
   },
 } as const
