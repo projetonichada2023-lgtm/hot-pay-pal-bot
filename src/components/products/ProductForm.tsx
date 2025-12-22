@@ -21,6 +21,7 @@ export interface ProductFormData {
   price: number;
   image_url: string;
   file_url: string;
+  telegram_group_id: string;
   is_active: boolean;
   is_hot: boolean;
 }
@@ -32,6 +33,7 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
     price: 0,
     image_url: '',
     file_url: '',
+    telegram_group_id: '',
     is_active: true,
     is_hot: false,
   });
@@ -44,6 +46,7 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
         price: Number(product.price),
         image_url: product.image_url || '',
         file_url: product.file_url || '',
+        telegram_group_id: (product as any).telegram_group_id || '',
         is_active: product.is_active ?? true,
         is_hot: product.is_hot ?? false,
       });
@@ -54,6 +57,7 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
         price: 0,
         image_url: '',
         file_url: '',
+        telegram_group_id: '',
         is_active: true,
         is_hot: false,
       });
@@ -127,6 +131,19 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
               onChange={(e) => setFormData({ ...formData, file_url: e.target.value })}
               placeholder="https://exemplo.com/arquivo.pdf"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="telegram_group_id">ID do Grupo VIP (Telegram)</Label>
+            <Input
+              id="telegram_group_id"
+              value={formData.telegram_group_id}
+              onChange={(e) => setFormData({ ...formData, telegram_group_id: e.target.value })}
+              placeholder="Ex: -1001234567890"
+            />
+            <p className="text-xs text-muted-foreground">
+              O bot será adicionado como admin do grupo e criará links de convite únicos para cada cliente.
+            </p>
           </div>
 
           <div className="flex items-center justify-between">

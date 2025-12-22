@@ -49,11 +49,39 @@ async function editMessageText(botToken: string, chatId: number, messageId: numb
   const body: any = { chat_id: chatId, message_id: messageId, text, parse_mode: 'HTML' };
   if (replyMarkup) body.reply_markup = replyMarkup;
   
-  await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+  return res.json();
+}
+
+// Create a unique invite link for a Telegram group/channel
+async function createGroupInviteLink(botToken: string, chatId: string, userId: number): Promise<string | null> {
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/createChatInviteLink`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        member_limit: 1, // Only 1 use allowed
+        expire_date: Math.floor(Date.now() / 1000) + 86400, // Expires in 24 hours
+        creates_join_request: false,
+      }),
+    });
+    
+    const data = await res.json();
+    console.log('Create invite link response:', JSON.stringify(data));
+    
+    if (data.ok && data.result?.invite_link) {
+      return data.result.invite_link;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error creating invite link:', error);
+    return null;
+  }
 }
 
 // =============== DATABASE HELPERS ===============
@@ -275,7 +303,7 @@ serve(async (req) => {
       // Confirm payment (demo mode)
       if (data.startsWith('paid_')) {
         const orderId = data.replace('paid_', '');
-        await handlePaymentConfirmed(botToken, chatId, clientId, orderId);
+        await handlePaymentConfirmed(botToken, chatId, clientId, orderId, telegramUser.id);
       }
 
       // Cancel order
@@ -396,7 +424,7 @@ async function handleBuyProduct(botToken: string, chatId: number, clientId: stri
   });
 }
 
-async function handlePaymentConfirmed(botToken: string, chatId: number, clientId: string, orderId: string) {
+async function handlePaymentConfirmed(botToken: string, chatId: number, clientId: string, orderId: string, telegramUserId: number) {
   const order = await getOrder(orderId);
   
   if (!order) {
@@ -418,7 +446,26 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
   // Auto-deliver the product
   const product = order.products as any;
   
+  let deliveryMessages: string[] = [];
+  
+  // Check for file URL delivery
   if (product?.file_url) {
+    deliveryMessages.push(`🔗 <b>Link de acesso:</b>\n${product.file_url}`);
+  }
+  
+  // Check for VIP group access
+  if (product?.telegram_group_id) {
+    console.log('Creating invite link for group:', product.telegram_group_id, 'user:', telegramUserId);
+    const inviteLink = await createGroupInviteLink(botToken, product.telegram_group_id, telegramUserId);
+    
+    if (inviteLink) {
+      deliveryMessages.push(`👥 <b>Acesso ao Grupo VIP:</b>\n${inviteLink}\n\n⚠️ <i>Este link é único e expira em 24 horas!</i>`);
+    } else {
+      deliveryMessages.push(`👥 <b>Grupo VIP:</b> Houve um problema ao gerar seu convite. Entre em contato com o suporte.`);
+    }
+  }
+  
+  if (deliveryMessages.length > 0) {
     await updateOrderStatus(orderId, 'delivered', { delivered_at: new Date().toISOString() });
     await incrementProductSales(product.id);
     
@@ -427,7 +474,7 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
     await sendTelegramMessage(
       botToken, 
       chatId, 
-      `${deliveredMessage || '📦 Produto entregue!'}\n\n🔗 <b>Link de acesso:</b>\n${product.file_url}`,
+      `${deliveredMessage || '📦 Produto entregue!'}\n\n${deliveryMessages.join('\n\n')}`,
       { inline_keyboard: [[{ text: '🛍️ Ver Mais Produtos', callback_data: 'products' }]] }
     );
   } else {
