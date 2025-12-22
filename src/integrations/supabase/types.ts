@@ -14,75 +14,128 @@ export type Database = {
   }
   public: {
     Tables: {
-      bot_settings: {
+      bot_messages: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          message_content: string
+          message_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message_content: string
+          message_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message_content?: string
+          message_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_messages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_settings: {
         Row: {
           auto_delivery: boolean | null
+          cart_reminder_enabled: boolean | null
+          cart_reminder_hours: number | null
+          client_id: string
           created_at: string | null
           id: string
-          payment_instructions: string | null
-          success_message: string | null
+          support_enabled: boolean | null
           updated_at: string | null
-          welcome_message: string | null
+          upsell_enabled: boolean | null
         }
         Insert: {
           auto_delivery?: boolean | null
+          cart_reminder_enabled?: boolean | null
+          cart_reminder_hours?: number | null
+          client_id: string
           created_at?: string | null
           id?: string
-          payment_instructions?: string | null
-          success_message?: string | null
+          support_enabled?: boolean | null
           updated_at?: string | null
-          welcome_message?: string | null
+          upsell_enabled?: boolean | null
         }
         Update: {
           auto_delivery?: boolean | null
+          cart_reminder_enabled?: boolean | null
+          cart_reminder_hours?: number | null
+          client_id?: string
           created_at?: string | null
           id?: string
-          payment_instructions?: string | null
-          success_message?: string | null
+          support_enabled?: boolean | null
           updated_at?: string | null
-          welcome_message?: string | null
+          upsell_enabled?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "client_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      customers: {
+      clients: {
         Row: {
+          business_name: string
           created_at: string | null
-          email: string | null
-          first_name: string | null
           id: string
-          last_name: string | null
-          phone: string | null
-          telegram_id: number
-          telegram_username: string | null
+          is_active: boolean | null
+          telegram_bot_token: string | null
+          telegram_bot_username: string | null
           updated_at: string | null
+          user_id: string
+          webhook_configured: boolean | null
         }
         Insert: {
+          business_name: string
           created_at?: string | null
-          email?: string | null
-          first_name?: string | null
           id?: string
-          last_name?: string | null
-          phone?: string | null
-          telegram_id: number
-          telegram_username?: string | null
+          is_active?: boolean | null
+          telegram_bot_token?: string | null
+          telegram_bot_username?: string | null
           updated_at?: string | null
+          user_id: string
+          webhook_configured?: boolean | null
         }
         Update: {
+          business_name?: string
           created_at?: string | null
-          email?: string | null
-          first_name?: string | null
           id?: string
-          last_name?: string | null
-          phone?: string | null
-          telegram_id?: number
-          telegram_username?: string | null
+          is_active?: boolean | null
+          telegram_bot_token?: string | null
+          telegram_bot_username?: string | null
           updated_at?: string | null
+          user_id?: string
+          webhook_configured?: boolean | null
         }
         Relationships: []
       }
       orders: {
         Row: {
           amount: number
+          client_id: string
           created_at: string | null
           customer_id: string | null
           delivered_at: string | null
@@ -99,6 +152,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          client_id: string
           created_at?: string | null
           customer_id?: string | null
           delivered_at?: string | null
@@ -115,6 +169,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          client_id?: string
           created_at?: string | null
           customer_id?: string | null
           delivered_at?: string | null
@@ -131,10 +186,17 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
-            referencedRelation: "customers"
+            referencedRelation: "telegram_customers"
             referencedColumns: ["id"]
           },
           {
@@ -148,6 +210,7 @@ export type Database = {
       }
       products: {
         Row: {
+          client_id: string
           created_at: string | null
           description: string | null
           file_url: string | null
@@ -162,6 +225,7 @@ export type Database = {
           views_count: number | null
         }
         Insert: {
+          client_id: string
           created_at?: string | null
           description?: string | null
           file_url?: string | null
@@ -176,6 +240,7 @@ export type Database = {
           views_count?: number | null
         }
         Update: {
+          client_id?: string
           created_at?: string | null
           description?: string | null
           file_url?: string | null
@@ -189,6 +254,79 @@ export type Database = {
           updated_at?: string | null
           views_count?: number | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "products_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telegram_customers: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          email: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          phone: string | null
+          telegram_id: number
+          telegram_username: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          telegram_id: number
+          telegram_username?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          telegram_id?: number
+          telegram_username?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_customers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
         Relationships: []
       }
     }
@@ -196,9 +334,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_my_client_id: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "client"
       order_status: "pending" | "paid" | "delivered" | "cancelled" | "refunded"
       payment_method: "pix" | "card" | "boleto"
     }
@@ -328,6 +474,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "client"],
       order_status: ["pending", "paid", "delivered", "cancelled", "refunded"],
       payment_method: ["pix", "card", "boleto"],
     },
