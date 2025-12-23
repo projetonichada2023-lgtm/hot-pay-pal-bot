@@ -3,6 +3,8 @@ import { Client } from '@/hooks/useClient';
 import { useProducts, useUpdateProduct, Product } from '@/hooks/useProducts';
 import { useFunnelStats } from '@/hooks/useFunnelStats';
 import { supabase } from '@/integrations/supabase/client';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { GitBranch, ArrowDown, ArrowRight, Loader2, Package, TrendingUp, TrendingDown, Plus, Trash2, BarChart3, DollarSign, Percent, MessageSquare, GripVertical } from 'lucide-react';
+import { GitBranch, ArrowDown, ArrowRight, Loader2, Package, TrendingUp, TrendingDown, Plus, Trash2, DollarSign, Percent, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
+import { SortableUpsellItem } from '@/components/funnel/SortableUpsellItem';
 
 interface FunnelPageProps {
   client: Client;
@@ -46,6 +49,18 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
   // Store product upsells from the new table
   const [productUpsells, setProductUpsells] = useState<Record<string, ProductUpsell[]>>({});
   const [loadingUpsells, setLoadingUpsells] = useState(true);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Fetch product upsells
   useEffect(() => {
@@ -219,14 +234,14 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
       .from('product_upsells')
       .insert({
         product_id: productId,
-        upsell_product_id: '',
+        upsell_product_id: products?.[0]?.id || '',
         display_order: nextOrder,
       })
       .select()
       .single();
 
     if (error) {
-      // Don't show toast for empty insert - user needs to select product first
+      toast.error('Erro ao adicionar upsell');
       return;
     }
 
@@ -234,6 +249,8 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
       ...prev,
       [productId]: [...(prev[productId] || []), data],
     }));
+
+    toast.success('Upsell adicionado! Selecione o produto.');
   };
 
   const handleUpdateUpsell = async (upsellId: string, productId: string, updates: Partial<ProductUpsell>) => {
@@ -274,6 +291,47 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
     }));
 
     toast.success('Upsell removido!');
+  };
+
+  const handleDragEnd = async (event: DragEndEvent, productId: string) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+
+    const upsells = productUpsells[productId] || [];
+    const oldIndex = upsells.findIndex(u => u.id === active.id);
+    const newIndex = upsells.findIndex(u => u.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(upsells, oldIndex, newIndex);
+    
+    // Update local state immediately for smooth UX
+    setProductUpsells(prev => ({
+      ...prev,
+      [productId]: reordered,
+    }));
+
+    // Update display_order in database
+    try {
+      const updates = reordered.map((upsell, index) => 
+        supabase
+          .from('product_upsells')
+          .update({ display_order: index + 1 })
+          .eq('id', upsell.id)
+      );
+
+      await Promise.all(updates);
+      toast.success('Ordem atualizada!');
+    } catch (error) {
+      console.error('Error reordering upsells:', error);
+      toast.error('Erro ao reordenar');
+      // Revert on error
+      setProductUpsells(prev => ({
+        ...prev,
+        [productId]: upsells,
+      }));
+    }
   };
 
   const handleUpdateDownsell = async (product: FunnelProduct, downsellId: string) => {
@@ -412,7 +470,7 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
               <TrendingUp className="w-5 h-5 text-green-500 mt-0.5" />
               <div>
                 <p className="font-medium">Upsells</p>
-                <p className="text-muted-foreground">Oferecidos em sequência após a compra</p>
+                <p className="text-muted-foreground">Arraste para reordenar a sequência</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
@@ -491,7 +549,7 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
                       <ArrowDown className="w-5 h-5 text-muted-foreground" />
                     </div>
 
-                    {/* Upsells */}
+                    {/* Upsells with Drag and Drop */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -509,60 +567,33 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
                         </Button>
                       </div>
 
-                      {upsells.map((upsell, index) => {
-                        const upsellProduct = getProductById(upsell.upsell_product_id);
-                        return (
-                          <div key={upsell.id} className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
-                            <div className="flex items-start gap-3">
-                              <div className="flex items-center gap-1 text-muted-foreground">
-                                <GripVertical className="w-4 h-4" />
-                                <span className="text-xs font-medium">{index + 1}º</span>
-                              </div>
-                              <div className="flex-1 space-y-2">
-                                <Select
-                                  value={upsell.upsell_product_id || 'none'}
-                                  onValueChange={(v) => handleUpdateUpsell(upsell.id, product.id, { 
-                                    upsell_product_id: v === 'none' ? '' : v 
-                                  })}
-                                >
-                                  <SelectTrigger className="h-9">
-                                    <SelectValue placeholder="Selecione o produto..." />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {upsellProduct && (
-                                      <SelectItem value={upsellProduct.id}>
-                                        {upsellProduct.is_hot ? '🔥 ' : ''}{upsellProduct.name} - {formatPrice(Number(upsellProduct.price))}
-                                      </SelectItem>
-                                    )}
-                                    {getOtherProducts(product.id, upsells.filter(u => u.id !== upsell.id).map(u => u.upsell_product_id)).map(p => (
-                                      <SelectItem key={p.id} value={p.id}>
-                                        {p.is_hot ? '🔥 ' : ''}{p.name} - {formatPrice(Number(p.price))}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <Textarea
-                                  placeholder="Mensagem personalizada do upsell..."
-                                  value={upsell.upsell_message || ''}
-                                  onChange={(e) => handleUpdateUpsell(upsell.id, product.id, { 
-                                    upsell_message: e.target.value || null 
-                                  })}
-                                  rows={2}
-                                  className="resize-none text-sm"
-                                />
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-muted-foreground hover:text-destructive h-8 w-8"
-                                onClick={() => handleDeleteUpsell(upsell.id, product.id)}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={(event) => handleDragEnd(event, product.id)}
+                      >
+                        <SortableContext
+                          items={upsells.map(u => u.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <div className="space-y-2">
+                            {upsells.map((upsell, index) => (
+                              <SortableUpsellItem
+                                key={upsell.id}
+                                upsell={upsell}
+                                index={index}
+                                productId={product.id}
+                                getProductById={getProductById}
+                                getOtherProducts={getOtherProducts}
+                                allUpsells={upsells}
+                                formatPrice={formatPrice}
+                                onUpdate={handleUpdateUpsell}
+                                onDelete={handleDeleteUpsell}
+                              />
+                            ))}
                           </div>
-                        );
-                      })}
+                        </SortableContext>
+                      </DndContext>
 
                       {upsells.length === 0 && (
                         <p className="text-sm text-muted-foreground text-center py-2">
@@ -647,7 +678,7 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
         </CardHeader>
         <CardContent>
           <ul className="text-sm text-muted-foreground space-y-2">
-            <li>• <strong>Múltiplos Upsells:</strong> Configure vários upsells que serão oferecidos em sequência</li>
+            <li>• <strong>Arraste para reordenar:</strong> Use o ícone de grip para reordenar os upsells</li>
             <li>• <strong>Ordem importa:</strong> O primeiro upsell é oferecido logo após a compra</li>
             <li>• <strong>Downsell:</strong> Oferecido apenas se o cliente recusar todos os upsells</li>
             <li>• <strong>Lembre-se:</strong> Ative o Upsell nas Configurações gerais para o funil funcionar</li>
@@ -702,7 +733,10 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
               {selectedUpsells.map((upsell, index) => (
                 <div key={index} className="p-3 rounded-lg bg-green-500/5 border border-green-500/20 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-green-500">{index + 1}º Upsell</span>
+                    <div className="flex items-center gap-2">
+                      <GripVertical className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs font-medium text-green-500">{index + 1}º Upsell</span>
+                    </div>
                     {index > 0 && (
                       <Button
                         type="button"
