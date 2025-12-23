@@ -141,9 +141,14 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
               onChange={(e) => setFormData({ ...formData, telegram_group_id: e.target.value })}
               placeholder="Ex: -1001234567890"
             />
-            <p className="text-xs text-muted-foreground">
-              O bot será adicionado como admin do grupo e criará links de convite únicos para cada cliente.
-            </p>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p><strong>Como obter o ID do grupo:</strong></p>
+              <ol className="list-decimal list-inside space-y-0.5 ml-1">
+                <li>Adicione o bot <code className="bg-muted px-1 rounded">@userinfobot</code> ao seu grupo</li>
+                <li>O bot enviará o ID do grupo (começa com <code className="bg-muted px-1 rounded">-100</code>)</li>
+                <li>Remova o @userinfobot e adicione seu bot como admin com permissão de convidar</li>
+              </ol>
+            </div>
           </div>
 
           <div className="flex items-center justify-between">
