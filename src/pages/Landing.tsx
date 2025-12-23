@@ -1,7 +1,6 @@
+import { lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { TestimonialsSection } from "@/components/ui/testimonials-with-marquee";
 import { 
   Bot, 
   ShoppingCart, 
@@ -29,9 +28,23 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link } from "react-router-dom";
 import { motion, useInView, Variants } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
-import { DemoModal } from "@/components/landing/DemoModal";
 import { AnimatedCounter } from "@/components/landing/AnimatedCounter";
 import unipayLogo from "@/assets/unipay-logo.png";
+
+// Lazy load heavy components
+const DemoModal = lazy(() => import("@/components/landing/DemoModal").then(m => ({ default: m.DemoModal })));
+const Accordion = lazy(() => import("@/components/ui/accordion").then(m => ({ default: m.Accordion })));
+const AccordionContent = lazy(() => import("@/components/ui/accordion").then(m => ({ default: m.AccordionContent })));
+const AccordionItem = lazy(() => import("@/components/ui/accordion").then(m => ({ default: m.AccordionItem })));
+const AccordionTrigger = lazy(() => import("@/components/ui/accordion").then(m => ({ default: m.AccordionTrigger })));
+const TestimonialsSection = lazy(() => import("@/components/ui/testimonials-with-marquee").then(m => ({ default: m.TestimonialsSection })));
+
+// Loading fallback for lazy components
+const SectionLoader = () => (
+  <div className="flex items-center justify-center py-20">
+    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 const features = [
   {
@@ -975,12 +988,14 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <TestimonialsSection
-        title="O que nossos clientes dizem"
-        description="Milhares de empreendedores já transformaram suas vendas com o TeleGateway."
-        testimonials={testimonials}
-      />
+      {/* Testimonials Section - Lazy loaded */}
+      <Suspense fallback={<SectionLoader />}>
+        <TestimonialsSection
+          title="O que nossos clientes dizem"
+          description="Milhares de empreendedores já transformaram suas vendas com o TeleGateway."
+          testimonials={testimonials}
+        />
+      </Suspense>
 
       {/* FAQ Section */}
       <section className="py-20 px-4">
@@ -995,22 +1010,24 @@ export default function Landing() {
           </ScrollReveal>
           
           <ScrollReveal className="max-w-3xl mx-auto">
-            <Accordion type="single" collapsible className="w-full">
-              {faqs.map((faq, index) => (
-                <AccordionItem 
-                  key={index} 
-                  value={`item-${index}`}
-                  className="border-border/50 data-[state=open]:border-primary/30"
-                >
-                  <AccordionTrigger className="text-left hover:no-underline hover:text-primary transition-colors py-5 text-base font-medium">
-                    {faq.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground leading-relaxed pb-5">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+            <Suspense fallback={<SectionLoader />}>
+              <Accordion type="single" collapsible className="w-full">
+                {faqs.map((faq, index) => (
+                  <AccordionItem 
+                    key={index} 
+                    value={`item-${index}`}
+                    className="border-border/50 data-[state=open]:border-primary/30"
+                  >
+                    <AccordionTrigger className="text-left hover:no-underline hover:text-primary transition-colors py-5 text-base font-medium">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground leading-relaxed pb-5">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </Suspense>
           </ScrollReveal>
         </div>
       </section>
@@ -1325,8 +1342,10 @@ export default function Landing() {
       {/* Add bottom padding on mobile for floating CTA */}
       <div className="h-20 md:hidden" />
 
-      {/* Demo Modal */}
-      <DemoModal open={demoOpen} onOpenChange={setDemoOpen} />
+      {/* Demo Modal - Lazy loaded */}
+      <Suspense fallback={null}>
+        <DemoModal open={demoOpen} onOpenChange={setDemoOpen} />
+      </Suspense>
     </div>
   );
 }
