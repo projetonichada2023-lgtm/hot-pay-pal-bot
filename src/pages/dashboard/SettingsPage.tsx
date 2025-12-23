@@ -16,8 +16,10 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   const { data: settings, isLoading } = useClientSettings(client.id);
   const updateSettings = useUpdateClientSettings();
   const { toast } = useToast();
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  const [showPublicKey, setShowPublicKey] = useState(false);
+  const [showSecretKey, setShowSecretKey] = useState(false);
+  const [publicKey, setPublicKey] = useState('');
+  const [secretKey, setSecretKey] = useState('');
 
   const handleToggle = async (field: string, value: boolean) => {
     if (!settings) return;
@@ -39,16 +41,17 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
     }
   };
 
-  const handleSaveApiKey = async () => {
-    if (!settings || !apiKey.trim()) return;
+  const handleSaveKeys = async () => {
+    if (!settings || (!publicKey.trim() && !secretKey.trim())) return;
     try {
-      await updateSettings.mutateAsync({ 
-        id: settings.id, 
-        fastsoft_api_key: apiKey.trim(),
-        fastsoft_enabled: true 
-      } as any);
-      toast({ title: 'Chave API salva com sucesso!' });
-      setApiKey('');
+      const updateData: any = { id: settings.id };
+      if (publicKey.trim()) updateData.fastsoft_public_key = publicKey.trim();
+      if (secretKey.trim()) updateData.fastsoft_api_key = secretKey.trim();
+      
+      await updateSettings.mutateAsync(updateData);
+      toast({ title: 'Chaves salvas com sucesso!' });
+      setPublicKey('');
+      setSecretKey('');
     } catch (error) {
       toast({ title: 'Erro ao salvar', variant: 'destructive' });
     }
@@ -74,7 +77,9 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
 
   if (!settings) return null;
 
-  const hasApiKey = !!(settings as any).fastsoft_api_key;
+  const hasPublicKey = !!(settings as any).fastsoft_public_key;
+  const hasSecretKey = !!(settings as any).fastsoft_api_key;
+  const hasKeys = hasPublicKey && hasSecretKey;
   const fastsoftEnabled = (settings as any).fastsoft_enabled || false;
 
   return (
@@ -105,49 +110,84 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
             <div className="space-y-0.5">
               <Label>FastSoft Ativo</Label>
               <p className="text-sm text-muted-foreground">
-                {hasApiKey ? 'Usar FastSoft para pagamentos PIX' : 'Configure a API Key primeiro'}
+                {hasKeys ? 'Usar FastSoft para pagamentos PIX' : 'Configure as chaves primeiro'}
               </p>
             </div>
             <Switch
               checked={fastsoftEnabled}
               onCheckedChange={handleToggleFastsoft}
-              disabled={!hasApiKey}
+              disabled={!hasKeys}
             />
           </div>
 
-          <div className="space-y-2 pt-4 border-t border-border">
-            <Label>API Key FastSoft</Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
+          <div className="space-y-4 pt-4 border-t border-border">
+            {/* Public Key */}
+            <div className="space-y-2">
+              <Label>Chave Pública (Public Key)</Label>
+              <div className="relative">
                 <Input
-                  type={showApiKey ? 'text' : 'password'}
-                  placeholder={hasApiKey ? '••••••••••••••••' : 'Cole sua API Key aqui'}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
+                  type={showPublicKey ? 'text' : 'password'}
+                  placeholder={hasPublicKey ? '••••••••••••••••' : 'Cole sua chave pública aqui'}
+                  value={publicKey}
+                  onChange={(e) => setPublicKey(e.target.value)}
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   className="absolute right-1 top-1/2 -translate-y-1/2"
-                  onClick={() => setShowApiKey(!showApiKey)}
+                  onClick={() => setShowPublicKey(!showPublicKey)}
                 >
-                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPublicKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
-              <Button onClick={handleSaveApiKey} disabled={!apiKey.trim()}>
-                Salvar
-              </Button>
+              {hasPublicKey && (
+                <p className="text-xs text-green-600 dark:text-green-400">✓ Chave pública configurada</p>
+              )}
             </div>
+
+            {/* Secret Key */}
+            <div className="space-y-2">
+              <Label>Chave Secreta (Secret Key)</Label>
+              <div className="relative">
+                <Input
+                  type={showSecretKey ? 'text' : 'password'}
+                  placeholder={hasSecretKey ? '••••••••••••••••' : 'Cole sua chave secreta aqui'}
+                  value={secretKey}
+                  onChange={(e) => setSecretKey(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2"
+                  onClick={() => setShowSecretKey(!showSecretKey)}
+                >
+                  {showSecretKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              {hasSecretKey && (
+                <p className="text-xs text-green-600 dark:text-green-400">✓ Chave secreta configurada</p>
+              )}
+            </div>
+
+            <Button 
+              onClick={handleSaveKeys} 
+              disabled={!publicKey.trim() && !secretKey.trim()}
+              className="w-full"
+            >
+              Salvar Chaves
+            </Button>
+            
             <p className="text-xs text-muted-foreground">
-              Obtenha em: Painel FastSoft → Configurações → Chave de API
+              Obtenha as chaves em: Painel FastSoft → Configurações → Credenciais da API
             </p>
           </div>
 
-          {hasApiKey && (
+          {hasKeys && (
             <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
               <p className="text-sm text-green-600 dark:text-green-400">
-                ✓ API Key configurada. Os pagamentos PIX serão processados pela FastSoft.
+                ✓ Chaves configuradas. Os pagamentos PIX serão processados pela FastSoft.
               </p>
             </div>
           )}
