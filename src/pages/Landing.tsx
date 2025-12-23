@@ -16,6 +16,7 @@ import {
 import { Link } from "react-router-dom";
 import { motion, useInView, Variants } from "framer-motion";
 import { useRef, useEffect } from "react";
+import unipayLogo from "@/assets/unipay-logo.png";
 
 const features = [
   {
@@ -397,24 +398,22 @@ export default function Landing() {
           >
             <p className="text-sm text-muted-foreground">Pagamentos processados com segurança por</p>
             <motion.a
-              href="https://unipay.com.br"
+              href="https://unipaybr.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300"
+              className="inline-flex items-center gap-4 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300"
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                <Shield className="w-4 h-4 text-white" />
-              </div>
+              <img 
+                src={unipayLogo} 
+                alt="UniPay" 
+                className="h-8 w-auto object-contain"
+              />
+              <div className="h-6 w-px bg-border/50" />
               <div className="text-left">
-                <span className="font-bold text-lg bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-                  UniPay
-                </span>
-                <p className="text-xs text-muted-foreground">Parceiro Oficial de Pagamentos</p>
-              </div>
-              <div className="ml-2 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-medium">
-                Seguro
+                <p className="text-xs text-muted-foreground">Parceiro Oficial</p>
+                <p className="text-sm font-medium text-emerald-400">Gateway de Pagamentos</p>
               </div>
             </motion.a>
           </motion.div>
