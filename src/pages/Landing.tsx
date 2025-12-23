@@ -13,7 +13,11 @@ import {
   CheckCircle2,
   Send,
   X,
-  Minus
+  Minus,
+  Lock,
+  Headphones,
+  BadgeCheck,
+  Activity
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, useInView, Variants } from "framer-motion";
@@ -772,6 +776,112 @@ export default function Landing() {
               </div>
             </div>
           </ScrollReveal>
+        </div>
+      </section>
+
+      {/* Trust Badges Section */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto">
+          <motion.div 
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+          >
+            {/* Security Badge */}
+            <motion.div variants={scaleIn}>
+              <motion.div
+                whileHover={{ y: -4, scale: 1.02 }}
+                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 text-center"
+              >
+                <div className="w-14 h-14 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <Shield className="w-7 h-7 text-emerald-500" />
+                </div>
+                <div>
+                  <p className="font-bold text-lg">100% Seguro</p>
+                  <p className="text-sm text-muted-foreground">Pagamentos criptografados</p>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* Data Protection Badge */}
+            <motion.div variants={scaleIn}>
+              <motion.div
+                whileHover={{ y: -4, scale: 1.02 }}
+                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20 text-center"
+              >
+                <div className="w-14 h-14 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                  <Lock className="w-7 h-7 text-blue-500" />
+                </div>
+                <div>
+                  <p className="font-bold text-lg">Dados Protegidos</p>
+                  <p className="text-sm text-muted-foreground">LGPD Compliance</p>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* Support Badge */}
+            <motion.div variants={scaleIn}>
+              <motion.div
+                whileHover={{ y: -4, scale: 1.02 }}
+                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-violet-500/10 to-violet-500/5 border border-violet-500/20 text-center"
+              >
+                <div className="w-14 h-14 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                  <Headphones className="w-7 h-7 text-violet-500" />
+                </div>
+                <div>
+                  <p className="font-bold text-lg">Suporte Brasileiro</p>
+                  <p className="text-sm text-muted-foreground">Atendimento humanizado</p>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* Transactions Badge */}
+            <motion.div variants={scaleIn}>
+              <motion.div
+                whileHover={{ y: -4, scale: 1.02 }}
+                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/20 text-center"
+              >
+                <div className="w-14 h-14 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                  <Activity className="w-7 h-7 text-amber-500" />
+                </div>
+                <div>
+                  <p className="font-bold text-lg">+5.000/dia</p>
+                  <p className="text-sm text-muted-foreground">Transações processadas</p>
+                </div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+
+          {/* Additional trust indicators */}
+          <motion.div 
+            className="flex flex-wrap justify-center items-center gap-6 mt-10 pt-8 border-t border-border/30"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <BadgeCheck className="w-5 h-5 text-emerald-500" />
+              <span>Empresa 100% Brasileira</span>
+            </div>
+            <div className="hidden md:block w-px h-4 bg-border" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <BadgeCheck className="w-5 h-5 text-emerald-500" />
+              <span>Sem mensalidade fixa</span>
+            </div>
+            <div className="hidden md:block w-px h-4 bg-border" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <BadgeCheck className="w-5 h-5 text-emerald-500" />
+              <span>Entrega instantânea garantida</span>
+            </div>
+            <div className="hidden md:block w-px h-4 bg-border" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <BadgeCheck className="w-5 h-5 text-emerald-500" />
+              <span>PIX em tempo real</span>
+            </div>
+          </motion.div>
         </div>
       </section>
 
