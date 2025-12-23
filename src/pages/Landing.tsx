@@ -88,7 +88,7 @@ const testimonials = [
     author: {
       name: "Lucas Mendes",
       handle: "@lucasmendes",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face&auto=format&q=75"
     },
     text: "O TeleGateway revolucionou minhas vendas. Antes eu perdia horas respondendo mensagens, agora tudo é automático. Meu faturamento triplicou em 2 meses!"
   },
@@ -96,7 +96,7 @@ const testimonials = [
     author: {
       name: "Ana Carolina",
       handle: "@anacarolina",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face"
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face&auto=format&q=75"
     },
     text: "A recuperação de carrinho é incrível! Recupero em média 30% das vendas abandonadas. O investimento se paga no primeiro dia."
   },
@@ -104,7 +104,7 @@ const testimonials = [
     author: {
       name: "Pedro Silva",
       handle: "@pedrosilva",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face&auto=format&q=75"
     },
     text: "Simplicidade é a palavra. Configurei minha loja em menos de 10 minutos e já comecei a vender. O suporte é excepcional!"
   },
@@ -112,7 +112,7 @@ const testimonials = [
     author: {
       name: "Mariana Costa",
       handle: "@maricosta",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face"
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face&auto=format&q=75"
     },
     text: "O funil de upsell aumentou meu ticket médio em 45%. Meus clientes compram mais sem eu precisar fazer nada."
   },
@@ -120,7 +120,7 @@ const testimonials = [
     author: {
       name: "Rafael Santos",
       handle: "@rafaelsantos",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face"
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face&auto=format&q=75"
     },
     text: "Migrei do WhatsApp para o Telegram com o TeleGateway e minhas vendas aumentaram 80%. A automação é outro nível!"
   },
@@ -128,7 +128,7 @@ const testimonials = [
     author: {
       name: "Julia Fernandes",
       handle: "@juliafernandes",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
+      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face&auto=format&q=75"
     },
     text: "Finalmente uma plataforma que entende o produtor digital. Entrega automática, PIX instantâneo, tudo perfeito!"
   }
@@ -509,8 +509,10 @@ export default function Landing() {
             >
               <img 
                 src={unipayLogo} 
-                alt="UniPay" 
+                alt="UniPay - Gateway de Pagamentos" 
                 className="h-8 w-auto object-contain"
+                loading="lazy"
+                decoding="async"
               />
               <div className="h-6 w-px bg-border/50" />
               <div className="text-left">
@@ -1285,8 +1287,10 @@ export default function Landing() {
               >
                 <img 
                   src={unipayLogo} 
-                  alt="UniPay" 
+                  alt="UniPay - Gateway de Pagamentos" 
                   className="h-6 w-auto object-contain"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div className="h-4 w-px bg-border/50" />
                 <div className="flex items-center gap-1 text-xs text-emerald-400">
