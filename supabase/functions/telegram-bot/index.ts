@@ -1,27 +1,30 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Environment variables
-const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') || 'BOT_TOKEN_FICTICIO';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-// EFI/Gerencianet credentials (fictitious for now)
-const EFI_CLIENT_ID = Deno.env.get('EFI_CLIENT_ID') || 'Client_Id_ficticio_12345';
-const EFI_CLIENT_SECRET = Deno.env.get('EFI_CLIENT_SECRET') || 'Client_Secret_ficticio_67890';
-const EFI_PIX_KEY = Deno.env.get('EFI_PIX_KEY') || 'chave-pix-ficticia@email.com';
+const FASTSOFT_API_URL = 'https://api.fastsoftbrasil.com';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// Telegram API helper
-async function sendTelegramMessage(chatId: number, text: string, replyMarkup?: object) {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+// Client context interface
+interface ClientContext {
+  clientId: string;
+  botToken: string;
+  fastsoftApiKey: string | null;
+  fastsoftEnabled: boolean;
+}
+
+// Telegram API helpers
+async function sendTelegramMessage(botToken: string, chatId: number, text: string, replyMarkup?: object) {
+  const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
   const body: any = {
     chat_id: chatId,
     text,
@@ -42,8 +45,8 @@ async function sendTelegramMessage(chatId: number, text: string, replyMarkup?: o
   return result;
 }
 
-async function sendTelegramPhoto(chatId: number, photoUrl: string, caption: string, replyMarkup?: object) {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
+async function sendTelegramPhoto(botToken: string, chatId: number, photoUrl: string, caption: string, replyMarkup?: object) {
+  const url = `https://api.telegram.org/bot${botToken}/sendPhoto`;
   const body: any = {
     chat_id: chatId,
     photo: photoUrl,
@@ -63,19 +66,48 @@ async function sendTelegramPhoto(chatId: number, photoUrl: string, caption: stri
   return response.json();
 }
 
+// Get client context from bot token in URL or request
+async function getClientContext(botToken: string): Promise<ClientContext | null> {
+  const { data: client } = await supabase
+    .from('clients')
+    .select('id, telegram_bot_token')
+    .eq('telegram_bot_token', botToken)
+    .single();
+
+  if (!client) {
+    console.error('Client not found for bot token');
+    return null;
+  }
+
+  const { data: settings } = await supabase
+    .from('client_settings')
+    .select('fastsoft_api_key, fastsoft_enabled')
+    .eq('client_id', client.id)
+    .single();
+
+  return {
+    clientId: client.id,
+    botToken: client.telegram_bot_token,
+    fastsoftApiKey: settings?.fastsoft_api_key || null,
+    fastsoftEnabled: settings?.fastsoft_enabled || false,
+  };
+}
+
 // Get or create customer
-async function getOrCreateCustomer(telegramUser: any) {
+async function getOrCreateCustomer(clientId: string, telegramUser: any) {
   const { data: existing } = await supabase
-    .from('customers')
+    .from('telegram_customers')
     .select('*')
+    .eq('client_id', clientId)
     .eq('telegram_id', telegramUser.id)
     .single();
 
   if (existing) return existing;
 
   const { data: newCustomer, error } = await supabase
-    .from('customers')
+    .from('telegram_customers')
     .insert({
+      client_id: clientId,
       telegram_id: telegramUser.id,
       telegram_username: telegramUser.username,
       first_name: telegramUser.first_name,
@@ -92,27 +124,35 @@ async function getOrCreateCustomer(telegramUser: any) {
   return newCustomer;
 }
 
-// Get bot settings
-async function getBotSettings() {
+// Get bot messages for client
+async function getBotMessage(clientId: string, messageType: string, defaultMessage: string): Promise<string> {
   const { data } = await supabase
-    .from('bot_settings')
-    .select('*')
-    .limit(1)
+    .from('bot_messages')
+    .select('message_content')
+    .eq('client_id', clientId)
+    .eq('message_type', messageType)
     .single();
   
-  return data || {
-    welcome_message: 'Olá! 👋 Bem-vindo à nossa loja! Use /produtos para ver nosso catálogo.',
-    payment_instructions: 'Escaneie o QR Code ou copie o código PIX para realizar o pagamento.',
-    success_message: '✅ Pagamento confirmado! Seu produto será entregue em instantes.',
-    auto_delivery: true,
-  };
+  return data?.message_content || defaultMessage;
 }
 
-// Get products
-async function getProducts() {
+// Get client settings
+async function getClientSettings(clientId: string) {
+  const { data } = await supabase
+    .from('client_settings')
+    .select('*')
+    .eq('client_id', clientId)
+    .single();
+  
+  return data || { auto_delivery: true };
+}
+
+// Get products for client
+async function getProducts(clientId: string) {
   const { data } = await supabase
     .from('products')
     .select('*')
+    .eq('client_id', clientId)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
   
@@ -130,26 +170,97 @@ async function getProduct(productId: string) {
   return data;
 }
 
-// Generate PIX (mock for now - will be replaced with real EFI API)
-async function generatePix(amount: number, orderId: string) {
-  console.log('Generating PIX with EFI credentials:', { EFI_CLIENT_ID, EFI_PIX_KEY });
-  
-  // Mock PIX data - replace with real EFI API integration
-  const pixCode = `00020126580014br.gov.bcb.pix0136${EFI_PIX_KEY}5204000053039865404${amount.toFixed(2)}5802BR5913LOJA DIGITAL6008BRASILIA62070503***6304`;
+// Generate PIX using FastSoft API
+async function generatePixFastsoft(ctx: ClientContext, amount: number, orderId: string, customer: any): Promise<{ pixCode: string; qrCodeUrl: string; paymentId: string } | null> {
+  if (!ctx.fastsoftApiKey) {
+    console.error('FastSoft API key not configured');
+    return null;
+  }
+
+  try {
+    const authHeader = 'Basic ' + btoa(`x:${ctx.fastsoftApiKey}`);
+    
+    const requestBody = {
+      amount: Math.round(amount * 100), // Convert to cents
+      currency: 'BRL',
+      paymentMethod: 'PIX',
+      customer: {
+        name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Cliente',
+        email: customer.email || 'cliente@email.com',
+        document: {
+          number: '00000000000',
+          type: 'CPF',
+        },
+      },
+      items: [{
+        title: 'Produto Digital',
+        unitPrice: Math.round(amount * 100),
+        quantity: 1,
+        tangible: false,
+      }],
+      pix: {
+        expiresInDays: 1,
+      },
+      metadata: JSON.stringify({ order_id: orderId, client_id: ctx.clientId }),
+      postbackUrl: `${SUPABASE_URL}/functions/v1/fastsoft-webhook`,
+    };
+
+    console.log('Creating FastSoft transaction:', JSON.stringify(requestBody, null, 2));
+
+    const response = await fetch(`${FASTSOFT_API_URL}/api/user/transactions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    const responseText = await response.text();
+    console.log('FastSoft response status:', response.status);
+    console.log('FastSoft response:', responseText);
+
+    if (!response.ok) {
+      console.error('FastSoft API error:', response.status, responseText);
+      return null;
+    }
+
+    const data = JSON.parse(responseText);
+    
+    // Extract PIX data from response
+    const pixCode = data.pix?.qrcode || data.pixCode || '';
+    const qrCodeUrl = data.pix?.receiptUrl || `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCode)}`;
+    
+    return {
+      pixCode,
+      qrCodeUrl,
+      paymentId: data.id,
+    };
+  } catch (error) {
+    console.error('Error generating PIX with FastSoft:', error);
+    return null;
+  }
+}
+
+// Generate mock PIX (fallback when FastSoft is not configured)
+function generateMockPix(amount: number, orderId: string): { pixCode: string; qrCodeUrl: string; paymentId: string } {
+  const randomId = crypto.randomUUID();
+  const pixCode = `00020126580014BR.GOV.BCB.PIX0136${randomId}52040000530398654${amount.toFixed(2).replace('.', '')}5802BR5913LOJA DIGITAL6009SAO PAULO62070503***6304`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCode)}`;
   
   return {
     pixCode,
     qrCodeUrl,
-    paymentId: `PIX_${orderId}_${Date.now()}`,
+    paymentId: `MOCK_${orderId}_${Date.now()}`,
   };
 }
 
 // Create order
-async function createOrder(customerId: string, productId: string, amount: number) {
+async function createOrder(ctx: ClientContext, customerId: string, productId: string, amount: number, customer: any) {
   const { data: order, error } = await supabase
     .from('orders')
     .insert({
+      client_id: ctx.clientId,
       customer_id: customerId,
       product_id: productId,
       amount,
@@ -164,8 +275,20 @@ async function createOrder(customerId: string, productId: string, amount: number
     return null;
   }
 
-  // Generate PIX
-  const pix = await generatePix(amount, order.id);
+  // Generate PIX - use FastSoft if enabled, otherwise mock
+  let pix: { pixCode: string; qrCodeUrl: string; paymentId: string };
+  
+  if (ctx.fastsoftEnabled && ctx.fastsoftApiKey) {
+    const fastsoftPix = await generatePixFastsoft(ctx, amount, order.id, customer);
+    if (fastsoftPix) {
+      pix = fastsoftPix;
+    } else {
+      console.log('FastSoft failed, falling back to mock PIX');
+      pix = generateMockPix(amount, order.id);
+    }
+  } else {
+    pix = generateMockPix(amount, order.id);
+  }
   
   // Update order with PIX data
   await supabase
@@ -180,10 +303,23 @@ async function createOrder(customerId: string, productId: string, amount: number
   return { ...order, ...pix };
 }
 
+// Log message to telegram_messages
+async function logMessage(clientId: string, customerId: string, chatId: number, direction: 'incoming' | 'outgoing', content: string, messageId?: number) {
+  await supabase.from('telegram_messages').insert({
+    client_id: clientId,
+    customer_id: customerId,
+    telegram_chat_id: chatId,
+    telegram_message_id: messageId,
+    direction,
+    message_type: 'text',
+    message_content: content,
+  });
+}
+
 // Handle /start command
-async function handleStart(chatId: number, telegramUser: any) {
-  await getOrCreateCustomer(telegramUser);
-  const settings = await getBotSettings();
+async function handleStart(ctx: ClientContext, chatId: number, telegramUser: any) {
+  const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
+  const welcomeMsg = await getBotMessage(ctx.clientId, 'welcome', 'Olá! 👋 Bem-vindo à nossa loja! Use /produtos para ver nosso catálogo.');
   
   const keyboard = {
     inline_keyboard: [
@@ -193,81 +329,128 @@ async function handleStart(chatId: number, telegramUser: any) {
     ],
   };
   
-  await sendTelegramMessage(chatId, settings.welcome_message, keyboard);
+  const result = await sendTelegramMessage(ctx.botToken, chatId, welcomeMsg, keyboard);
+  if (customer) {
+    await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', welcomeMsg, result?.result?.message_id);
+  }
 }
 
-// Handle /produtos command
-async function handleProducts(chatId: number) {
-  const products = await getProducts();
+// Handle products command
+async function handleProducts(ctx: ClientContext, chatId: number, telegramUser: any) {
+  const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
+  const products = await getProducts(ctx.clientId);
   
   if (products.length === 0) {
-    await sendTelegramMessage(chatId, '😕 Nenhum produto disponível no momento.');
+    const noProductsMsg = await getBotMessage(ctx.clientId, 'no_products', '😕 Nenhum produto disponível no momento.');
+    await sendTelegramMessage(ctx.botToken, chatId, noProductsMsg);
     return;
   }
   
-  for (const product of products) {
-    const price = Number(product.price).toFixed(2);
-    const caption = `<b>${product.name}</b>\n\n${product.description || ''}\n\n💰 <b>R$ ${price}</b>${product.is_hot ? '\n\n🔥 PRODUTO EM DESTAQUE!' : ''}`;
-    
-    const keyboard = {
-      inline_keyboard: [
-        [{ text: '🛒 Comprar Agora', callback_data: `buy_${product.id}` }],
-      ],
-    };
-    
-    if (product.image_url) {
-      await sendTelegramPhoto(chatId, product.image_url, caption, keyboard);
-    } else {
-      await sendTelegramMessage(chatId, caption, keyboard);
-    }
+  // Send product list header
+  const headerMsg = '🛍️ <b>Nossos Produtos</b>\n\nEscolha um produto para ver mais detalhes:';
+  await sendTelegramMessage(ctx.botToken, chatId, headerMsg, {
+    inline_keyboard: products.map(p => [{ text: `📦 ${p.name} - R$ ${Number(p.price).toFixed(2)}`, callback_data: `view_${p.id}` }])
+  });
+  
+  if (customer) {
+    await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', headerMsg);
   }
 }
 
-// Handle buy action
-async function handleBuy(chatId: number, productId: string, telegramUser: any) {
-  const customer = await getOrCreateCustomer(telegramUser);
-  if (!customer) {
-    await sendTelegramMessage(chatId, '❌ Erro ao processar. Tente novamente.');
-    return;
-  }
-  
+// Handle view product
+async function handleViewProduct(ctx: ClientContext, chatId: number, productId: string, telegramUser: any) {
+  const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
   const product = await getProduct(productId);
+  
   if (!product) {
-    await sendTelegramMessage(chatId, '❌ Produto não encontrado.');
+    await sendTelegramMessage(ctx.botToken, chatId, '❌ Produto não encontrado.');
     return;
   }
-  
+
   // Increment views
   await supabase
     .from('products')
     .update({ views_count: (product.views_count || 0) + 1 })
     .eq('id', productId);
+
+  const price = Number(product.price).toFixed(2);
+  const caption = `<b>${product.name}</b>\n\n${product.description || 'Sem descrição'}\n\n💰 <b>R$ ${price}</b>${product.is_hot ? '\n\n🔥 PRODUTO EM DESTAQUE!' : ''}`;
   
-  const order = await createOrder(customer.id, productId, Number(product.price));
-  if (!order) {
-    await sendTelegramMessage(chatId, '❌ Erro ao criar pedido. Tente novamente.');
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: '🛒 Comprar Agora', callback_data: `buy_${product.id}` }],
+      [{ text: '⬅️ Voltar', callback_data: 'products' }],
+    ],
+  };
+  
+  if (product.image_url) {
+    await sendTelegramPhoto(ctx.botToken, chatId, product.image_url, caption, keyboard);
+  } else {
+    await sendTelegramMessage(ctx.botToken, chatId, caption, keyboard);
+  }
+
+  if (customer) {
+    await logMessage(ctx.clientId, customer.id, chatId, 'incoming', `[Clicou: Ver "${product.name}"]`);
+  }
+}
+
+// Handle buy action
+async function handleBuy(ctx: ClientContext, chatId: number, productId: string, telegramUser: any) {
+  const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
+  if (!customer) {
+    await sendTelegramMessage(ctx.botToken, chatId, '❌ Erro ao processar. Tente novamente.');
     return;
   }
   
-  const settings = await getBotSettings();
+  const product = await getProduct(productId);
+  if (!product) {
+    await sendTelegramMessage(ctx.botToken, chatId, '❌ Produto não encontrado.');
+    return;
+  }
   
-  const message = `🛒 <b>Pedido Criado!</b>\n\n` +
-    `📦 Produto: <b>${product.name}</b>\n` +
-    `💰 Valor: <b>R$ ${Number(product.price).toFixed(2)}</b>\n\n` +
-    `${settings.payment_instructions}\n\n` +
-    `📋 <b>Código PIX (Copia e Cola):</b>\n<code>${order.pixCode}</code>`;
+  await logMessage(ctx.clientId, customer.id, chatId, 'incoming', `[Clicou: Comprar "${product.name}"]`);
   
-  // Send QR Code
-  await sendTelegramPhoto(chatId, order.qrCodeUrl, message, {
+  const order = await createOrder(ctx, customer.id, productId, Number(product.price), customer);
+  if (!order) {
+    await sendTelegramMessage(ctx.botToken, chatId, '❌ Erro ao criar pedido. Tente novamente.');
+    return;
+  }
+  
+  const orderCreatedMsg = await getBotMessage(ctx.clientId, 'order_created', '🛒 Pedido criado com sucesso! Efetue o pagamento para receber seu produto.');
+  const paymentInstructions = await getBotMessage(ctx.clientId, 'payment_instructions', 'Escaneie o QR Code ou copie o código PIX para realizar o pagamento.');
+  
+  const message = `${orderCreatedMsg}\n\n` +
+    `<b>Produto:</b> ${product.name}\n` +
+    `<b>Valor:</b> R$ ${Number(product.price).toFixed(2)}\n\n` +
+    `${paymentInstructions}\n\n` +
+    `<code>${order.pixCode}</code>\n\n` +
+    `⏰ <i>Você tem 15 minutos para efetuar o pagamento.</i>`;
+  
+  const keyboard = {
     inline_keyboard: [
       [{ text: '✅ Já Paguei', callback_data: `paid_${order.id}` }],
       [{ text: '❌ Cancelar', callback_data: `cancel_${order.id}` }],
     ],
-  });
+  };
+
+  // Try to send with QR code image, fallback to text only
+  try {
+    if (order.qrCodeUrl) {
+      await sendTelegramPhoto(ctx.botToken, chatId, order.qrCodeUrl, message, keyboard);
+    } else {
+      await sendTelegramMessage(ctx.botToken, chatId, message, keyboard);
+    }
+  } catch {
+    await sendTelegramMessage(ctx.botToken, chatId, message, keyboard);
+  }
+
+  await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', message);
 }
 
-// Handle payment confirmation (mock - in production would verify with EFI API)
-async function handlePaidConfirmation(chatId: number, orderId: string) {
+// Handle payment confirmation (manual - for when FastSoft webhook doesn't work)
+async function handlePaidConfirmation(ctx: ClientContext, chatId: number, orderId: string, telegramUser: any) {
+  const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
+  
   const { data: order } = await supabase
     .from('orders')
     .select('*, products(*)')
@@ -275,14 +458,23 @@ async function handlePaidConfirmation(chatId: number, orderId: string) {
     .single();
   
   if (!order) {
-    await sendTelegramMessage(chatId, '❌ Pedido não encontrado.');
+    await sendTelegramMessage(ctx.botToken, chatId, '❌ Pedido não encontrado.');
     return;
   }
+
+  if (customer) {
+    await logMessage(ctx.clientId, customer.id, chatId, 'incoming', '[Clicou: Confirmar Pagamento]');
+  }
+
+  // If FastSoft is enabled, we should wait for webhook
+  // But for now, we'll allow manual confirmation with a message
+  if (ctx.fastsoftEnabled && order.payment_id && !order.payment_id.startsWith('MOCK_')) {
+    // Check payment status with FastSoft API (optional)
+    // For now, just confirm manually
+  }
   
-  // In production, here we would verify with EFI API if payment was received
-  // For now, we'll simulate automatic confirmation
-  
-  const settings = await getBotSettings();
+  const settings = await getClientSettings(ctx.clientId);
+  const successMsg = await getBotMessage(ctx.clientId, 'payment_success', '✅ Pagamento confirmado! Seu produto será entregue em instantes.');
   
   await supabase
     .from('orders')
@@ -292,7 +484,11 @@ async function handlePaidConfirmation(chatId: number, orderId: string) {
     })
     .eq('id', orderId);
   
-  await sendTelegramMessage(chatId, settings.success_message);
+  await sendTelegramMessage(ctx.botToken, chatId, successMsg);
+  
+  if (customer) {
+    await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', successMsg);
+  }
   
   // Auto delivery if enabled
   if (settings.auto_delivery && order.products?.file_url) {
@@ -304,34 +500,45 @@ async function handlePaidConfirmation(chatId: number, orderId: string) {
       })
       .eq('id', orderId);
     
-    // Increment sales count
     await supabase
       .from('products')
       .update({ sales_count: (order.products.sales_count || 0) + 1 })
       .eq('id', order.product_id);
     
+    const deliveryMsg = await getBotMessage(ctx.clientId, 'product_delivered', '📦 Produto entregue! Obrigado pela compra!');
     await sendTelegramMessage(
+      ctx.botToken,
       chatId,
-      `📦 <b>Entrega Automática</b>\n\n🔗 Acesse seu produto:\n${order.products.file_url}`
+      `${deliveryMsg}\n\n🔗 Acesse seu produto:\n${order.products.file_url}`
     );
+  } else {
+    await sendTelegramMessage(ctx.botToken, chatId, '📦 Seu produto será entregue em breve pelo vendedor.');
   }
 }
 
 // Handle order cancellation
-async function handleCancel(chatId: number, orderId: string) {
+async function handleCancel(ctx: ClientContext, chatId: number, orderId: string, telegramUser: any) {
+  const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
+  
   await supabase
     .from('orders')
     .update({ status: 'cancelled' })
     .eq('id', orderId);
   
-  await sendTelegramMessage(chatId, '❌ Pedido cancelado.');
+  const cancelMsg = await getBotMessage(ctx.clientId, 'order_cancelled', '❌ Pedido cancelado.');
+  await sendTelegramMessage(ctx.botToken, chatId, cancelMsg);
+  
+  if (customer) {
+    await logMessage(ctx.clientId, customer.id, chatId, 'incoming', '[Clicou: Cancelar Pedido]');
+    await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', cancelMsg);
+  }
 }
 
 // Handle my orders
-async function handleMyOrders(chatId: number, telegramUser: any) {
-  const customer = await getOrCreateCustomer(telegramUser);
+async function handleMyOrders(ctx: ClientContext, chatId: number, telegramUser: any) {
+  const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
   if (!customer) {
-    await sendTelegramMessage(chatId, '❌ Erro ao buscar pedidos.');
+    await sendTelegramMessage(ctx.botToken, chatId, '❌ Erro ao buscar pedidos.');
     return;
   }
   
@@ -343,7 +550,7 @@ async function handleMyOrders(chatId: number, telegramUser: any) {
     .limit(10);
   
   if (!orders || orders.length === 0) {
-    await sendTelegramMessage(chatId, '📭 Você ainda não tem pedidos.');
+    await sendTelegramMessage(ctx.botToken, chatId, '📭 Você ainda não tem pedidos.');
     return;
   }
   
@@ -352,6 +559,7 @@ async function handleMyOrders(chatId: number, telegramUser: any) {
     paid: '✅',
     delivered: '📦',
     cancelled: '❌',
+    refunded: '💸',
   };
   
   let message = '📋 <b>Seus Últimos Pedidos:</b>\n\n';
@@ -361,11 +569,11 @@ async function handleMyOrders(chatId: number, telegramUser: any) {
     message += `${emoji} ${order.products?.name || 'Produto'} - R$ ${Number(order.amount).toFixed(2)} (${date})\n`;
   }
   
-  await sendTelegramMessage(chatId, message);
+  await sendTelegramMessage(ctx.botToken, chatId, message);
 }
 
 // Handle help
-async function handleHelp(chatId: number) {
+async function handleHelp(ctx: ClientContext, chatId: number) {
   const message = `❓ <b>Ajuda</b>\n\n` +
     `<b>Comandos disponíveis:</b>\n` +
     `/start - Iniciar bot\n` +
@@ -379,11 +587,10 @@ async function handleHelp(chatId: number) {
     `4️⃣ Receba seu produto!\n\n` +
     `💬 Dúvidas? Entre em contato com o suporte.`;
   
-  await sendTelegramMessage(chatId, message);
+  await sendTelegramMessage(ctx.botToken, chatId, message);
 }
 
 serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -392,23 +599,76 @@ serve(async (req) => {
     const update = await req.json();
     console.log('Telegram update received:', JSON.stringify(update, null, 2));
 
+    // Extract bot token from the message - we need to find which client this is for
+    let chatId: number;
+    let telegramUser: any;
+    
+    if (update.message) {
+      chatId = update.message.chat.id;
+      telegramUser = update.message.from;
+    } else if (update.callback_query) {
+      chatId = update.callback_query.message.chat.id;
+      telegramUser = update.callback_query.from;
+    } else {
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Find client by telegram_id of customer (they must have interacted before)
+    // Or we need to get the bot token from the URL params
+    const url = new URL(req.url);
+    const botTokenFromUrl = url.searchParams.get('bot_token');
+    
+    let ctx: ClientContext | null = null;
+    
+    if (botTokenFromUrl) {
+      ctx = await getClientContext(botTokenFromUrl);
+    } else {
+      // Try to find client by existing customer relationship
+      const { data: existingCustomer } = await supabase
+        .from('telegram_customers')
+        .select('client_id')
+        .eq('telegram_id', telegramUser.id)
+        .limit(1)
+        .single();
+      
+      if (existingCustomer?.client_id) {
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('telegram_bot_token')
+          .eq('id', existingCustomer.client_id)
+          .single();
+        
+        if (clientData?.telegram_bot_token) {
+          ctx = await getClientContext(clientData.telegram_bot_token);
+        }
+      }
+    }
+
+    if (!ctx) {
+      console.error('Could not determine client context');
+      return new Response(JSON.stringify({ error: 'Client not found' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Handle message
     if (update.message) {
-      const chatId = update.message.chat.id;
       const text = update.message.text || '';
-      const telegramUser = update.message.from;
 
       if (text.startsWith('/start')) {
-        await handleStart(chatId, telegramUser);
+        await handleStart(ctx, chatId, telegramUser);
       } else if (text.startsWith('/produtos') || text.startsWith('/products')) {
-        await handleProducts(chatId);
+        await handleProducts(ctx, chatId, telegramUser);
       } else if (text.startsWith('/pedidos') || text.startsWith('/orders')) {
-        await handleMyOrders(chatId, telegramUser);
+        await handleMyOrders(ctx, chatId, telegramUser);
       } else if (text.startsWith('/ajuda') || text.startsWith('/help')) {
-        await handleHelp(chatId);
+        await handleHelp(ctx, chatId);
       } else {
-        // Default response
         await sendTelegramMessage(
+          ctx.botToken,
           chatId,
           'Use /produtos para ver nosso catálogo ou /ajuda para mais informações.'
         );
@@ -418,32 +678,33 @@ serve(async (req) => {
     // Handle callback query (button clicks)
     if (update.callback_query) {
       const callbackQuery = update.callback_query;
-      const chatId = callbackQuery.message.chat.id;
       const data = callbackQuery.data;
-      const telegramUser = callbackQuery.from;
 
       // Answer callback to remove loading state
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+      await fetch(`https://api.telegram.org/bot${ctx.botToken}/answerCallbackQuery`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ callback_query_id: callbackQuery.id }),
       });
 
       if (data === 'products') {
-        await handleProducts(chatId);
+        await handleProducts(ctx, chatId, telegramUser);
       } else if (data === 'my_orders') {
-        await handleMyOrders(chatId, telegramUser);
+        await handleMyOrders(ctx, chatId, telegramUser);
       } else if (data === 'help') {
-        await handleHelp(chatId);
+        await handleHelp(ctx, chatId);
+      } else if (data.startsWith('view_')) {
+        const productId = data.replace('view_', '');
+        await handleViewProduct(ctx, chatId, productId, telegramUser);
       } else if (data.startsWith('buy_')) {
         const productId = data.replace('buy_', '');
-        await handleBuy(chatId, productId, telegramUser);
+        await handleBuy(ctx, chatId, productId, telegramUser);
       } else if (data.startsWith('paid_')) {
         const orderId = data.replace('paid_', '');
-        await handlePaidConfirmation(chatId, orderId);
+        await handlePaidConfirmation(ctx, chatId, orderId, telegramUser);
       } else if (data.startsWith('cancel_')) {
         const orderId = data.replace('cancel_', '');
-        await handleCancel(chatId, orderId);
+        await handleCancel(ctx, chatId, orderId, telegramUser);
       }
     }
 

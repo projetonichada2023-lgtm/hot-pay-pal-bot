@@ -72,6 +72,9 @@ export type Database = {
           client_id: string
           closing_time: string | null
           created_at: string | null
+          fastsoft_api_key: string | null
+          fastsoft_enabled: boolean | null
+          fastsoft_webhook_secret: string | null
           id: string
           opening_time: string | null
           pix_key: string | null
@@ -89,6 +92,9 @@ export type Database = {
           client_id: string
           closing_time?: string | null
           created_at?: string | null
+          fastsoft_api_key?: string | null
+          fastsoft_enabled?: boolean | null
+          fastsoft_webhook_secret?: string | null
           id?: string
           opening_time?: string | null
           pix_key?: string | null
@@ -106,6 +112,9 @@ export type Database = {
           client_id?: string
           closing_time?: string | null
           created_at?: string | null
+          fastsoft_api_key?: string | null
+          fastsoft_enabled?: boolean | null
+          fastsoft_webhook_secret?: string | null
           id?: string
           opening_time?: string | null
           pix_key?: string | null
