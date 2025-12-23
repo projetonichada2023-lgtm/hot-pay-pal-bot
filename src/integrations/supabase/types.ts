@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           client_id: string
           created_at: string | null
+          display_order: number
           id: string
           is_active: boolean | null
           message_content: string
@@ -27,6 +28,7 @@ export type Database = {
         Insert: {
           client_id: string
           created_at?: string | null
+          display_order?: number
           id?: string
           is_active?: boolean | null
           message_content: string
@@ -36,6 +38,7 @@ export type Database = {
         Update: {
           client_id?: string
           created_at?: string | null
+          display_order?: number
           id?: string
           is_active?: boolean | null
           message_content?: string
