@@ -332,6 +332,17 @@ function b64ToUuid(b64url: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+function getCallbackLabel(data: string): string {
+  if (data === 'products') return 'Ver Produtos';
+  if (data === 'menu') return 'Menu';
+  if (data.startsWith('product_')) return 'Ver Produto';
+  if (data.startsWith('buy_') || data.startsWith('buyu_') || data.startsWith('buyd_')) return 'Comprar';
+  if (data.startsWith('paid_')) return 'Confirmar Pagamento';
+  if (data.startsWith('cancel_')) return 'Cancelar Pedido';
+  if (data.startsWith('declu_') || data.startsWith('decline_upsell_')) return 'Recusar Oferta';
+  return data;
+}
+
 // =============== MAIN HANDLER ===============
 
 serve(async (req) => {
@@ -407,6 +418,10 @@ serve(async (req) => {
 
       // Ensure customer exists
       const customer = await getOrCreateCustomer(clientId, telegramUser);
+
+      // Save callback_query as an event in the conversation
+      const callbackLabel = getCallbackLabel(data);
+      await saveMessage(clientId, chatId, customer?.id || null, 'incoming', `[Clicou: ${callbackLabel}]`, messageId);
 
       // Show products list
       if (data === 'products') {
