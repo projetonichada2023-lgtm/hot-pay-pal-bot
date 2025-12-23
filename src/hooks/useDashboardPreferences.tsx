@@ -7,6 +7,13 @@ export interface MetricConfig {
   order: number;
 }
 
+export interface WidgetConfig {
+  id: string;
+  label: string;
+  visible: boolean;
+  order: number;
+}
+
 const DEFAULT_METRICS: MetricConfig[] = [
   { id: 'ordersTotal', label: 'Total Pedidos', visible: true, order: 0 },
   { id: 'salesTotal', label: 'Receita Total', visible: true, order: 1 },
@@ -19,17 +26,28 @@ const DEFAULT_METRICS: MetricConfig[] = [
   { id: 'recurringCustomers', label: 'Clientes Recorrentes', visible: false, order: 8 },
 ];
 
-const STORAGE_KEY = 'dashboard-metrics-preferences';
+const DEFAULT_WIDGETS: WidgetConfig[] = [
+  { id: 'salesChart', label: 'Gráfico de Vendas', visible: true, order: 0 },
+  { id: 'recentOrders', label: 'Pedidos Recentes', visible: true, order: 1 },
+  { id: 'funnelInsights', label: 'Insights do Funil', visible: true, order: 2 },
+  { id: 'topProducts', label: 'Top Produtos', visible: true, order: 3 },
+  { id: 'orderStatus', label: 'Status dos Pedidos', visible: true, order: 4 },
+  { id: 'recentCustomers', label: 'Clientes Recentes', visible: true, order: 5 },
+  { id: 'salesByHour', label: 'Vendas por Hora', visible: true, order: 6 },
+];
+
+const METRICS_STORAGE_KEY = 'dashboard-metrics-preferences';
+const WIDGETS_STORAGE_KEY = 'dashboard-widgets-preferences';
 
 export const useDashboardPreferences = (clientId: string) => {
-  const storageKey = `${STORAGE_KEY}-${clientId}`;
+  const metricsStorageKey = `${METRICS_STORAGE_KEY}-${clientId}`;
+  const widgetsStorageKey = `${WIDGETS_STORAGE_KEY}-${clientId}`;
   
   const [metrics, setMetrics] = useState<MetricConfig[]>(() => {
     try {
-      const saved = localStorage.getItem(storageKey);
+      const saved = localStorage.getItem(metricsStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Merge with defaults in case new metrics were added
         const mergedMetrics = DEFAULT_METRICS.map(defaultMetric => {
           const savedMetric = parsed.find((m: MetricConfig) => m.id === defaultMetric.id);
           return savedMetric || defaultMetric;
@@ -42,13 +60,38 @@ export const useDashboardPreferences = (clientId: string) => {
     return DEFAULT_METRICS;
   });
 
+  const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
+    try {
+      const saved = localStorage.getItem(widgetsStorageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const mergedWidgets = DEFAULT_WIDGETS.map(defaultWidget => {
+          const savedWidget = parsed.find((w: WidgetConfig) => w.id === defaultWidget.id);
+          return savedWidget || defaultWidget;
+        });
+        return mergedWidgets.sort((a, b) => a.order - b.order);
+      }
+    } catch (e) {
+      console.error('Error loading widget preferences:', e);
+    }
+    return DEFAULT_WIDGETS;
+  });
+
   useEffect(() => {
     try {
-      localStorage.setItem(storageKey, JSON.stringify(metrics));
+      localStorage.setItem(metricsStorageKey, JSON.stringify(metrics));
     } catch (e) {
       console.error('Error saving dashboard preferences:', e);
     }
-  }, [metrics, storageKey]);
+  }, [metrics, metricsStorageKey]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(widgetsStorageKey, JSON.stringify(widgets));
+    } catch (e) {
+      console.error('Error saving widget preferences:', e);
+    }
+  }, [widgets, widgetsStorageKey]);
 
   const toggleMetric = useCallback((id: string) => {
     setMetrics(prev => 
@@ -60,17 +103,33 @@ export const useDashboardPreferences = (clientId: string) => {
     setMetrics(newOrder.map((m, index) => ({ ...m, order: index })));
   }, []);
 
+  const toggleWidget = useCallback((id: string) => {
+    setWidgets(prev => 
+      prev.map(w => w.id === id ? { ...w, visible: !w.visible } : w)
+    );
+  }, []);
+
+  const reorderWidgets = useCallback((newOrder: WidgetConfig[]) => {
+    setWidgets(newOrder.map((w, index) => ({ ...w, order: index })));
+  }, []);
+
   const resetToDefaults = useCallback(() => {
     setMetrics(DEFAULT_METRICS);
+    setWidgets(DEFAULT_WIDGETS);
   }, []);
 
   const visibleMetrics = metrics.filter(m => m.visible).sort((a, b) => a.order - b.order);
+  const visibleWidgets = widgets.filter(w => w.visible).sort((a, b) => a.order - b.order);
 
   return {
     metrics,
     visibleMetrics,
     toggleMetric,
     reorderMetrics,
+    widgets,
+    visibleWidgets,
+    toggleWidget,
+    reorderWidgets,
     resetToDefaults,
   };
 };

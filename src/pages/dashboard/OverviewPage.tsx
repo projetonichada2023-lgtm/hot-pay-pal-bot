@@ -10,6 +10,10 @@ import { useDashboardPreferences } from '@/hooks/useDashboardPreferences';
 import { SalesChart } from '@/components/dashboard/SalesChart';
 import { RecentOrdersCard } from '@/components/dashboard/RecentOrdersCard';
 import { FunnelInsightsCard } from '@/components/dashboard/FunnelInsightsCard';
+import { TopProductsWidget } from '@/components/dashboard/TopProductsWidget';
+import { OrderStatusWidget } from '@/components/dashboard/OrderStatusWidget';
+import { RecentCustomersWidget } from '@/components/dashboard/RecentCustomersWidget';
+import { SalesByHourWidget } from '@/components/dashboard/SalesByHourWidget';
 import { CustomizeDashboardDialog } from '@/components/dashboard/CustomizeDashboardDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -144,7 +148,11 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
   const [activePreset, setActivePreset] = useState<number | null>(1);
   
   const { data: stats, isLoading } = useDashboardStats(client.id, dateRange);
-  const { metrics, visibleMetrics, toggleMetric, reorderMetrics, resetToDefaults } = useDashboardPreferences(client.id);
+  const { 
+    metrics, visibleMetrics, toggleMetric, reorderMetrics, 
+    widgets, visibleWidgets, toggleWidget, reorderWidgets,
+    resetToDefaults 
+  } = useDashboardPreferences(client.id);
 
   const handlePresetClick = (days: number) => {
     const to = new Date();
@@ -249,8 +257,11 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
 
           <CustomizeDashboardDialog
             metrics={metrics}
-            onToggle={toggleMetric}
-            onReorder={reorderMetrics}
+            widgets={widgets}
+            onToggleMetric={toggleMetric}
+            onReorderMetrics={reorderMetrics}
+            onToggleWidget={toggleWidget}
+            onReorderWidgets={reorderWidgets}
             onReset={resetToDefaults}
           />
         </div>
@@ -309,15 +320,32 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
         })}
       </div>
 
-      {/* Chart */}
-      <div data-tour="sales-chart">
-        <SalesChart clientId={client.id} dateRange={dateRange} />
-      </div>
-
-      {/* Bottom Grid */}
+      {/* Widgets Grid - dynamically rendered based on preferences */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RecentOrdersCard clientId={client.id} />
-        <FunnelInsightsCard clientId={client.id} />
+        {visibleWidgets.map((widget) => {
+          switch (widget.id) {
+            case 'salesChart':
+              return (
+                <div key={widget.id} className="lg:col-span-2" data-tour="sales-chart">
+                  <SalesChart clientId={client.id} dateRange={dateRange} />
+                </div>
+              );
+            case 'recentOrders':
+              return <RecentOrdersCard key={widget.id} clientId={client.id} />;
+            case 'funnelInsights':
+              return <FunnelInsightsCard key={widget.id} clientId={client.id} />;
+            case 'topProducts':
+              return <TopProductsWidget key={widget.id} clientId={client.id} />;
+            case 'orderStatus':
+              return <OrderStatusWidget key={widget.id} clientId={client.id} />;
+            case 'recentCustomers':
+              return <RecentCustomersWidget key={widget.id} clientId={client.id} />;
+            case 'salesByHour':
+              return <SalesByHourWidget key={widget.id} clientId={client.id} />;
+            default:
+              return null;
+          }
+        })}
       </div>
 
       {/* Quick Actions */}
