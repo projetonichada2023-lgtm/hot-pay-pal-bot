@@ -1,19 +1,26 @@
+import { useState } from 'react';
 import { Client } from '@/hooks/useClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, ShoppingCart, Users, DollarSign, Bot } from 'lucide-react';
+import { TrendingUp, ShoppingCart, Users, DollarSign, Bot, CalendarIcon } from 'lucide-react';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { SalesChart } from '@/components/dashboard/SalesChart';
 import { RecentOrdersCard } from '@/components/dashboard/RecentOrdersCard';
 import { FunnelInsightsCard } from '@/components/dashboard/FunnelInsightsCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format, isToday } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface OverviewPageProps {
   client: Client;
 }
 
 export const OverviewPage = ({ client }: OverviewPageProps) => {
-  const { data: stats, isLoading } = useDashboardStats(client.id);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const { data: stats, isLoading } = useDashboardStats(client.id, selectedDate);
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -30,20 +37,22 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
     return `${sign}${value}`;
   };
 
+  const dateLabel = isToday(selectedDate) ? 'Hoje' : format(selectedDate, "dd 'de' MMM", { locale: ptBR });
+
   const statsCards = [
     { 
-      label: 'Vendas Hoje', 
-      value: isLoading ? null : formatPrice(stats?.salesToday || 0),
+      label: `Vendas ${dateLabel}`, 
+      value: isLoading ? null : formatPrice(stats?.salesSelected || 0),
       change: stats?.salesChange || 0,
-      changeLabel: 'vs ontem',
+      changeLabel: 'vs dia anterior',
       icon: DollarSign,
       color: 'text-success'
     },
     { 
-      label: 'Pedidos', 
-      value: isLoading ? null : String(stats?.ordersTotal || 0),
+      label: `Pedidos ${dateLabel}`, 
+      value: isLoading ? null : String(stats?.ordersSelected || 0),
       change: stats?.ordersChange || 0,
-      changeLabel: 'vs ontem',
+      changeLabel: 'vs dia anterior',
       icon: ShoppingCart,
       color: 'text-primary'
     },
@@ -51,7 +60,7 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       label: 'Clientes', 
       value: isLoading ? null : String(stats?.customersTotal || 0),
       change: stats?.customersNew || 0,
-      changeLabel: 'novos hoje',
+      changeLabel: `novos ${dateLabel.toLowerCase()}`,
       isPercent: false,
       icon: Users,
       color: 'text-telegram'
@@ -60,7 +69,7 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       label: 'Taxa de Conversão', 
       value: isLoading ? null : `${(stats?.conversionRate || 0).toFixed(0)}%`,
       change: stats?.conversionChange || 0,
-      changeLabel: 'vs ontem',
+      changeLabel: 'vs dia anterior',
       icon: TrendingUp,
       color: 'text-warning'
     },
@@ -68,16 +77,36 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">Bem-vindo, {client.business_name}</p>
         </div>
-        <div className="flex items-center gap-2 text-sm">
-          <div className={`w-2 h-2 rounded-full ${client.webhook_configured ? 'bg-success' : 'bg-warning'}`} />
-          <span className="text-muted-foreground">
-            Bot {client.webhook_configured ? 'Ativo' : 'Pendente'}
-          </span>
+        <div className="flex items-center gap-4">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <CalendarIcon className="w-4 h-4" />
+                {format(selectedDate, "dd/MM/yyyy")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => date && setSelectedDate(date)}
+                disabled={(date) => date > new Date()}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+          <div className="flex items-center gap-2 text-sm">
+            <div className={`w-2 h-2 rounded-full ${client.webhook_configured ? 'bg-success' : 'bg-warning'}`} />
+            <span className="text-muted-foreground">
+              Bot {client.webhook_configured ? 'Ativo' : 'Pendente'}
+            </span>
+          </div>
         </div>
       </div>
 

@@ -1,18 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { startOfDay, subDays, format } from 'date-fns';
+import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 
 interface DashboardStats {
-  salesToday: number;
-  salesYesterday: number;
+  salesSelected: number;
+  salesPrevious: number;
   salesChange: number;
-  ordersTotal: number;
-  ordersYesterday: number;
+  ordersSelected: number;
+  ordersPrevious: number;
   ordersChange: number;
   customersTotal: number;
   customersNew: number;
   conversionRate: number;
-  conversionYesterday: number;
+  conversionPrevious: number;
   conversionChange: number;
 }
 
@@ -22,12 +22,14 @@ interface DailySales {
   orders: number;
 }
 
-export const useDashboardStats = (clientId: string) => {
+export const useDashboardStats = (clientId: string, selectedDate: Date = new Date()) => {
   return useQuery({
-    queryKey: ['dashboard-stats', clientId],
+    queryKey: ['dashboard-stats', clientId, format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async (): Promise<DashboardStats> => {
-      const today = startOfDay(new Date());
-      const yesterday = startOfDay(subDays(new Date(), 1));
+      const selectedStart = startOfDay(selectedDate);
+      const selectedEnd = endOfDay(selectedDate);
+      const previousStart = startOfDay(subDays(selectedDate, 1));
+      const previousEnd = endOfDay(subDays(selectedDate, 1));
 
       // Fetch all orders
       const { data: orders, error } = await supabase
@@ -43,62 +45,66 @@ export const useDashboardStats = (clientId: string) => {
         .select('*', { count: 'exact', head: true })
         .eq('client_id', clientId);
 
-      // Fetch new customers today
+      // Fetch new customers on selected date
       const { count: customersNew } = await supabase
         .from('telegram_customers')
         .select('*', { count: 'exact', head: true })
         .eq('client_id', clientId)
-        .gte('created_at', today.toISOString());
+        .gte('created_at', selectedStart.toISOString())
+        .lte('created_at', selectedEnd.toISOString());
 
       // Calculate metrics
-      const todayOrders = orders?.filter(o => new Date(o.created_at!) >= today) || [];
-      const yesterdayOrders = orders?.filter(o => {
+      const selectedOrders = orders?.filter(o => {
         const date = new Date(o.created_at!);
-        return date >= yesterday && date < today;
+        return date >= selectedStart && date <= selectedEnd;
+      }) || [];
+      
+      const previousOrders = orders?.filter(o => {
+        const date = new Date(o.created_at!);
+        return date >= previousStart && date <= previousEnd;
       }) || [];
 
       const paidStatuses = ['paid', 'delivered'];
       
-      const salesToday = todayOrders
+      const salesSelected = selectedOrders
         .filter(o => paidStatuses.includes(o.status || ''))
         .reduce((sum, o) => sum + Number(o.amount), 0);
 
-      const salesYesterday = yesterdayOrders
+      const salesPrevious = previousOrders
         .filter(o => paidStatuses.includes(o.status || ''))
         .reduce((sum, o) => sum + Number(o.amount), 0);
 
-      const salesChange = salesYesterday > 0 
-        ? ((salesToday - salesYesterday) / salesYesterday) * 100 
-        : salesToday > 0 ? 100 : 0;
+      const salesChange = salesPrevious > 0
+        ? ((salesSelected - salesPrevious) / salesPrevious) * 100 
+        : salesSelected > 0 ? 100 : 0;
 
-      const ordersTotal = orders?.length || 0;
-      const ordersYesterday = yesterdayOrders.length;
-      const ordersTodayCount = todayOrders.length;
-      const ordersChange = ordersYesterday > 0
-        ? ((ordersTodayCount - ordersYesterday) / ordersYesterday) * 100
-        : ordersTodayCount > 0 ? 100 : 0;
+      const ordersSelected = selectedOrders.length;
+      const ordersPrevious = previousOrders.length;
+      const ordersChange = ordersPrevious > 0
+        ? ((ordersSelected - ordersPrevious) / ordersPrevious) * 100
+        : ordersSelected > 0 ? 100 : 0;
 
-      // Conversion rate
-      const totalPaid = orders?.filter(o => paidStatuses.includes(o.status || '')).length || 0;
-      const conversionRate = ordersTotal > 0 ? (totalPaid / ordersTotal) * 100 : 0;
+      // Conversion rate for selected date
+      const selectedPaid = selectedOrders.filter(o => paidStatuses.includes(o.status || '')).length;
+      const conversionRate = ordersSelected > 0 ? (selectedPaid / ordersSelected) * 100 : 0;
 
-      const yesterdayPaid = yesterdayOrders.filter(o => paidStatuses.includes(o.status || '')).length;
-      const conversionYesterday = ordersYesterday > 0 ? (yesterdayPaid / ordersYesterday) * 100 : 0;
-      const conversionChange = conversionYesterday > 0
-        ? conversionRate - conversionYesterday
+      const previousPaid = previousOrders.filter(o => paidStatuses.includes(o.status || '')).length;
+      const conversionPrevious = ordersPrevious > 0 ? (previousPaid / ordersPrevious) * 100 : 0;
+      const conversionChange = conversionPrevious > 0
+        ? conversionRate - conversionPrevious
         : conversionRate > 0 ? conversionRate : 0;
 
       return {
-        salesToday,
-        salesYesterday,
+        salesSelected,
+        salesPrevious,
         salesChange,
-        ordersTotal,
-        ordersYesterday,
+        ordersSelected,
+        ordersPrevious,
         ordersChange,
         customersTotal: customersTotal || 0,
         customersNew: customersNew || 0,
         conversionRate,
-        conversionYesterday,
+        conversionPrevious,
         conversionChange,
       };
     },
