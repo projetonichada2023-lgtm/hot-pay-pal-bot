@@ -4,8 +4,9 @@ import { useProducts, useUpdateProduct, Product } from '@/hooks/useProducts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { GitBranch, ArrowDown, ArrowRight, Check, X, Loader2, Package, TrendingUp, TrendingDown } from 'lucide-react';
+import { GitBranch, ArrowDown, ArrowRight, Loader2, Package, TrendingUp, TrendingDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface FunnelPageProps {
@@ -20,9 +21,6 @@ type FunnelProduct = Product & {
 export const FunnelPage = ({ client }: FunnelPageProps) => {
   const { data: products, isLoading } = useProducts(client.id);
   const updateProduct = useUpdateProduct();
-  const [editingProduct, setEditingProduct] = useState<string | null>(null);
-  const [upsellId, setUpsellId] = useState<string>('');
-  const [downsellId, setDownsellId] = useState<string>('');
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price);
@@ -33,35 +31,50 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
     return products?.find(p => p.id === id) as FunnelProduct | undefined;
   };
 
-  const handleEdit = (product: FunnelProduct) => {
-    setEditingProduct(product.id);
-    setUpsellId(product.upsell_product_id || '');
-    setDownsellId(product.downsell_product_id || '');
+  const getOtherProducts = (currentId: string) => {
+    return products?.filter(p => p.id !== currentId && p.is_active) || [];
   };
 
-  const handleSave = async (product: FunnelProduct) => {
+  const handleToggleUpsell = async (product: FunnelProduct, enabled: boolean) => {
+    try {
+      await updateProduct.mutateAsync({
+        id: product.id,
+        clientId: client.id,
+        upsell_product_id: enabled ? product.upsell_product_id : null,
+        downsell_product_id: enabled ? product.downsell_product_id : null,
+      } as any);
+      if (!enabled) {
+        toast.success('Upsell desativado para este produto');
+      }
+    } catch (error) {
+      toast.error('Erro ao atualizar');
+    }
+  };
+
+  const handleUpdateUpsell = async (product: FunnelProduct, upsellId: string) => {
     try {
       await updateProduct.mutateAsync({
         id: product.id,
         clientId: client.id,
         upsell_product_id: upsellId || null,
-        downsell_product_id: downsellId || null,
       } as any);
-      toast.success('Funil atualizado!');
-      setEditingProduct(null);
+      toast.success('Upsell atualizado!');
     } catch (error) {
-      toast.error('Erro ao salvar');
+      toast.error('Erro ao atualizar');
     }
   };
 
-  const handleCancel = () => {
-    setEditingProduct(null);
-    setUpsellId('');
-    setDownsellId('');
-  };
-
-  const getOtherProducts = (currentId: string) => {
-    return products?.filter(p => p.id !== currentId && p.is_active) || [];
+  const handleUpdateDownsell = async (product: FunnelProduct, downsellId: string) => {
+    try {
+      await updateProduct.mutateAsync({
+        id: product.id,
+        clientId: client.id,
+        downsell_product_id: downsellId || null,
+      } as any);
+      toast.success('Downsell atualizado!');
+    } catch (error) {
+      toast.error('Erro ao atualizar');
+    }
   };
 
   if (isLoading) {
@@ -130,7 +143,7 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
           </Card>
         ) : (
           activeProducts.map((product) => {
-            const isEditing = editingProduct === product.id;
+            const hasUpsell = !!product.upsell_product_id;
             const upsellProduct = getProductById(product.upsell_product_id);
             const downsellProduct = getProductById(product.downsell_product_id);
             const otherProducts = getOtherProducts(product.id);
@@ -151,55 +164,76 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
                         <CardDescription>{formatPrice(Number(product.price))}</CardDescription>
                       </div>
                     </div>
-                    {!isEditing ? (
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(product)}>
-                        Configurar Funil
-                      </Button>
-                    ) : (
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleCancel}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleSave(product)}
-                          disabled={updateProduct.isPending}
-                        >
-                          <Check className="w-4 h-4 mr-1" />
-                          Salvar
-                        </Button>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Upsell</span>
+                      <Switch
+                        checked={hasUpsell}
+                        onCheckedChange={(checked) => {
+                          if (checked && otherProducts.length > 0) {
+                            // Enable with first available product
+                            handleUpdateUpsell(product, otherProducts[0].id);
+                          } else {
+                            handleToggleUpsell(product, false);
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
                 </CardHeader>
 
-                <CardContent className="pt-0">
-                  <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
-                    {/* Main Product Visual */}
-                    <div className="flex-1 p-4 rounded-lg bg-primary/5 border border-primary/20">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Package className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-medium">Produto Principal</span>
+                {hasUpsell && (
+                  <CardContent className="pt-0">
+                    <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+                      {/* Main Product Visual */}
+                      <div className="flex-1 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Package className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-medium">Produto Principal</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">{product.name}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">{product.name}</p>
-                    </div>
 
-                    <ArrowRight className="w-5 h-5 text-muted-foreground hidden lg:block" />
-                    <ArrowDown className="w-5 h-5 text-muted-foreground mx-auto lg:hidden" />
+                      <ArrowRight className="w-5 h-5 text-muted-foreground hidden lg:block" />
+                      <ArrowDown className="w-5 h-5 text-muted-foreground mx-auto lg:hidden" />
 
-                    {/* Upsell */}
-                    <div className="flex-1 p-4 rounded-lg bg-green-500/5 border border-green-500/20">
-                      <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp className="w-4 h-4 text-green-500" />
-                        <span className="text-sm font-medium">Upsell</span>
-                        <Badge variant="outline" className="text-xs">Após compra</Badge>
+                      {/* Upsell */}
+                      <div className="flex-1 p-4 rounded-lg bg-green-500/5 border border-green-500/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <TrendingUp className="w-4 h-4 text-green-500" />
+                          <span className="text-sm font-medium">Upsell</span>
+                          <Badge variant="outline" className="text-xs">Após compra</Badge>
+                        </div>
+                        <Select 
+                          value={product.upsell_product_id || ''} 
+                          onValueChange={(v) => handleUpdateUpsell(product, v)}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Selecione..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {otherProducts.map(p => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.is_hot ? '🔥 ' : ''}{p.name} - {formatPrice(Number(p.price))}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                      {isEditing ? (
-                        <Select value={upsellId || 'none'} onValueChange={(v) => setUpsellId(v === 'none' ? '' : v)}>
+
+                      <ArrowRight className="w-5 h-5 text-muted-foreground hidden lg:block" />
+                      <ArrowDown className="w-5 h-5 text-muted-foreground mx-auto lg:hidden" />
+
+                      {/* Downsell */}
+                      <div className="flex-1 p-4 rounded-lg bg-orange-500/5 border border-orange-500/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <TrendingDown className="w-4 h-4 text-orange-500" />
+                          <span className="text-sm font-medium">Downsell</span>
+                          <Badge variant="outline" className="text-xs">Se recusar</Badge>
+                        </div>
+                        <Select 
+                          value={product.downsell_product_id || 'none'} 
+                          onValueChange={(v) => handleUpdateDownsell(product, v === 'none' ? '' : v)}
+                        >
                           <SelectTrigger className="h-9">
                             <SelectValue placeholder="Selecione..." />
                           </SelectTrigger>
@@ -207,56 +241,15 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
                             <SelectItem value="none">Nenhum</SelectItem>
                             {otherProducts.map(p => (
                               <SelectItem key={p.id} value={p.id}>
-                                {p.name} - {formatPrice(Number(p.price))}
+                                {p.is_hot ? '🔥 ' : ''}{p.name} - {formatPrice(Number(p.price))}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                      ) : upsellProduct ? (
-                        <p className="text-sm text-muted-foreground truncate">
-                          {upsellProduct.name} - {formatPrice(Number(upsellProduct.price))}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">Não configurado</p>
-                      )}
-                    </div>
-
-                    <ArrowRight className="w-5 h-5 text-muted-foreground hidden lg:block" />
-                    <ArrowDown className="w-5 h-5 text-muted-foreground mx-auto lg:hidden" />
-
-                    {/* Downsell */}
-                    <div className="flex-1 p-4 rounded-lg bg-orange-500/5 border border-orange-500/20">
-                      <div className="flex items-center gap-2 mb-2">
-                        <TrendingDown className="w-4 h-4 text-orange-500" />
-                        <span className="text-sm font-medium">Downsell</span>
-                        <Badge variant="outline" className="text-xs">Se recusar</Badge>
                       </div>
-                      {isEditing ? (
-                        <Select value={downsellId || 'none'} onValueChange={(v) => setDownsellId(v === 'none' ? '' : v)}>
-                          <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Selecione..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Nenhum</SelectItem>
-                            {otherProducts.map(p => (
-                              <SelectItem key={p.id} value={p.id}>
-                                {p.name} - {formatPrice(Number(p.price))}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : downsellProduct ? (
-                        <p className="text-sm text-muted-foreground truncate">
-                          {downsellProduct.name} - {formatPrice(Number(downsellProduct.price))}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">Não configurado</p>
-                      )}
                     </div>
-                  </div>
 
-                  {/* Flow visualization */}
-                  {(upsellProduct || downsellProduct) && !isEditing && (
+                    {/* Flow visualization */}
                     <div className="mt-4 pt-4 border-t border-border">
                       <p className="text-xs text-muted-foreground mb-2">Fluxo do funil:</p>
                       <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1">
@@ -275,8 +268,8 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
                         )}
                       </div>
                     </div>
-                  )}
-                </CardContent>
+                  </CardContent>
+                )}
               </Card>
             );
           })
@@ -292,7 +285,8 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
           <ul className="text-sm text-muted-foreground space-y-2">
             <li>• <strong>Upsell:</strong> Ofereça um produto complementar ou versão premium com valor maior</li>
             <li>• <strong>Downsell:</strong> Ofereça algo mais acessível se o cliente recusar o upsell</li>
-            <li>• <strong>Lembre-se:</strong> Ative o Upsell nas Configurações para o funil funcionar</li>
+            <li>• <strong>Ative o switch:</strong> Para cada produto que você quer que tenha upsell</li>
+            <li>• <strong>Lembre-se:</strong> Ative também o Upsell nas Configurações gerais</li>
           </ul>
         </CardContent>
       </Card>
