@@ -362,11 +362,15 @@ async function generatePixFastsoft(secretKey: string, amount: number, orderId: s
       return null;
     }
 
-    const data = JSON.parse(responseText);
-    const pixCode = data.pix?.qrcode || data.pixCode || '';
-    const qrCodeUrl = data.pix?.receiptUrl || `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCode)}`;
+    const responseData = JSON.parse(responseText);
+    // FastSoft response is nested: { status, message, data: { pix: { qrcode }, id } }
+    const transactionData = responseData.data || responseData;
+    const pixCode = transactionData.pix?.qrcode || transactionData.pixCode || '';
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCode)}`;
     
-    return { pixCode, qrCodeUrl, paymentId: data.id };
+    console.log('Extracted PIX code:', pixCode ? pixCode.substring(0, 50) + '...' : 'EMPTY');
+    
+    return { pixCode, qrCodeUrl, paymentId: transactionData.id };
   } catch (error) {
     console.error('Error generating PIX with FastSoft:', error);
     return null;
