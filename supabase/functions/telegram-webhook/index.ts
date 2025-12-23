@@ -35,11 +35,24 @@ async function sendTelegramPhoto(botToken: string, chatId: number, photoUrl: str
   const body: any = { chat_id: chatId, photo: photoUrl, caption, parse_mode: 'HTML' };
   if (replyMarkup) body.reply_markup = replyMarkup;
   
-  await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+  return res.json();
+}
+
+async function sendTelegramVideo(botToken: string, chatId: number, videoUrl: string, caption: string, replyMarkup?: object) {
+  const body: any = { chat_id: chatId, video: videoUrl, caption, parse_mode: 'HTML' };
+  if (replyMarkup) body.reply_markup = replyMarkup;
+  
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return res.json();
 }
 
 async function answerCallbackQuery(botToken: string, callbackQueryId: string, text?: string) {
@@ -168,6 +181,24 @@ async function getClientMessages(clientId: string, messageType: string): Promise
     .order('display_order', { ascending: true });
   
   return data?.map(m => m.message_content) || [];
+}
+
+interface BotMessageWithMedia {
+  message_content: string;
+  media_url: string | null;
+  media_type: string | null;
+}
+
+async function getClientMessagesWithMedia(clientId: string, messageType: string): Promise<BotMessageWithMedia[]> {
+  const { data } = await supabase
+    .from('bot_messages')
+    .select('message_content, media_url, media_type')
+    .eq('client_id', clientId)
+    .eq('message_type', messageType)
+    .eq('is_active', true)
+    .order('display_order', { ascending: true });
+  
+  return data || [];
 }
 
 async function getOrCreateCustomer(clientId: string, telegramUser: any) {
@@ -445,19 +476,28 @@ serve(async (req) => {
 
       // Handle /start command
       if (text.startsWith('/start')) {
-        const welcomeMessages = await getClientMessages(clientId, 'welcome');
+        const welcomeMessages = await getClientMessagesWithMedia(clientId, 'welcome');
         
         if (welcomeMessages.length > 0) {
           // Send all welcome messages in sequence
-          for (const msgText of welcomeMessages) {
-            const sent = await sendTelegramMessage(botToken, chatId, msgText, 
-              // Only add button on the last message
-              welcomeMessages.indexOf(msgText) === welcomeMessages.length - 1 
-                ? { inline_keyboard: [[{ text: '🛍️ Ver Produtos', callback_data: 'products' }]] }
-                : undefined
-            );
+          for (let i = 0; i < welcomeMessages.length; i++) {
+            const msg = welcomeMessages[i];
+            const isLast = i === welcomeMessages.length - 1;
+            const replyMarkup = isLast 
+              ? { inline_keyboard: [[{ text: '🛍️ Ver Produtos', callback_data: 'products' }]] }
+              : undefined;
+            
+            let sent;
+            if (msg.media_url && msg.media_type === 'video') {
+              sent = await sendTelegramVideo(botToken, chatId, msg.media_url, msg.message_content, replyMarkup);
+            } else if (msg.media_url && msg.media_type === 'image') {
+              sent = await sendTelegramPhoto(botToken, chatId, msg.media_url, msg.message_content, replyMarkup);
+            } else {
+              sent = await sendTelegramMessage(botToken, chatId, msg.message_content, replyMarkup);
+            }
+            
             if (sent?.result?.message_id) {
-              await saveMessage(clientId, chatId, customer?.id || null, 'outgoing', msgText, sent.result.message_id);
+              await saveMessage(clientId, chatId, customer?.id || null, 'outgoing', msg.message_content, sent.result.message_id);
             }
           }
         } else {

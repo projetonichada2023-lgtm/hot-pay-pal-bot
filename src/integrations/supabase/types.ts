@@ -21,6 +21,8 @@ export type Database = {
           display_order: number
           id: string
           is_active: boolean | null
+          media_type: string | null
+          media_url: string | null
           message_content: string
           message_type: string
           updated_at: string | null
@@ -31,6 +33,8 @@ export type Database = {
           display_order?: number
           id?: string
           is_active?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
           message_content: string
           message_type: string
           updated_at?: string | null
@@ -41,6 +45,8 @@ export type Database = {
           display_order?: number
           id?: string
           is_active?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
           message_content?: string
           message_type?: string
           updated_at?: string | null

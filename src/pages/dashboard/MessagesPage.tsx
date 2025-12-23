@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Client } from '@/hooks/useClient';
 import { 
   useBotMessages, 
@@ -8,6 +8,7 @@ import {
   useReorderBotMessages,
   BotMessage 
 } from '@/hooks/useBotMessages';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,9 +22,12 @@ import {
   Sparkles, 
   Plus, 
   Trash2, 
-  GripVertical,
   ChevronDown,
-  ChevronUp 
+  ChevronUp,
+  Image,
+  Video,
+  X,
+  Upload
 } from 'lucide-react';
 import {
   Collapsible,
@@ -125,17 +129,29 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
   const { toast } = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [editMediaUrl, setEditMediaUrl] = useState<string | null>(null);
+  const [editMediaType, setEditMediaType] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set(['welcome']));
+  const [uploading, setUploading] = useState(false);
 
-  const handleEdit = (id: string, content: string) => {
-    setEditingId(id);
-    setEditContent(content);
+  const handleEdit = (message: BotMessage) => {
+    setEditingId(message.id);
+    setEditContent(message.message_content);
+    setEditMediaUrl(message.media_url);
+    setEditMediaType(message.media_type);
   };
 
   const handleSave = async (id: string) => {
     try {
-      await updateMessage.mutateAsync({ id, message_content: editContent });
+      await updateMessage.mutateAsync({ 
+        id, 
+        message_content: editContent,
+        media_url: editMediaUrl,
+        media_type: editMediaType,
+      });
       setEditingId(null);
+      setEditMediaUrl(null);
+      setEditMediaType(null);
       toast({ title: 'Mensagem atualizada!' });
     } catch (error) {
       toast({ title: 'Erro ao atualizar', variant: 'destructive' });
@@ -175,14 +191,11 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
     }
   };
 
-  const handleMoveUp = async (messageType: string, messages: BotMessage[], index: number) => {
+  const handleMoveUp = async (messageType: string, msgs: BotMessage[], index: number) => {
     if (index === 0) return;
-    
-    const newMessages = [...messages];
+    const newMessages = [...msgs];
     [newMessages[index - 1], newMessages[index]] = [newMessages[index], newMessages[index - 1]];
-    
     const updates = newMessages.map((m, i) => ({ id: m.id, display_order: i + 1 }));
-    
     try {
       await reorderMessages.mutateAsync(updates);
     } catch (error) {
@@ -190,19 +203,50 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
     }
   };
 
-  const handleMoveDown = async (messageType: string, messages: BotMessage[], index: number) => {
-    if (index === messages.length - 1) return;
-    
-    const newMessages = [...messages];
+  const handleMoveDown = async (messageType: string, msgs: BotMessage[], index: number) => {
+    if (index === msgs.length - 1) return;
+    const newMessages = [...msgs];
     [newMessages[index], newMessages[index + 1]] = [newMessages[index + 1], newMessages[index]];
-    
     const updates = newMessages.map((m, i) => ({ id: m.id, display_order: i + 1 }));
-    
     try {
       await reorderMessages.mutateAsync(updates);
     } catch (error) {
       toast({ title: 'Erro ao reordenar', variant: 'destructive' });
     }
+  };
+
+  const handleMediaUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${client.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('bot-media')
+        .upload(fileName, file);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('bot-media')
+        .getPublicUrl(fileName);
+      
+      const isVideo = file.type.startsWith('video/');
+      setEditMediaUrl(publicUrl);
+      setEditMediaType(isVideo ? 'video' : 'image');
+      
+      toast({ title: 'Mídia enviada!' });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({ title: 'Erro ao enviar mídia', variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveMedia = () => {
+    setEditMediaUrl(null);
+    setEditMediaType(null);
   };
 
   const toggleExpanded = (type: string) => {
@@ -265,7 +309,6 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
           const hasMultiple = typeMessages.length > 1;
 
           if (config.allowMultiple) {
-            // Collapsible section for types that allow multiple messages
             return (
               <Collapsible key={messageType} open={isExpanded} onOpenChange={() => toggleExpanded(messageType)}>
                 <Card className="glass-card">
@@ -328,15 +371,24 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
                               totalCount={typeMessages.length}
                               isEditing={editingId === message.id}
                               editContent={editContent}
+                              editMediaUrl={editMediaUrl}
+                              editMediaType={editMediaType}
                               onEditContentChange={setEditContent}
-                              onEdit={() => handleEdit(message.id, message.message_content)}
+                              onEdit={() => handleEdit(message)}
                               onSave={() => handleSave(message.id)}
-                              onCancel={() => setEditingId(null)}
+                              onCancel={() => {
+                                setEditingId(null);
+                                setEditMediaUrl(null);
+                                setEditMediaType(null);
+                              }}
                               onToggle={(checked) => handleToggle(message.id, checked)}
                               onDelete={() => handleDelete(message.id)}
                               onMoveUp={() => handleMoveUp(messageType, typeMessages.sort((a, b) => a.display_order - b.display_order), index)}
                               onMoveDown={() => handleMoveDown(messageType, typeMessages.sort((a, b) => a.display_order - b.display_order), index)}
+                              onMediaUpload={handleMediaUpload}
+                              onRemoveMedia={handleRemoveMedia}
                               isPending={updateMessage.isPending}
+                              uploading={uploading}
                               allowDelete={typeMessages.length > 1}
                               showOrder={typeMessages.length > 1}
                             />
@@ -382,44 +434,34 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
               </CardHeader>
               <CardContent className="space-y-3">
                 {isEditing ? (
-                  <>
-                    <Textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="min-h-[100px] resize-none"
-                      placeholder="Digite a mensagem..."
-                    />
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        onClick={() => handleSave(message.id)}
-                        disabled={updateMessage.isPending}
-                      >
-                        {updateMessage.isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : (
-                          <Save className="w-4 h-4 mr-2" />
-                        )}
-                        Salvar
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => setEditingId(null)}
-                      >
-                        Cancelar
-                      </Button>
-                    </div>
-                  </>
+                  <MessageEditor
+                    content={editContent}
+                    mediaUrl={editMediaUrl}
+                    mediaType={editMediaType}
+                    onContentChange={setEditContent}
+                    onMediaUpload={handleMediaUpload}
+                    onRemoveMedia={handleRemoveMedia}
+                    onSave={() => handleSave(message.id)}
+                    onCancel={() => {
+                      setEditingId(null);
+                      setEditMediaUrl(null);
+                      setEditMediaType(null);
+                    }}
+                    isPending={updateMessage.isPending}
+                    uploading={uploading}
+                  />
                 ) : (
                   <>
+                    {message.media_url && (
+                      <MediaPreview url={message.media_url} type={message.media_type} />
+                    )}
                     <div className="p-3 bg-secondary/50 rounded-lg text-sm whitespace-pre-wrap">
                       {message.message_content}
                     </div>
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => handleEdit(message.id, message.message_content)}
+                      onClick={() => handleEdit(message)}
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
                       Editar Mensagem
@@ -435,6 +477,132 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
   );
 };
 
+// Media Preview Component
+const MediaPreview = ({ url, type }: { url: string; type: string | null }) => {
+  if (type === 'video') {
+    return (
+      <video 
+        src={url} 
+        controls 
+        className="max-h-48 rounded-lg w-full object-contain bg-secondary/30"
+      />
+    );
+  }
+  return (
+    <img 
+      src={url} 
+      alt="Media preview" 
+      className="max-h-48 rounded-lg object-contain"
+    />
+  );
+};
+
+// Message Editor Component
+interface MessageEditorProps {
+  content: string;
+  mediaUrl: string | null;
+  mediaType: string | null;
+  onContentChange: (content: string) => void;
+  onMediaUpload: (file: File) => void;
+  onRemoveMedia: () => void;
+  onSave: () => void;
+  onCancel: () => void;
+  isPending: boolean;
+  uploading: boolean;
+}
+
+const MessageEditor = ({
+  content,
+  mediaUrl,
+  mediaType,
+  onContentChange,
+  onMediaUpload,
+  onRemoveMedia,
+  onSave,
+  onCancel,
+  isPending,
+  uploading,
+}: MessageEditorProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="space-y-3">
+      {/* Media preview with remove button */}
+      {mediaUrl && (
+        <div className="relative inline-block">
+          <MediaPreview url={mediaUrl} type={mediaType} />
+          <Button
+            size="icon"
+            variant="destructive"
+            className="absolute top-2 right-2 h-6 w-6"
+            onClick={onRemoveMedia}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
+
+      {/* Media upload buttons */}
+      <div className="flex gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) onMediaUpload(file);
+          }}
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+        >
+          {uploading ? (
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          ) : (
+            <Upload className="w-4 h-4 mr-2" />
+          )}
+          {mediaUrl ? 'Trocar Mídia' : 'Adicionar Foto/Vídeo'}
+        </Button>
+      </div>
+
+      {/* Text content */}
+      <Textarea
+        value={content}
+        onChange={(e) => onContentChange(e.target.value)}
+        className="min-h-[100px] resize-none"
+        placeholder="Digite a mensagem..."
+      />
+
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        <Button 
+          size="sm" 
+          onClick={onSave}
+          disabled={isPending || uploading}
+        >
+          {isPending ? (
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          ) : (
+            <Save className="w-4 h-4 mr-2" />
+          )}
+          Salvar
+        </Button>
+        <Button 
+          size="sm" 
+          variant="ghost"
+          onClick={onCancel}
+        >
+          Cancelar
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 // Sub-component for individual message items in multi-message sections
 interface MessageItemProps {
   message: BotMessage;
@@ -442,6 +610,8 @@ interface MessageItemProps {
   totalCount: number;
   isEditing: boolean;
   editContent: string;
+  editMediaUrl: string | null;
+  editMediaType: string | null;
   onEditContentChange: (content: string) => void;
   onEdit: () => void;
   onSave: () => void;
@@ -450,7 +620,10 @@ interface MessageItemProps {
   onDelete: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onMediaUpload: (file: File) => void;
+  onRemoveMedia: () => void;
   isPending: boolean;
+  uploading: boolean;
   allowDelete: boolean;
   showOrder: boolean;
 }
@@ -461,6 +634,8 @@ const MessageItem = ({
   totalCount,
   isEditing,
   editContent,
+  editMediaUrl,
+  editMediaType,
   onEditContentChange,
   onEdit,
   onSave,
@@ -469,10 +644,15 @@ const MessageItem = ({
   onDelete,
   onMoveUp,
   onMoveDown,
+  onMediaUpload,
+  onRemoveMedia,
   isPending,
+  uploading,
   allowDelete,
   showOrder,
 }: MessageItemProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   return (
     <div className="border border-border/50 rounded-lg p-4 space-y-3 bg-card/50">
       <div className="flex items-center justify-between">
@@ -499,9 +679,17 @@ const MessageItem = ({
               </Button>
             </div>
           )}
-          <span className="text-sm font-medium text-muted-foreground">
-            Mensagem {index + 1}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">
+              Mensagem {index + 1}
+            </span>
+            {message.media_type && (
+              <span className="text-xs bg-secondary px-2 py-0.5 rounded flex items-center gap-1">
+                {message.media_type === 'video' ? <Video className="h-3 w-3" /> : <Image className="h-3 w-3" />}
+                {message.media_type === 'video' ? 'Vídeo' : 'Foto'}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <Label htmlFor={`toggle-${message.id}`} className="text-xs text-muted-foreground">
@@ -537,7 +725,49 @@ const MessageItem = ({
       </div>
 
       {isEditing ? (
-        <>
+        <div className="space-y-3">
+          {/* Media preview */}
+          {editMediaUrl && (
+            <div className="relative inline-block">
+              <MediaPreview url={editMediaUrl} type={editMediaType} />
+              <Button
+                size="icon"
+                variant="destructive"
+                className="absolute top-2 right-2 h-6 w-6"
+                onClick={onRemoveMedia}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+
+          {/* Media upload */}
+          <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onMediaUpload(file);
+              }}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Upload className="w-4 h-4 mr-2" />
+              )}
+              {editMediaUrl ? 'Trocar' : 'Foto/Vídeo'}
+            </Button>
+          </div>
+
           <Textarea
             value={editContent}
             onChange={(e) => onEditContentChange(e.target.value)}
@@ -545,7 +775,7 @@ const MessageItem = ({
             placeholder="Digite a mensagem..."
           />
           <div className="flex gap-2">
-            <Button size="sm" onClick={onSave} disabled={isPending}>
+            <Button size="sm" onClick={onSave} disabled={isPending || uploading}>
               {isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
               ) : (
@@ -557,9 +787,12 @@ const MessageItem = ({
               Cancelar
             </Button>
           </div>
-        </>
+        </div>
       ) : (
         <>
+          {message.media_url && (
+            <MediaPreview url={message.media_url} type={message.media_type} />
+          )}
           <div className="p-3 bg-secondary/30 rounded-lg text-sm whitespace-pre-wrap">
             {message.message_content}
           </div>
