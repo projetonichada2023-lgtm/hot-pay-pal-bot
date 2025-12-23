@@ -1,1 +1,16 @@
 project_id = "ufyvllgimtkyehfkfxoi"
+
+[functions.telegram-bot]
+verify_jwt = false
+
+[functions.telegram-webhook]
+verify_jwt = false
+
+[functions.setup-telegram-webhook]
+verify_jwt = false
+
+[functions.configure-client-webhook]
+verify_jwt = false
+
+[functions.fastsoft-webhook]
+verify_jwt = false

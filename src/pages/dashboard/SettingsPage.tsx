@@ -3,8 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Loader2 } from 'lucide-react';
+import { Settings, Loader2, CreditCard, Eye, EyeOff } from 'lucide-react';
+import { useState } from 'react';
 
 interface SettingsPageProps {
   client: Client;
@@ -14,6 +16,8 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   const { data: settings, isLoading } = useClientSettings(client.id);
   const updateSettings = useUpdateClientSettings();
   const { toast } = useToast();
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [apiKey, setApiKey] = useState('');
 
   const handleToggle = async (field: string, value: boolean) => {
     if (!settings) return;
@@ -35,6 +39,31 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
     }
   };
 
+  const handleSaveApiKey = async () => {
+    if (!settings || !apiKey.trim()) return;
+    try {
+      await updateSettings.mutateAsync({ 
+        id: settings.id, 
+        fastsoft_api_key: apiKey.trim(),
+        fastsoft_enabled: true 
+      } as any);
+      toast({ title: 'Chave API salva com sucesso!' });
+      setApiKey('');
+    } catch (error) {
+      toast({ title: 'Erro ao salvar', variant: 'destructive' });
+    }
+  };
+
+  const handleToggleFastsoft = async (enabled: boolean) => {
+    if (!settings) return;
+    try {
+      await updateSettings.mutateAsync({ id: settings.id, fastsoft_enabled: enabled } as any);
+      toast({ title: enabled ? 'FastSoft ativado!' : 'FastSoft desativado!' });
+    } catch (error) {
+      toast({ title: 'Erro ao atualizar', variant: 'destructive' });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -44,6 +73,9 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   }
 
   if (!settings) return null;
+
+  const hasApiKey = !!(settings as any).fastsoft_api_key;
+  const fastsoftEnabled = (settings as any).fastsoft_enabled || false;
 
   return (
     <div className="space-y-6">
@@ -57,13 +89,76 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
         </p>
       </div>
 
+      {/* Payment Gateway */}
+      <Card className="glass-card border-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="w-5 h-5" />
+            Gateway de Pagamento (FastSoft/UniPay)
+          </CardTitle>
+          <CardDescription>
+            Configure suas credenciais para receber pagamentos PIX reais
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>FastSoft Ativo</Label>
+              <p className="text-sm text-muted-foreground">
+                {hasApiKey ? 'Usar FastSoft para pagamentos PIX' : 'Configure a API Key primeiro'}
+              </p>
+            </div>
+            <Switch
+              checked={fastsoftEnabled}
+              onCheckedChange={handleToggleFastsoft}
+              disabled={!hasApiKey}
+            />
+          </div>
+
+          <div className="space-y-2 pt-4 border-t border-border">
+            <Label>API Key FastSoft</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  type={showApiKey ? 'text' : 'password'}
+                  placeholder={hasApiKey ? '••••••••••••••••' : 'Cole sua API Key aqui'}
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                >
+                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              <Button onClick={handleSaveApiKey} disabled={!apiKey.trim()}>
+                Salvar
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Obtenha em: Painel FastSoft → Configurações → Chave de API
+            </p>
+          </div>
+
+          {hasApiKey && (
+            <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+              <p className="text-sm text-green-600 dark:text-green-400">
+                ✓ API Key configurada. Os pagamentos PIX serão processados pela FastSoft.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Automations */}
       <Card className="glass-card">
         <CardHeader>
           <CardTitle>Automações</CardTitle>
-          <CardDescription>
-            Configure as automações do seu bot
-          </CardDescription>
+          <CardDescription>Configure as automações do seu bot</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
@@ -82,9 +177,7 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Suporte Ativo</Label>
-              <p className="text-sm text-muted-foreground">
-                Mostrar opção de suporte no menu do bot
-              </p>
+              <p className="text-sm text-muted-foreground">Mostrar opção de suporte no menu</p>
             </div>
             <Switch
               checked={settings.support_enabled}
@@ -96,9 +189,7 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Lembrete de Carrinho</Label>
-                <p className="text-sm text-muted-foreground">
-                  Enviar lembrete para pedidos pendentes
-                </p>
+                <p className="text-sm text-muted-foreground">Enviar lembrete para pedidos pendentes</p>
               </div>
               <Switch
                 checked={settings.cart_reminder_enabled}
@@ -131,9 +222,7 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
       <Card className="glass-card">
         <CardHeader>
           <CardTitle>Informações do Negócio</CardTitle>
-          <CardDescription>
-            Dados da sua conta
-          </CardDescription>
+          <CardDescription>Dados da sua conta</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -143,11 +232,7 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
             </div>
             <div>
               <Label>Status</Label>
-              <Input 
-                value={client.is_active ? 'Ativo' : 'Inativo'} 
-                readOnly 
-                className="mt-2" 
-              />
+              <Input value={client.is_active ? 'Ativo' : 'Inativo'} readOnly className="mt-2" />
             </div>
           </div>
         </CardContent>
