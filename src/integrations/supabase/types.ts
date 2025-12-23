@@ -213,6 +213,7 @@ export type Database = {
           client_id: string
           created_at: string | null
           description: string | null
+          downsell_product_id: string | null
           file_url: string | null
           id: string
           image_url: string | null
@@ -230,6 +231,7 @@ export type Database = {
           client_id: string
           created_at?: string | null
           description?: string | null
+          downsell_product_id?: string | null
           file_url?: string | null
           id?: string
           image_url?: string | null
@@ -247,6 +249,7 @@ export type Database = {
           client_id?: string
           created_at?: string | null
           description?: string | null
+          downsell_product_id?: string | null
           file_url?: string | null
           id?: string
           image_url?: string | null
@@ -266,6 +269,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_downsell_product_id_fkey"
+            columns: ["downsell_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {

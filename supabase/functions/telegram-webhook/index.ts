@@ -368,6 +368,12 @@ serve(async (req) => {
         await handleCancelOrder(botToken, chatId, clientId, orderId, messageId);
       }
 
+      // Decline upsell - show downsell
+      if (data.startsWith('decline_upsell_')) {
+        const productId = data.replace('decline_upsell_', '');
+        await handleDeclineUpsell(botToken, chatId, clientId, productId);
+      }
+
       // Back to menu
       if (data === 'menu') {
         const welcomeMessage = await getClientMessage(clientId, 'welcome');
@@ -602,11 +608,12 @@ async function handleUpsell(botToken: string, chatId: number, clientId: string, 
   
   // Build keyboard with upsell products
   const keyboard = upsellProducts.map(product => [{
-    text: `${product.is_hot ? '🔥 ' : ''}${product.name} - ${formatPrice(Number(product.price))}`,
+    text: `✅ ${product.is_hot ? '🔥 ' : ''}${product.name} - ${formatPrice(Number(product.price))}`,
     callback_data: `product_${product.id}`
   }]);
   
-  keyboard.push([{ text: '❌ Não, obrigado', callback_data: 'menu' }]);
+  // Add decline button that triggers downsell check
+  keyboard.push([{ text: '❌ Não, obrigado', callback_data: `decline_upsell_${purchasedProductId}` }]);
   
   // Send upsell message
   await sendTelegramMessage(
@@ -615,4 +622,50 @@ async function handleUpsell(botToken: string, chatId: number, clientId: string, 
     upsellMessage || '🔥 <b>Oferta Especial!</b>\n\nQue tal aproveitar e levar mais um produto? Confira nossas sugestões:',
     { inline_keyboard: keyboard }
   );
+}
+
+async function handleDeclineUpsell(botToken: string, chatId: number, clientId: string, purchasedProductId: string) {
+  // Get the purchased product to check for downsell
+  const purchasedProduct = await getProduct(purchasedProductId);
+  
+  if (!purchasedProduct?.downsell_product_id) {
+    // No downsell configured, just show menu
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      '👍 Tudo bem! Obrigado pela sua compra.',
+      { inline_keyboard: [[{ text: '🛍️ Ver Mais Produtos', callback_data: 'products' }]] }
+    );
+    return;
+  }
+  
+  // Get the downsell product
+  const downsellProduct = await getProduct(purchasedProduct.downsell_product_id);
+  
+  if (!downsellProduct || !downsellProduct.is_active) {
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      '👍 Tudo bem! Obrigado pela sua compra.',
+      { inline_keyboard: [[{ text: '🛍️ Ver Mais Produtos', callback_data: 'products' }]] }
+    );
+    return;
+  }
+  
+  // Show downsell offer
+  const description = downsellProduct.description || 'Sem descrição';
+  const downsellMessage = `💰 <b>Última Oferta!</b>\n\nQue tal este produto com um preço especial?\n\n${downsellProduct.is_hot ? '🔥 ' : ''}<b>${downsellProduct.name}</b>\n\n${description}\n\n💰 <b>Apenas ${formatPrice(Number(downsellProduct.price))}</b>`;
+  
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: '✅ Quero esse!', callback_data: `product_${downsellProduct.id}` }],
+      [{ text: '❌ Não, obrigado', callback_data: 'menu' }]
+    ]
+  };
+  
+  if (downsellProduct.image_url) {
+    await sendTelegramPhoto(botToken, chatId, downsellProduct.image_url, downsellMessage, keyboard);
+  } else {
+    await sendTelegramMessage(botToken, chatId, downsellMessage, keyboard);
+  }
 }

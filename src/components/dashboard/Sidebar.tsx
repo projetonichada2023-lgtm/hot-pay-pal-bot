@@ -13,7 +13,8 @@ import {
   Bot,
   LogOut,
   Menu,
-  X
+  X,
+  GitBranch
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +26,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
   { icon: MessageSquare, label: 'Mensagens', path: '/messages' },
   { icon: Package, label: 'Produtos', path: '/products' },
+  { icon: GitBranch, label: 'Funil', path: '/funnel' },
   { icon: ShoppingCart, label: 'Pedidos', path: '/orders' },
   { icon: Users, label: 'Clientes', path: '/customers' },
   { icon: Bot, label: 'Bot Config', path: '/bot-config' },
