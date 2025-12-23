@@ -672,7 +672,14 @@ async function handleUpsell(botToken: string, chatId: number, clientId: string, 
   const upsellProduct = await getProduct(upsellProductId);
   if (!upsellProduct || !upsellProduct.is_active) return;
 
-  const upsellMessage = await getClientMessage(clientId, 'upsell');
+  // Use custom upsell message from the product, or fallback to client message, or default
+  let upsellMessage = purchasedProduct?.upsell_message;
+  if (!upsellMessage) {
+    upsellMessage = await getClientMessage(clientId, 'upsell');
+  }
+  if (!upsellMessage) {
+    upsellMessage = '🔥 <b>Oferta Especial!</b>\n\nQue tal aproveitar e levar mais um produto?';
+  }
 
   const keyboard = [
     [{
@@ -685,7 +692,7 @@ async function handleUpsell(botToken: string, chatId: number, clientId: string, 
   await sendTelegramMessage(
     botToken,
     chatId,
-    upsellMessage || '🔥 <b>Oferta Especial!</b>\n\nQue tal aproveitar e levar mais um produto?',
+    upsellMessage,
     { inline_keyboard: keyboard }
   );
 }
@@ -730,9 +737,15 @@ async function handleDeclineUpsell(botToken: string, chatId: number, clientId: s
     return;
   }
   
-  // Show downsell offer
+  // Use custom downsell message from the product, or default
   const description = downsellProduct.description || 'Sem descrição';
-  const downsellMessage = `💰 <b>Última Oferta!</b>\n\nQue tal este produto com um preço especial?\n\n${downsellProduct.is_hot ? '🔥 ' : ''}<b>${downsellProduct.name}</b>\n\n${description}\n\n💰 <b>Apenas ${formatPrice(Number(downsellProduct.price))}</b>`;
+  let downsellMessage = (purchasedProduct as any)?.downsell_message;
+  if (!downsellMessage) {
+    downsellMessage = `💰 <b>Última Oferta!</b>\n\nQue tal este produto com um preço especial?\n\n${downsellProduct.is_hot ? '🔥 ' : ''}<b>${downsellProduct.name}</b>\n\n${description}\n\n💰 <b>Apenas ${formatPrice(Number(downsellProduct.price))}</b>`;
+  } else {
+    // Append product info to custom message
+    downsellMessage = `${downsellMessage}\n\n${downsellProduct.is_hot ? '🔥 ' : ''}<b>${downsellProduct.name}</b>\n\n${description}\n\n💰 <b>Apenas ${formatPrice(Number(downsellProduct.price))}</b>`;
+  }
   
   // Show downsell offer - include parent order id for tracking
   const buyDownsellCallback = parentOrderId

@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { GitBranch, ArrowDown, ArrowRight, Loader2, Package, TrendingUp, TrendingDown, Plus, Trash2, BarChart3, DollarSign, Percent } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { GitBranch, ArrowDown, ArrowRight, Loader2, Package, TrendingUp, TrendingDown, Plus, Trash2, BarChart3, DollarSign, Percent, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface FunnelPageProps {
@@ -18,6 +19,8 @@ interface FunnelPageProps {
 type FunnelProduct = Product & {
   upsell_product_id?: string | null;
   downsell_product_id?: string | null;
+  upsell_message?: string | null;
+  downsell_message?: string | null;
 };
 
 export const FunnelPage = ({ client }: FunnelPageProps) => {
@@ -28,6 +31,8 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
   const [selectedMainProduct, setSelectedMainProduct] = useState('');
   const [selectedUpsell, setSelectedUpsell] = useState('');
   const [selectedDownsell, setSelectedDownsell] = useState('');
+  const [upsellMessage, setUpsellMessage] = useState('');
+  const [downsellMessage, setDownsellMessage] = useState('');
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price);
@@ -60,12 +65,16 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
         clientId: client.id,
         upsell_product_id: selectedUpsell,
         downsell_product_id: selectedDownsell || null,
+        upsell_message: upsellMessage || null,
+        downsell_message: downsellMessage || null,
       } as any);
       toast.success('Funil criado com sucesso!');
       setIsAddOpen(false);
       setSelectedMainProduct('');
       setSelectedUpsell('');
       setSelectedDownsell('');
+      setUpsellMessage('');
+      setDownsellMessage('');
     } catch (error) {
       toast.error('Erro ao criar funil');
     }
@@ -93,6 +102,32 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
         upsell_product_id: upsellId || null,
       } as any);
       toast.success('Upsell atualizado!');
+    } catch (error) {
+      toast.error('Erro ao atualizar');
+    }
+  };
+
+  const handleUpdateUpsellMessage = async (product: FunnelProduct, message: string) => {
+    try {
+      await updateProduct.mutateAsync({
+        id: product.id,
+        clientId: client.id,
+        upsell_message: message || null,
+      } as any);
+      toast.success('Mensagem de upsell atualizada!');
+    } catch (error) {
+      toast.error('Erro ao atualizar');
+    }
+  };
+
+  const handleUpdateDownsellMessage = async (product: FunnelProduct, message: string) => {
+    try {
+      await updateProduct.mutateAsync({
+        id: product.id,
+        clientId: client.id,
+        downsell_message: message || null,
+      } as any);
+      toast.success('Mensagem de downsell atualizada!');
     } catch (error) {
       toast.error('Erro ao atualizar');
     }
@@ -346,6 +381,38 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
                     </div>
                   </div>
 
+                  {/* Custom Messages */}
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2 mb-3">
+                      <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Mensagens Personalizadas</span>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-green-500">Mensagem do Upsell</Label>
+                        <Textarea
+                          placeholder="🔥 Oferta Especial! Que tal aproveitar e levar mais um produto?"
+                          value={product.upsell_message || ''}
+                          onChange={(e) => handleUpdateUpsellMessage(product, e.target.value)}
+                          rows={2}
+                          className="resize-none text-sm"
+                        />
+                      </div>
+                      {product.downsell_product_id && (
+                        <div className="space-y-1">
+                          <Label className="text-xs text-orange-500">Mensagem do Downsell</Label>
+                          <Textarea
+                            placeholder="💰 Última Oferta! Que tal este produto com um preço especial?"
+                            value={product.downsell_message || ''}
+                            onChange={(e) => handleUpdateDownsellMessage(product, e.target.value)}
+                            rows={2}
+                            className="resize-none text-sm"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Flow visualization */}
                   <div className="mt-4 pt-4 border-t border-border">
                     <p className="text-xs text-muted-foreground mb-2">Fluxo do funil:</p>
@@ -456,6 +523,32 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
               </Select>
               <p className="text-xs text-muted-foreground">Oferecido se o cliente recusar o upsell</p>
             </div>
+
+            <div className="space-y-2">
+              <Label>Mensagem de Upsell (opcional)</Label>
+              <Textarea
+                placeholder="🔥 Oferta Especial! Que tal aproveitar e levar mais um produto?"
+                value={upsellMessage}
+                onChange={(e) => setUpsellMessage(e.target.value)}
+                rows={2}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground">Mensagem enviada na oferta de upsell</p>
+            </div>
+
+            {selectedDownsell && (
+              <div className="space-y-2">
+                <Label>Mensagem de Downsell (opcional)</Label>
+                <Textarea
+                  placeholder="💰 Última Oferta! Que tal este produto com um preço especial?"
+                  value={downsellMessage}
+                  onChange={(e) => setDownsellMessage(e.target.value)}
+                  rows={2}
+                  className="resize-none"
+                />
+                <p className="text-xs text-muted-foreground">Mensagem enviada na oferta de downsell</p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>
