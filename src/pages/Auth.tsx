@@ -49,6 +49,16 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Apply dark mode on auth page
+    const stored = localStorage.getItem('theme');
+    if (stored === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  useEffect(() => {
     if (user && !isResetMode) {
       navigate('/');
     }
