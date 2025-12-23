@@ -161,7 +161,7 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stats-cards">
         {statsCards.map((stat) => (
           <Card key={stat.label} className="glass-card hover-scale">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -190,7 +190,9 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       </div>
 
       {/* Chart */}
-      <SalesChart clientId={client.id} dateRange={dateRange} />
+      <div data-tour="sales-chart">
+        <SalesChart clientId={client.id} dateRange={dateRange} />
+      </div>
 
       {/* Bottom Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

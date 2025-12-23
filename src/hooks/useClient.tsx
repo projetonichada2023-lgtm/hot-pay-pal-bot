@@ -21,6 +21,7 @@ export interface Client {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  onboarding_completed: boolean;
 }
 
 export interface ClientSettings {

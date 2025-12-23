@@ -60,7 +60,7 @@ export const NotificationCenter = ({ clientId, onNavigate }: NotificationCenterP
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50 md:top-6 md:right-6">
+    <div className="fixed top-4 right-4 z-50 md:top-6 md:right-6" data-tour="notifications">
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
