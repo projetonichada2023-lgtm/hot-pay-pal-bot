@@ -124,6 +124,7 @@ export const Sidebar = ({ client }: SidebarProps) => {
                 if (item.path === '/dashboard/bot-config') return 'menu-bot-config';
                 if (item.path === '/dashboard/funnel') return 'menu-funnel';
                 if (item.path === '/dashboard/messages') return 'menu-messages';
+                if (item.path === '/dashboard/recovery') return 'menu-recovery';
                 return undefined;
               };
               const tourAttr = getTourAttribute();

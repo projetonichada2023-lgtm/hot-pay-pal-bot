@@ -61,6 +61,13 @@ export const tourSteps: TourStep[] = [
     position: 'right',
   },
   {
+    id: 'recovery',
+    target: '[data-tour="menu-recovery"]',
+    title: 'Recuperação de Carrinho 🛒',
+    content: 'Recupere vendas perdidas com mensagens automáticas para clientes que abandonaram o pagamento.',
+    position: 'right',
+  },
+  {
     id: 'notifications',
     target: '[data-tour="notifications"]',
     title: 'Fique Informado',
