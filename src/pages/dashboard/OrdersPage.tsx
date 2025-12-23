@@ -22,19 +22,20 @@ const statusOptions = [
   { value: 'refunded', label: 'Reembolsados' },
 ];
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
 export const OrdersPage = ({ client }: OrdersPageProps) => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { data, isLoading } = useOrders(
     client.id, 
     statusFilter === 'all' ? null : statusFilter as OrderStatus,
     currentPage,
-    PAGE_SIZE
+    pageSize
   );
   const { data: stats } = useOrderStats(client.id);
   const updateStatus = useUpdateOrderStatus();
@@ -46,6 +47,11 @@ export const OrdersPage = ({ client }: OrdersPageProps) => {
   // Reset page when filter changes
   const handleStatusChange = (value: string) => {
     setStatusFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
     setCurrentPage(1);
   };
 
@@ -186,31 +192,52 @@ export const OrdersPage = ({ client }: OrdersPageProps) => {
               />
               
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-4 border-t border-border">
-                  <p className="text-sm text-muted-foreground">
-                    Página {currentPage} de {totalPages}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      <span className="hidden sm:inline ml-1">Anterior</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      <span className="hidden sm:inline mr-1">Próxima</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+              {totalCount > 0 && (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4 border-t border-border">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">Itens por página:</span>
+                    <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                      <SelectTrigger className="w-[70px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAGE_SIZE_OPTIONS.map(size => (
+                          <SelectItem key={size} value={String(size)}>
+                            {size}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-muted-foreground hidden sm:inline">
+                      ({totalCount} {totalCount === 1 ? 'pedido' : 'pedidos'})
+                    </span>
                   </div>
+                  
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground mr-2">
+                        Página {currentPage} de {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="hidden sm:inline ml-1">Anterior</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        <span className="hidden sm:inline mr-1">Próxima</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </>
