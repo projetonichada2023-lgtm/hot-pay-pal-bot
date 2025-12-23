@@ -17,7 +17,12 @@ import {
   Lock,
   Headphones,
   BadgeCheck,
-  Activity
+  Activity,
+  Instagram,
+  Youtube,
+  BookOpen,
+  Mail,
+  ExternalLink
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, useInView, Variants } from "framer-motion";
@@ -1039,25 +1044,179 @@ export default function Landing() {
 
       {/* Footer */}
       <motion.footer 
-        className="py-8 px-4 border-t border-border/50"
+        className="py-12 px-4 border-t border-border/50 bg-muted/20"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
       >
-        <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <motion.div 
-            className="flex items-center gap-2"
-            whileHover={{ scale: 1.05 }}
-          >
-            <div className="w-6 h-6 rounded bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-              <Send className="w-3 h-3 text-primary-foreground" />
+        <div className="container mx-auto">
+          {/* Main Footer Content */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+            {/* Brand Column */}
+            <div className="col-span-2 md:col-span-1">
+              <motion.div 
+                className="flex items-center gap-2 mb-4"
+                whileHover={{ scale: 1.02 }}
+              >
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                  <Send className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <span className="font-bold text-lg">TeleGateway</span>
+              </motion.div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Automatize suas vendas no Telegram com pagamento PIX, entrega instantânea e recuperação de carrinho.
+              </p>
+              {/* Social Media */}
+              <div className="flex items-center gap-3">
+                <motion.a
+                  href="https://instagram.com/telegateway"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-lg bg-muted/50 hover:bg-primary/20 flex items-center justify-center transition-colors"
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Instagram className="w-4 h-4" />
+                </motion.a>
+                <motion.a
+                  href="https://youtube.com/@telegateway"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-lg bg-muted/50 hover:bg-primary/20 flex items-center justify-center transition-colors"
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Youtube className="w-4 h-4" />
+                </motion.a>
+                <motion.a
+                  href="https://t.me/telegateway"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-lg bg-muted/50 hover:bg-primary/20 flex items-center justify-center transition-colors"
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Send className="w-4 h-4" />
+                </motion.a>
+              </div>
             </div>
-            <span className="font-semibold text-sm">TeleGateway</span>
-          </motion.div>
-          <p className="text-sm text-muted-foreground">
-            © 2024 TeleGateway. Todos os direitos reservados.
-          </p>
+
+            {/* Links Column */}
+            <div>
+              <h4 className="font-semibold mb-4">Plataforma</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <Link to="/auth" className="hover:text-primary transition-colors">
+                    Criar Conta
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/auth" className="hover:text-primary transition-colors">
+                    Entrar
+                  </Link>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-primary transition-colors flex items-center gap-1">
+                    Preços
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-primary transition-colors flex items-center gap-1">
+                    Recursos
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Support Column */}
+            <div>
+              <h4 className="font-semibold mb-4">Suporte</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <a href="#" className="hover:text-primary transition-colors flex items-center gap-1">
+                    <BookOpen className="w-3 h-3" />
+                    Documentação
+                  </a>
+                </li>
+                <li>
+                  <a href="https://t.me/telegateway_suporte" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors flex items-center gap-1">
+                    <Send className="w-3 h-3" />
+                    Suporte Telegram
+                  </a>
+                </li>
+                <li>
+                  <a href="mailto:suporte@telegateway.com" className="hover:text-primary transition-colors flex items-center gap-1">
+                    <Mail className="w-3 h-3" />
+                    Email
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-primary transition-colors">
+                    FAQ
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal Column */}
+            <div>
+              <h4 className="font-semibold mb-4">Legal</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <a href="#" className="hover:text-primary transition-colors">
+                    Termos de Uso
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-primary transition-colors">
+                    Política de Privacidade
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-primary transition-colors">
+                    Política de Cookies
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-primary transition-colors">
+                    LGPD
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-border/50 pt-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              {/* UniPay Partnership */}
+              <motion.a
+                href="https://unipaybr.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <img 
+                  src={unipayLogo} 
+                  alt="UniPay" 
+                  className="h-6 w-auto object-contain"
+                />
+                <div className="h-4 w-px bg-border/50" />
+                <div className="flex items-center gap-1 text-xs text-emerald-400">
+                  <span>Parceiro de Pagamentos</span>
+                  <ExternalLink className="w-3 h-3" />
+                </div>
+              </motion.a>
+
+              {/* Copyright */}
+              <p className="text-sm text-muted-foreground">
+                © 2025 TeleGateway. Todos os direitos reservados.
+              </p>
+            </div>
+          </div>
         </div>
       </motion.footer>
 
