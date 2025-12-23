@@ -11,7 +11,9 @@ import {
   Shield, 
   ArrowRight,
   CheckCircle2,
-  Send
+  Send,
+  X,
+  Minus
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, useInView, Variants } from "framer-motion";
@@ -636,6 +638,142 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Comparison Section */}
+      <section className="py-20 px-4 bg-muted/30">
+        <div className="container mx-auto">
+          <ScrollReveal className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Por que escolher o TeleGateway?
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Compare e veja as vantagens de vender no Telegram com automação.
+            </p>
+          </ScrollReveal>
+
+          <ScrollReveal>
+            <div className="max-w-4xl mx-auto overflow-hidden rounded-2xl border border-border/50 bg-card/50 backdrop-blur">
+              {/* Table Header */}
+              <div className="grid grid-cols-4 bg-muted/50 border-b border-border/50">
+                <div className="p-4 md:p-6 font-semibold text-sm md:text-base">Recurso</div>
+                <div className="p-4 md:p-6 text-center">
+                  <div className="inline-flex flex-col items-center gap-1">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                      <Send className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
+                    </div>
+                    <span className="font-bold text-sm md:text-base text-primary">TeleGateway</span>
+                  </div>
+                </div>
+                <div className="p-4 md:p-6 text-center">
+                  <div className="inline-flex flex-col items-center gap-1">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-emerald-600 flex items-center justify-center">
+                      <MessageCircle className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                    </div>
+                    <span className="font-medium text-sm md:text-base text-muted-foreground">WhatsApp</span>
+                  </div>
+                </div>
+                <div className="p-4 md:p-6 text-center">
+                  <div className="inline-flex flex-col items-center gap-1">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-muted flex items-center justify-center">
+                      <ShoppingCart className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
+                    </div>
+                    <span className="font-medium text-sm md:text-base text-muted-foreground">Hotmart/Kiwify</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table Rows */}
+              {[
+                { feature: "Automação 100% sem código", telegateway: true, whatsapp: false, others: "partial" },
+                { feature: "Bot próprio personalizado", telegateway: true, whatsapp: false, others: false },
+                { feature: "PIX automático integrado", telegateway: true, whatsapp: false, others: true },
+                { feature: "Entrega instantânea", telegateway: true, whatsapp: false, others: true },
+                { feature: "Recuperação de carrinho", telegateway: true, whatsapp: "partial", others: true },
+                { feature: "Funil de upsell automático", telegateway: true, whatsapp: false, others: "partial" },
+                { feature: "Sem mensalidade fixa", telegateway: true, whatsapp: true, others: false },
+                { feature: "Taxa por transação baixa", telegateway: true, whatsapp: true, others: false },
+                { feature: "Chat direto com cliente", telegateway: true, whatsapp: true, others: false },
+                { feature: "Acesso a grupos automático", telegateway: true, whatsapp: false, others: false },
+              ].map((row, index) => (
+                <motion.div
+                  key={row.feature}
+                  className={`grid grid-cols-4 border-b border-border/30 last:border-b-0 ${
+                    index % 2 === 0 ? "bg-transparent" : "bg-muted/20"
+                  }`}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <div className="p-4 md:p-5 text-sm md:text-base font-medium">{row.feature}</div>
+                  <div className="p-4 md:p-5 flex justify-center items-center">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      whileInView={{ scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ type: "spring", stiffness: 500, delay: index * 0.05 + 0.1 }}
+                      className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-emerald-500/20 flex items-center justify-center"
+                    >
+                      <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-emerald-500" />
+                    </motion.div>
+                  </div>
+                  <div className="p-4 md:p-5 flex justify-center items-center">
+                    {row.whatsapp === true ? (
+                      <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                        <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-emerald-500" />
+                      </div>
+                    ) : row.whatsapp === "partial" ? (
+                      <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-amber-500/20 flex items-center justify-center">
+                        <Minus className="w-4 h-4 md:w-5 md:h-5 text-amber-500" />
+                      </div>
+                    ) : (
+                      <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-destructive/20 flex items-center justify-center">
+                        <X className="w-4 h-4 md:w-5 md:h-5 text-destructive" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 md:p-5 flex justify-center items-center">
+                    {row.others === true ? (
+                      <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                        <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-emerald-500" />
+                      </div>
+                    ) : row.others === "partial" ? (
+                      <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-amber-500/20 flex items-center justify-center">
+                        <Minus className="w-4 h-4 md:w-5 md:h-5 text-amber-500" />
+                      </div>
+                    ) : (
+                      <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-destructive/20 flex items-center justify-center">
+                        <X className="w-4 h-4 md:w-5 md:h-5 text-destructive" />
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Legend */}
+            <div className="flex flex-wrap justify-center gap-6 mt-6 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                </div>
+                <span>Incluso</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <Minus className="w-3 h-3 text-amber-500" />
+                </div>
+                <span>Parcial / Manual</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-destructive/20 flex items-center justify-center">
+                  <X className="w-3 h-3 text-destructive" />
+                </div>
+                <span>Não disponível</span>
+              </div>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
 
       {/* Testimonials Section */}
       <TestimonialsSection
