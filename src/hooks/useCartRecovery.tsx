@@ -12,6 +12,8 @@ export interface CartRecoveryMessage {
   media_type: string | null;
   is_active: boolean;
   display_order: number;
+  offer_product_id: string | null;
+  offer_message: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -47,7 +47,7 @@ serve(async (req) => {
       // Get recovery messages for this client
       const { data: recoveryMessages, error: messagesError } = await supabase
         .from("cart_recovery_messages")
-        .select("*")
+        .select("*, offer_product:products!cart_recovery_messages_offer_product_id_fkey(id, name, price, image_url)")
         .eq("client_id", clientId)
         .eq("is_active", true)
         .order("delay_minutes", { ascending: true });
@@ -191,6 +191,58 @@ serve(async (req) => {
           }
 
           console.log(`Recovery message sent successfully for order ${order.id}`);
+
+          // Check if there's an offer product to send
+          const offerProduct = nextMessage.offer_product as any;
+          if (offerProduct && nextMessage.offer_product_id) {
+            console.log(`Sending offer product ${offerProduct.name} for order ${order.id}`);
+            
+            const offerMessage = nextMessage.offer_message || "🔥 Aproveite também esta oferta especial:";
+            const productText = `${offerMessage}\n\n📦 *${offerProduct.name}*\n💰 R$ ${Number(offerProduct.price).toFixed(2).replace(".", ",")}`;
+            
+            // If product has image, send with photo
+            if (offerProduct.image_url) {
+              const offerPhotoResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: customer.telegram_id,
+                  photo: offerProduct.image_url,
+                  caption: productText,
+                  parse_mode: "Markdown",
+                  reply_markup: {
+                    inline_keyboard: [[
+                      { text: "🛒 Comprar agora", callback_data: `buy_${offerProduct.id}` }
+                    ]]
+                  }
+                }),
+              });
+              
+              if (!offerPhotoResponse.ok) {
+                console.error(`Failed to send offer photo for order ${order.id}:`, await offerPhotoResponse.text());
+              }
+            } else {
+              // Send text only
+              const offerTextResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: customer.telegram_id,
+                  text: productText,
+                  parse_mode: "Markdown",
+                  reply_markup: {
+                    inline_keyboard: [[
+                      { text: "🛒 Comprar agora", callback_data: `buy_${offerProduct.id}` }
+                    ]]
+                  }
+                }),
+              });
+              
+              if (!offerTextResponse.ok) {
+                console.error(`Failed to send offer text for order ${order.id}:`, await offerTextResponse.text());
+              }
+            }
+          }
           
           // Update order with recovery message count
           await supabase
