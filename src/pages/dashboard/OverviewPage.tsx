@@ -1,38 +1,66 @@
 import { Client } from '@/hooks/useClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, ShoppingCart, Users, DollarSign, Bot } from 'lucide-react';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { SalesChart } from '@/components/dashboard/SalesChart';
+import { RecentOrdersCard } from '@/components/dashboard/RecentOrdersCard';
+import { FunnelInsightsCard } from '@/components/dashboard/FunnelInsightsCard';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface OverviewPageProps {
   client: Client;
 }
 
 export const OverviewPage = ({ client }: OverviewPageProps) => {
-  const stats = [
+  const { data: stats, isLoading } = useDashboardStats(client.id);
+
+  const formatPrice = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
+  const formatChange = (value: number, isPercent = true) => {
+    const sign = value >= 0 ? '+' : '';
+    if (isPercent) {
+      return `${sign}${value.toFixed(0)}%`;
+    }
+    return `${sign}${value}`;
+  };
+
+  const statsCards = [
     { 
       label: 'Vendas Hoje', 
-      value: 'R$ 0,00', 
-      change: '+0%', 
+      value: isLoading ? null : formatPrice(stats?.salesToday || 0),
+      change: stats?.salesChange || 0,
+      changeLabel: 'vs ontem',
       icon: DollarSign,
       color: 'text-success'
     },
     { 
       label: 'Pedidos', 
-      value: '0', 
-      change: '+0%', 
+      value: isLoading ? null : String(stats?.ordersTotal || 0),
+      change: stats?.ordersChange || 0,
+      changeLabel: 'vs ontem',
       icon: ShoppingCart,
       color: 'text-primary'
     },
     { 
       label: 'Clientes', 
-      value: '0', 
-      change: '+0%', 
+      value: isLoading ? null : String(stats?.customersTotal || 0),
+      change: stats?.customersNew || 0,
+      changeLabel: 'novos hoje',
+      isPercent: false,
       icon: Users,
       color: 'text-telegram'
     },
     { 
       label: 'Taxa de Conversão', 
-      value: '0%', 
-      change: '+0%', 
+      value: isLoading ? null : `${(stats?.conversionRate || 0).toFixed(0)}%`,
+      change: stats?.conversionChange || 0,
+      changeLabel: 'vs ontem',
       icon: TrendingUp,
       color: 'text-warning'
     },
@@ -55,7 +83,7 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => (
+        {statsCards.map((stat) => (
           <Card key={stat.label} className="glass-card hover-scale">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -64,11 +92,31 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
               <stat.icon className={`w-4 h-4 ${stat.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-success">{stat.change} vs ontem</p>
+              {stat.value === null ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <p className={cn(
+                    "text-xs",
+                    stat.change >= 0 ? "text-success" : "text-destructive"
+                  )}>
+                    {formatChange(stat.change, stat.isPercent !== false)} {stat.changeLabel}
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Chart */}
+      <SalesChart clientId={client.id} />
+
+      {/* Bottom Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RecentOrdersCard clientId={client.id} />
+        <FunnelInsightsCard clientId={client.id} />
       </div>
 
       {/* Quick Actions */}
