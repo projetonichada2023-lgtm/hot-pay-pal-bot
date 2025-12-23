@@ -87,7 +87,7 @@ const CookiePolicy = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">7. Contato</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Dúvidas sobre cookies? Entre em contato: suporte@unipay.com.br
+              Dúvidas sobre cookies? Entre em contato: suporte@telegateway.com.br
             </p>
           </section>
         </div>
