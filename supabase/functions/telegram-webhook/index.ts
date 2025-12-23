@@ -167,6 +167,30 @@ async function getProducts(clientId: string) {
   return data || [];
 }
 
+async function getClientSettings(clientId: string) {
+  const { data } = await supabase
+    .from('client_settings')
+    .select('*')
+    .eq('client_id', clientId)
+    .maybeSingle();
+  
+  return data;
+}
+
+async function getUpsellProducts(clientId: string, excludeProductId: string, limit: number = 3) {
+  const { data } = await supabase
+    .from('products')
+    .select('*')
+    .eq('client_id', clientId)
+    .eq('is_active', true)
+    .neq('id', excludeProductId)
+    .order('is_hot', { ascending: false })
+    .order('sales_count', { ascending: false })
+    .limit(limit);
+  
+  return data || [];
+}
+
 async function getProduct(productId: string) {
   const { data } = await supabase
     .from('products')
@@ -512,6 +536,9 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
       `${deliveredMessage || '📦 Produto entregue!'}\n\n${deliveryMessages.join('\n\n')}`,
       { inline_keyboard: [[{ text: '🛍️ Ver Mais Produtos', callback_data: 'products' }]] }
     );
+    
+    // Check for upsell
+    await handleUpsell(botToken, chatId, clientId, product.id);
   } else {
     await sendTelegramMessage(
       botToken, 
@@ -541,4 +568,39 @@ async function handleCancelOrder(botToken: string, chatId: number, clientId: str
   await editMessageText(botToken, chatId, messageId, cancelledMessage || '❌ Pedido cancelado.', {
     inline_keyboard: [[{ text: '🛍️ Ver Produtos', callback_data: 'products' }]]
   });
+}
+
+async function handleUpsell(botToken: string, chatId: number, clientId: string, purchasedProductId: string) {
+  // Check if upsell is enabled for this client
+  const settings = await getClientSettings(clientId);
+  
+  if (!settings?.upsell_enabled) {
+    return;
+  }
+  
+  // Get other products to suggest
+  const upsellProducts = await getUpsellProducts(clientId, purchasedProductId, 3);
+  
+  if (upsellProducts.length === 0) {
+    return;
+  }
+  
+  // Get custom upsell message
+  const upsellMessage = await getClientMessage(clientId, 'upsell');
+  
+  // Build keyboard with upsell products
+  const keyboard = upsellProducts.map(product => [{
+    text: `${product.is_hot ? '🔥 ' : ''}${product.name} - ${formatPrice(Number(product.price))}`,
+    callback_data: `product_${product.id}`
+  }]);
+  
+  keyboard.push([{ text: '❌ Não, obrigado', callback_data: 'menu' }]);
+  
+  // Send upsell message after a small delay effect
+  await sendTelegramMessage(
+    botToken,
+    chatId,
+    upsellMessage || '🔥 <b>Oferta Especial!</b>\n\nQue tal aproveitar e levar mais um produto? Confira nossas sugestões:',
+    { inline_keyboard: keyboard }
+  );
 }
