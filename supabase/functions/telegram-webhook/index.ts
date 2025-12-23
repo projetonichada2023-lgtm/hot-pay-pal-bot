@@ -377,6 +377,58 @@ async function generatePixFastsoft(secretKey: string, amount: number, orderId: s
   }
 }
 
+type FastsoftTransaction = {
+  id?: string;
+  status?: string;
+  paidAt?: string | null;
+  pix?: { qrcode?: string } | null;
+};
+
+function isFastsoftPaidStatus(status?: string | null) {
+  const s = String(status || '').toUpperCase();
+  if (!s) return false;
+  if (s.includes('WAIT')) return false;
+  return (
+    s === 'PAID' ||
+    s.includes('PAID') ||
+    s.includes('APPROVED') ||
+    s.includes('CONFIRMED') ||
+    s.includes('COMPLETED') ||
+    s.includes('SUCCESS')
+  );
+}
+
+async function getFastsoftTransaction(secretKey: string, transactionId: string): Promise<FastsoftTransaction | null> {
+  try {
+    const authHeader = 'Basic ' + btoa(`x:${secretKey}`);
+
+    const response = await fetch(`${FASTSOFT_API_URL}/api/user/transactions/${transactionId}`, {
+      method: 'GET',
+      headers: {
+        Authorization: authHeader,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const responseText = await response.text();
+    console.log('FastSoft get transaction status:', response.status);
+    console.log('FastSoft get transaction response:', responseText);
+
+    if (!response.ok) {
+      console.error('FastSoft get transaction error:', response.status, responseText);
+      return null;
+    }
+
+    const responseData = JSON.parse(responseText);
+    const transactionData = responseData.data || responseData;
+
+    return transactionData as FastsoftTransaction;
+  } catch (error) {
+    console.error('Error fetching FastSoft transaction:', error);
+    return null;
+  }
+}
+
 // Generate mock PIX (fallback)
 function generateMockPix(amount: number, orderId: string): { pixCode: string; qrCodeUrl: string; paymentId: string } {
   const pixCode = `00020126580014BR.GOV.BCB.PIX0136${crypto.randomUUID()}5204000053039865406${amount.toFixed(2)}5802BR5913LOJA DIGITAL6009SAO PAULO62070503***6304`;
@@ -935,9 +987,56 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
   }
 
   const customerId = (order as any).customer_id || null;
+  const paymentId = (order as any).payment_id as string | null;
 
-  // Update order to paid
-  await updateOrderStatus(orderId, 'paid', { paid_at: new Date().toISOString() });
+  // If this order was created via FastSoft, do NOT auto-confirm.
+  // We verify the payment status first.
+  const settings = await getClientSettings(clientId);
+  const shouldVerifyFastsoft =
+    !!paymentId &&
+    !paymentId.startsWith('MOCK_') &&
+    !!settings?.fastsoft_enabled &&
+    !!settings?.fastsoft_api_key;
+
+  if (shouldVerifyFastsoft) {
+    const checkingText = '🔎 Verificando pagamento...';
+    const checkingSent = await sendTelegramMessage(botToken, chatId, checkingText);
+    if (checkingSent?.result?.message_id) {
+      await saveMessage(clientId, chatId, customerId, 'outgoing', checkingText, checkingSent.result.message_id);
+    }
+
+    const tx = await getFastsoftTransaction(settings!.fastsoft_api_key, paymentId!);
+    const txStatus = (tx?.status || 'UNKNOWN') as string;
+
+    if (!tx) {
+      await sendTelegramMessage(botToken, chatId, '⚠️ Não consegui verificar seu pagamento agora. Tente novamente em instantes.');
+      return;
+    }
+
+    if (!isFastsoftPaidStatus(txStatus)) {
+      await sendTelegramMessage(
+        botToken,
+        chatId,
+        `⏳ Ainda não identificamos seu pagamento (status: ${txStatus}).\n\nSe você acabou de pagar, aguarde alguns segundos e toque em "✅ Já Paguei" novamente.`
+      );
+      return;
+    }
+
+    // Confirm payment only when provider indicates it's paid.
+    await updateOrderStatus(orderId, 'paid', { paid_at: new Date().toISOString() });
+  } else {
+    // Demo / mock flow (keeps existing behavior for local tests)
+    if (paymentId?.startsWith('MOCK_')) {
+      await updateOrderStatus(orderId, 'paid', { paid_at: new Date().toISOString() });
+    } else {
+      await sendTelegramMessage(
+        botToken,
+        chatId,
+        '⏳ Aguardando confirmação automática do pagamento. Assim que o pagamento for identificado, eu envio seu produto por aqui.'
+      );
+      return;
+    }
+  }
 
   const paymentSuccessMessage = await getClientMessage(clientId, 'payment_success');
   const paymentText = paymentSuccessMessage || '✅ Pagamento confirmado!';
