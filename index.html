@@ -40,11 +40,22 @@
     <meta name="format-detection" content="telephone=no" />
     
     <!-- Performance & Preconnect -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://images.unsplash.com" />
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
+    
+    <!-- Preload critical font -->
+    <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/spacegrotesk/v16/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj7oUXskPMBBSSJLm2E.woff2" crossorigin />
+    
+    <!-- Critical CSS for above-the-fold content -->
+    <style>
+      /* Inline critical CSS for faster first paint */
+      body { margin: 0; font-family: 'Space Grotesk', system-ui, sans-serif; }
+      #root { min-height: 100vh; }
+      .loading-skeleton { background: linear-gradient(90deg, #1a1a2e 25%, #16213e 50%, #1a1a2e 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+      @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    </style>
     
     <!-- Structured Data / JSON-LD -->
     <script type="application/ld+json">
