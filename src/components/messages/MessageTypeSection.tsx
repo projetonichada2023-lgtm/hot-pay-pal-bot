@@ -3,14 +3,29 @@ import { BotMessage, MessageButton } from '@/hooks/useBotMessages';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, ChevronDown, FileText } from 'lucide-react';
+import { Plus, ChevronDown, GripVertical } from 'lucide-react';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { MessageCard } from './MessageCard';
 import { MessageTemplates } from './MessageTemplates';
+import { SortableMessageCard } from './SortableMessageCard';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 interface MessageConfig {
   label: string;
@@ -29,8 +44,7 @@ interface MessageTypeSectionProps {
   onAddMessageWithContent: (content: string, buttons?: MessageButton[]) => void;
   onUpdateMessage: (id: string, updates: Partial<BotMessage>) => Promise<void>;
   onDeleteMessage: (id: string) => Promise<void>;
-  onMoveUp: (index: number) => void;
-  onMoveDown: (index: number) => void;
+  onReorderMessages: (updates: { id: string; display_order: number }[]) => Promise<void>;
   onMediaUpload: (file: File) => Promise<string | null>;
   isPending: boolean;
   isCreating: boolean;
@@ -46,8 +60,7 @@ export const MessageTypeSection = ({
   onAddMessageWithContent,
   onUpdateMessage,
   onDeleteMessage,
-  onMoveUp,
-  onMoveDown,
+  onReorderMessages,
   onMediaUpload,
   isPending,
   isCreating,
@@ -55,11 +68,33 @@ export const MessageTypeSection = ({
   const sortedMessages = [...messages].sort((a, b) => a.display_order - b.display_order);
   const activeCount = messages.filter(m => m.is_active).length;
 
-  const handleTemplateSelect = (content: string, buttons?: Array<{ text: string; type: 'callback' | 'url'; value: string }>) => {
-    if (messages.length === 0) {
-      // Create new message with template content
-      onAddMessageWithContent(content, buttons as MessageButton[]);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = sortedMessages.findIndex((m) => m.id === active.id);
+      const newIndex = sortedMessages.findIndex((m) => m.id === over.id);
+
+      const newOrder = arrayMove(sortedMessages, oldIndex, newIndex);
+      const updates = newOrder.map((m, i) => ({ id: m.id, display_order: i + 1 }));
+      
+      await onReorderMessages(updates);
     }
+  };
+
+  const handleTemplateSelect = (content: string, buttons?: Array<{ text: string; type: 'callback' | 'url'; value: string }>) => {
+    onAddMessageWithContent(content, buttons as MessageButton[]);
   };
 
   return (
@@ -98,21 +133,19 @@ export const MessageTypeSection = ({
               </div>
 
               <div className="flex items-center gap-3">
-                {config.allowMultiple && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAddMessage();
-                    }}
-                    disabled={isCreating}
-                    className="hidden sm:flex bg-secondary/50 hover:bg-secondary"
-                  >
-                    <Plus className="w-4 h-4 mr-1.5" />
-                    Nova Mensagem
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddMessage();
+                  }}
+                  disabled={isCreating}
+                  className="hidden sm:flex bg-secondary/50 hover:bg-secondary"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" />
+                  Nova Mensagem
+                </Button>
                 <div className={`p-2 rounded-lg bg-secondary/50 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
                   <ChevronDown className="w-5 h-5 text-muted-foreground" />
                 </div>
@@ -124,18 +157,16 @@ export const MessageTypeSection = ({
         <CollapsibleContent>
           <CardContent className="pt-0 space-y-4">
             {/* Mobile add button */}
-            {config.allowMultiple && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onAddMessage}
-                disabled={isCreating}
-                className="w-full sm:hidden"
-              >
-                <Plus className="w-4 h-4 mr-1.5" />
-                Nova Mensagem
-              </Button>
-            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAddMessage}
+              disabled={isCreating}
+              className="w-full sm:hidden"
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
+              Nova Mensagem
+            </Button>
 
             {messages.length === 0 ? (
               <div className="text-center py-12 px-4">
@@ -150,32 +181,64 @@ export const MessageTypeSection = ({
                     messageType={messageType} 
                     onSelectTemplate={handleTemplateSelect} 
                   />
-                  {config.allowMultiple && (
-                    <Button variant="outline" onClick={onAddMessage} disabled={isCreating}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Criar do Zero
-                    </Button>
-                  )}
+                  <Button variant="outline" onClick={onAddMessage} disabled={isCreating}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar do Zero
+                  </Button>
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
-                {sortedMessages.map((message, index) => (
-                  <MessageCard
-                    key={message.id}
-                    message={message}
-                    index={index}
-                    totalCount={sortedMessages.length}
-                    onUpdate={onUpdateMessage}
-                    onDelete={onDeleteMessage}
-                    onMoveUp={() => onMoveUp(index)}
-                    onMoveDown={() => onMoveDown(index)}
-                    onMediaUpload={onMediaUpload}
-                    isPending={isPending}
-                    allowDelete={sortedMessages.length > 1}
-                    showOrder={sortedMessages.length > 1}
-                  />
-                ))}
+              <div className="space-y-3 pl-0 sm:pl-8">
+                {sortedMessages.length > 1 && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-2 pb-2">
+                    <GripVertical className="h-3 w-3" />
+                    Arraste para reordenar as mensagens
+                  </p>
+                )}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={sortedMessages.map(m => m.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {sortedMessages.map((message, index) => (
+                      <SortableMessageCard
+                        key={message.id}
+                        message={message}
+                        index={index}
+                        totalCount={sortedMessages.length}
+                        onUpdate={onUpdateMessage}
+                        onDelete={onDeleteMessage}
+                        onMediaUpload={onMediaUpload}
+                        isPending={isPending}
+                        allowDelete={true}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+
+                {/* Add more button */}
+                <div className="pt-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <MessageTemplates 
+                      messageType={messageType} 
+                      onSelectTemplate={handleTemplateSelect} 
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={onAddMessage} 
+                      disabled={isCreating}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <Plus className="w-4 h-4 mr-1.5" />
+                      Mensagem em branco
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>

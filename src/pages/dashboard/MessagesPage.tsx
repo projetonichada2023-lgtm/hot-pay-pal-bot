@@ -46,79 +46,79 @@ const messageLabels: Record<string, MessageConfig> = {
     label: 'Catálogo', 
     description: 'Apresentação dos produtos disponíveis',
     icon: '📦',
-    allowMultiple: false,
+    allowMultiple: true,
   },
   product_detail: { 
     label: 'Detalhe do Produto', 
     description: 'Informações detalhadas de cada produto',
     icon: '🏷️',
-    allowMultiple: false,
+    allowMultiple: true,
   },
   pix_generated: { 
     label: 'PIX Gerado', 
     description: 'Código PIX para pagamento',
     icon: '💳',
-    allowMultiple: false,
+    allowMultiple: true,
   },
   payment_confirmed: { 
     label: 'Pagamento Confirmado', 
     description: 'Confirmação após aprovação do pagamento',
     icon: '✅',
-    allowMultiple: false,
+    allowMultiple: true,
   },
   delivery: { 
     label: 'Entrega', 
     description: 'Link de acesso ao produto digital',
     icon: '📦',
-    allowMultiple: false,
+    allowMultiple: true,
   },
   thank_you: { 
     label: 'Agradecimento', 
     description: 'Mensagem de pós-venda e fidelização',
     icon: '❤️',
-    allowMultiple: false,
+    allowMultiple: true,
   },
   order_created: { 
     label: 'Pedido Criado', 
     description: 'Confirmação de criação do pedido',
     icon: '🛒',
-    allowMultiple: false,
+    allowMultiple: true,
   },
   order_cancelled: { 
     label: 'Pedido Cancelado', 
     description: 'Aviso de cancelamento do pedido',
     icon: '❌',
-    allowMultiple: false,
+    allowMultiple: true,
   },
   cart_reminder: { 
     label: 'Lembrete de Carrinho', 
     description: 'Recuperação de pedidos abandonados',
     icon: '⏰',
-    allowMultiple: false,
+    allowMultiple: true,
   },
   upsell: { 
     label: 'Upsell', 
     description: 'Oferta adicional após compra',
     icon: '🔥',
-    allowMultiple: false,
+    allowMultiple: true,
   },
   downsell: { 
     label: 'Downsell', 
     description: 'Oferta alternativa se recusar upsell',
     icon: '💡',
-    allowMultiple: false,
+    allowMultiple: true,
   },
   support: { 
     label: 'Suporte', 
     description: 'Mensagem de atendimento ao cliente',
     icon: '💬',
-    allowMultiple: false,
+    allowMultiple: true,
   },
   no_products: { 
     label: 'Sem Produtos', 
     description: 'Quando não há produtos disponíveis',
     icon: '😕',
-    allowMultiple: false,
+    allowMultiple: true,
   },
 };
 
@@ -203,25 +203,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
     }
   };
 
-  const handleMoveUp = async (messageType: string, msgs: BotMessage[], index: number) => {
-    if (index === 0) return;
-    const sorted = [...msgs].sort((a, b) => a.display_order - b.display_order);
-    const newMessages = [...sorted];
-    [newMessages[index - 1], newMessages[index]] = [newMessages[index], newMessages[index - 1]];
-    const updates = newMessages.map((m, i) => ({ id: m.id, display_order: i + 1 }));
-    try {
-      await reorderMessages.mutateAsync(updates);
-    } catch (error) {
-      toast({ title: 'Erro ao reordenar', variant: 'destructive' });
-    }
-  };
-
-  const handleMoveDown = async (messageType: string, msgs: BotMessage[], index: number) => {
-    const sorted = [...msgs].sort((a, b) => a.display_order - b.display_order);
-    if (index === sorted.length - 1) return;
-    const newMessages = [...sorted];
-    [newMessages[index], newMessages[index + 1]] = [newMessages[index + 1], newMessages[index]];
-    const updates = newMessages.map((m, i) => ({ id: m.id, display_order: i + 1 }));
+  const handleReorderMessages = async (updates: { id: string; display_order: number }[]) => {
     try {
       await reorderMessages.mutateAsync(updates);
     } catch (error) {
@@ -410,8 +392,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
                     onAddMessageWithContent={(content, buttons) => handleAddMessageWithContent(messageType, typeMessages, content, buttons)}
                     onUpdateMessage={handleUpdateMessage}
                     onDeleteMessage={handleDeleteMessage}
-                    onMoveUp={(index) => handleMoveUp(messageType, typeMessages, index)}
-                    onMoveDown={(index) => handleMoveDown(messageType, typeMessages, index)}
+                    onReorderMessages={handleReorderMessages}
                     onMediaUpload={handleMediaUpload}
                     isPending={updateMessage.isPending}
                     isCreating={createMessage.isPending}
