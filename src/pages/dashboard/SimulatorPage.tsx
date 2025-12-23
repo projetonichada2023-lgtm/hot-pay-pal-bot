@@ -50,11 +50,11 @@ export const SimulatorPage = ({ client }: SimulatorPageProps) => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Smartphone className="w-6 h-6 text-primary" />
+        <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+          <Smartphone className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
           Simulador do Bot
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm sm:text-base text-muted-foreground">
           Teste o fluxo completo de vendas antes de publicar
         </p>
       </div>
@@ -64,14 +64,15 @@ export const SimulatorPage = ({ client }: SimulatorPageProps) => {
         <div className="space-y-3">
           {!hasProducts && (
             <Alert variant="destructive" className="border-destructive/50">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Nenhum produto cadastrado</AlertTitle>
-              <AlertDescription className="flex items-center justify-between">
-                <span>Cadastre pelo menos um produto para testar o fluxo de vendas.</span>
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <AlertTitle className="text-sm">Nenhum produto cadastrado</AlertTitle>
+              <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
+                <span className="text-xs sm:text-sm">Cadastre pelo menos um produto para testar.</span>
                 <Button 
                   size="sm" 
                   variant="outline"
                   onClick={() => navigate('/dashboard/products')}
+                  className="w-full sm:w-auto shrink-0"
                 >
                   Cadastrar Produto
                 </Button>
@@ -80,14 +81,15 @@ export const SimulatorPage = ({ client }: SimulatorPageProps) => {
           )}
           {!hasMinimumMessages && (
             <Alert className="border-warning/50 bg-warning/10">
-              <Info className="h-4 w-4 text-warning" />
-              <AlertTitle className="text-warning">Mensagens não configuradas</AlertTitle>
-              <AlertDescription className="flex items-center justify-between">
-                <span>Configure as mensagens do bot para uma simulação mais realista.</span>
+              <Info className="h-4 w-4 text-warning shrink-0" />
+              <AlertTitle className="text-warning text-sm">Mensagens não configuradas</AlertTitle>
+              <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
+                <span className="text-xs sm:text-sm">Configure as mensagens para simulação realista.</span>
                 <Button 
                   size="sm" 
                   variant="outline"
                   onClick={() => navigate('/dashboard/messages')}
+                  className="w-full sm:w-auto shrink-0"
                 >
                   Configurar Mensagens
                 </Button>
@@ -97,14 +99,14 @@ export const SimulatorPage = ({ client }: SimulatorPageProps) => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Simulator */}
-        <div className="lg:col-span-2">
+      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6">
+        {/* Simulator - Full width on mobile, 2 cols on desktop */}
+        <div className="lg:col-span-2 order-1">
           <BotSimulator clientId={client.id} />
         </div>
 
-        {/* Status sidebar */}
-        <div className="space-y-4">
+        {/* Status sidebar - Below simulator on mobile */}
+        <div className="space-y-4 order-2 lg:order-2">
           {/* Flow status */}
           <Card className="glass-card">
             <CardHeader className="pb-3">
