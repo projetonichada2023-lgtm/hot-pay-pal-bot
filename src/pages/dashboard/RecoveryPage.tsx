@@ -24,6 +24,7 @@ import { ptBR } from "date-fns/locale";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableRecoveryMessage } from "@/components/recovery/SortableRecoveryMessage";
+import { RecoveryTelegramPreview } from "@/components/recovery/RecoveryTelegramPreview";
 
 interface RecoveryPageProps {
   client: Client;
@@ -133,189 +134,216 @@ const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId
     }
   };
 
+  // Get selected offer product details
+  const selectedOfferProduct = offerProductId 
+    ? products.find(p => p.id === offerProductId) 
+    : null;
+
   return (
     <Card className="border-2 border-primary/20">
       <CardContent className="pt-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="delay" className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-primary" />
-              Tempo de espera
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                id="delay"
-                type="number"
-                min="1"
-                value={delayValue}
-                onChange={(e) => setDelayValue(e.target.value)}
-                placeholder="30"
-                className="flex-1"
-              />
-              <Select value={timeUnit} onValueChange={(v: 'minutes' | 'hours' | 'days') => setTimeUnit(v)}>
-                <SelectTrigger className="w-28">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="minutes">Minutos</SelectItem>
-                  <SelectItem value="hours">Horas</SelectItem>
-                  <SelectItem value="days">Dias</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Tempo após o pedido (ou última mensagem)
-            </p>
-          </div>
-          
-          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-            <div>
-              <Label>Ativo</Label>
-              <p className="text-xs text-muted-foreground">
-                Habilitar esta mensagem
-              </p>
-            </div>
-            <Switch checked={isActive} onCheckedChange={setIsActive} />
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Form Section */}
+          <div className="lg:col-span-2 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="delay" className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary" />
+                  Tempo de espera
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="delay"
+                    type="number"
+                    min="1"
+                    value={delayValue}
+                    onChange={(e) => setDelayValue(e.target.value)}
+                    placeholder="30"
+                    className="flex-1"
+                  />
+                  <Select value={timeUnit} onValueChange={(v: 'minutes' | 'hours' | 'days') => setTimeUnit(v)}>
+                    <SelectTrigger className="w-28">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="minutes">Minutos</SelectItem>
+                      <SelectItem value="hours">Horas</SelectItem>
+                      <SelectItem value="days">Dias</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Tempo após o pedido (ou última mensagem)
+                </p>
+              </div>
+              
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div>
+                  <Label>Ativo</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Habilitar esta mensagem
+                  </p>
+                </div>
+                <Switch checked={isActive} onCheckedChange={setIsActive} />
+              </div>
 
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Upload className="w-4 h-4 text-primary" />
-              Mídia (opcional)
-            </Label>
-            <div className="flex gap-2">
-              <label className="flex-1">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleFileUpload(e, 'image')}
-                  disabled={isUploading}
-                />
-                <Button variant="outline" size="sm" className="w-full" asChild disabled={isUploading}>
-                  <span>
-                    <Image className="w-4 h-4 mr-1" />
-                    Imagem
-                  </span>
-                </Button>
-              </label>
-              <label className="flex-1">
-                <input
-                  type="file"
-                  accept="audio/*"
-                  className="hidden"
-                  onChange={(e) => handleFileUpload(e, 'audio')}
-                  disabled={isUploading}
-                />
-                <Button variant="outline" size="sm" className="w-full" asChild disabled={isUploading}>
-                  <span>
-                    <Music className="w-4 h-4 mr-1" />
-                    Áudio
-                  </span>
-                </Button>
-              </label>
-            </div>
-            {isUploading && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Enviando...
-              </p>
-            )}
-            {mediaUrl && (
-              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                {mediaType === 'image' ? (
-                  <img src={mediaUrl} alt="Preview" className="w-12 h-12 object-cover rounded" />
-                ) : (
-                  <div className="w-12 h-12 bg-primary/10 rounded flex items-center justify-center">
-                    <Music className="w-6 h-6 text-primary" />
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-primary" />
+                  Mídia (opcional)
+                </Label>
+                <div className="flex gap-2">
+                  <label className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(e, 'image')}
+                      disabled={isUploading}
+                    />
+                    <Button variant="outline" size="sm" className="w-full" asChild disabled={isUploading}>
+                      <span>
+                        <Image className="w-4 h-4 mr-1" />
+                        Imagem
+                      </span>
+                    </Button>
+                  </label>
+                  <label className="flex-1">
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(e, 'audio')}
+                      disabled={isUploading}
+                    />
+                    <Button variant="outline" size="sm" className="w-full" asChild disabled={isUploading}>
+                      <span>
+                        <Music className="w-4 h-4 mr-1" />
+                        Áudio
+                      </span>
+                    </Button>
+                  </label>
+                </div>
+                {isUploading && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Enviando...
+                  </p>
+                )}
+                {mediaUrl && (
+                  <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                    {mediaType === 'image' ? (
+                      <img src={mediaUrl} alt="Preview" className="w-12 h-12 object-cover rounded" />
+                    ) : (
+                      <div className="w-12 h-12 bg-primary/10 rounded flex items-center justify-center">
+                        <Music className="w-6 h-6 text-primary" />
+                      </div>
+                    )}
+                    <span className="text-xs text-muted-foreground flex-1 truncate">
+                      {mediaType === 'image' ? 'Imagem' : 'Áudio'} anexado
+                    </span>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={removeMedia}>
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
                 )}
-                <span className="text-xs text-muted-foreground flex-1 truncate">
-                  {mediaType === 'image' ? 'Imagem' : 'Áudio'} anexado
-                </span>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={removeMedia}>
-                  <X className="w-4 h-4" />
-                </Button>
               </div>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="content" className="flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-primary" />
-            Conteúdo da Mensagem
-          </Label>
-          <Textarea
-            id="content"
-            value={messageContent}
-            onChange={(e) => setMessageContent(e.target.value)}
-            rows={5}
-            placeholder="Digite a mensagem de recuperação..."
-          />
-          <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
-            <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-            <p className="text-xs text-muted-foreground">
-              Variáveis disponíveis: <code className="bg-muted px-1 rounded">{"{nome}"}</code> (nome do cliente), 
-              <code className="bg-muted px-1 rounded ml-1">{"{produto}"}</code> (nome do produto), 
-              <code className="bg-muted px-1 rounded ml-1">{"{valor}"}</code> (valor do pedido)
-            </p>
-          </div>
-        </div>
-
-        {/* Product Offer Section */}
-        <div className="space-y-4 p-4 border border-dashed border-primary/30 rounded-lg bg-primary/5">
-          <div className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-primary" />
-            <Label className="text-base font-medium">Oferecer Produto (opcional)</Label>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Envie uma oferta de produto junto com a mensagem de recuperação para aumentar as conversões.
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Produto para oferecer</Label>
-              <Select 
-                value={offerProductId || "none"} 
-                onValueChange={(v) => setOfferProductId(v === "none" ? null : v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um produto" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum (não oferecer produto)</SelectItem>
-                  {products.map((product) => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.name} - R$ {product.price.toFixed(2).replace(".", ",")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
 
-            {offerProductId && (
-              <div className="space-y-2">
-                <Label>Mensagem da oferta</Label>
-                <Input
-                  value={offerMessage}
-                  onChange={(e) => setOfferMessage(e.target.value)}
-                  placeholder="🔥 Aproveite também esta oferta especial:"
-                />
+            <div className="space-y-2">
+              <Label htmlFor="content" className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-primary" />
+                Conteúdo da Mensagem
+              </Label>
+              <Textarea
+                id="content"
+                value={messageContent}
+                onChange={(e) => setMessageContent(e.target.value)}
+                rows={5}
+                placeholder="Digite a mensagem de recuperação..."
+              />
+              <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
+                <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  Variáveis disponíveis: <code className="bg-muted px-1 rounded">{"{nome}"}</code> (nome do cliente), 
+                  <code className="bg-muted px-1 rounded ml-1">{"{produto}"}</code> (nome do produto), 
+                  <code className="bg-muted px-1 rounded ml-1">{"{valor}"}</code> (valor do pedido)
+                </p>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        <div className="flex gap-2 justify-end">
-          <Button variant="outline" onClick={onCancel}>
-            <X className="w-4 h-4 mr-2" />
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={isUploading}>
-            <Save className="w-4 h-4 mr-2" />
-            Salvar
-          </Button>
+            {/* Product Offer Section */}
+            <div className="space-y-4 p-4 border border-dashed border-primary/30 rounded-lg bg-primary/5">
+              <div className="flex items-center gap-2">
+                <Package className="w-5 h-5 text-primary" />
+                <Label className="text-base font-medium">Oferecer Produto (opcional)</Label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Envie uma oferta de produto junto com a mensagem de recuperação para aumentar as conversões.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Produto para oferecer</Label>
+                  <Select 
+                    value={offerProductId || "none"} 
+                    onValueChange={(v) => setOfferProductId(v === "none" ? null : v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um produto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum (não oferecer produto)</SelectItem>
+                      {products.map((product) => (
+                        <SelectItem key={product.id} value={product.id}>
+                          {product.name} - R$ {product.price.toFixed(2).replace(".", ",")}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {offerProductId && (
+                  <div className="space-y-2">
+                    <Label>Mensagem da oferta</Label>
+                    <Input
+                      value={offerMessage}
+                      onChange={(e) => setOfferMessage(e.target.value)}
+                      placeholder="🔥 Aproveite também esta oferta especial:"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={onCancel}>
+                <X className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+              <Button onClick={handleSave} disabled={isUploading}>
+                <Save className="w-4 h-4 mr-2" />
+                Salvar
+              </Button>
+            </div>
+          </div>
+
+          {/* Preview Section */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-4">
+              <RecoveryTelegramPreview
+                content={messageContent}
+                mediaUrl={mediaUrl}
+                mediaType={mediaType}
+                offerProduct={selectedOfferProduct ? {
+                  name: selectedOfferProduct.name,
+                  price: selectedOfferProduct.price,
+                  image_url: (selectedOfferProduct as any).image_url
+                } : null}
+                offerMessage={offerMessage}
+              />
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
