@@ -68,7 +68,15 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
 
   const statsCards = [
     { 
-      label: 'Vendas', 
+      label: 'Pedidos Pagos', 
+      value: isLoading ? null : String(stats?.paidOrdersCount || 0),
+      change: stats?.paidOrdersChange || 0,
+      changeLabel: 'vs período anterior',
+      icon: CheckCircle,
+      color: 'text-success'
+    },
+    { 
+      label: 'Valor Pago', 
       value: isLoading ? null : formatPrice(stats?.salesTotal || 0),
       change: stats?.salesChange || 0,
       changeLabel: 'vs período anterior',
@@ -76,20 +84,12 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       color: 'text-success'
     },
     { 
-      label: 'Pedidos', 
+      label: 'Total Pedidos', 
       value: isLoading ? null : String(stats?.ordersTotal || 0),
       change: stats?.ordersChange || 0,
       changeLabel: 'vs período anterior',
       icon: ShoppingCart,
       color: 'text-primary'
-    },
-    { 
-      label: 'Pedidos Pagos', 
-      value: isLoading ? null : `${stats?.paidOrdersCount || 0} (${formatPrice(stats?.salesTotal || 0)})`,
-      change: stats?.paidOrdersChange || 0,
-      changeLabel: 'vs período anterior',
-      icon: CheckCircle,
-      color: 'text-success'
     },
     { 
       label: 'Clientes', 
