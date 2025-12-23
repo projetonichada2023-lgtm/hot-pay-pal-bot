@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Client } from '@/hooks/useClient';
 import { useTelegramConversations, ChatConversation, TelegramMessage } from '@/hooks/useTelegramMessages';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MessageCircle, User, Send, ArrowLeft } from 'lucide-react';
-import { format, isToday, isYesterday } from 'date-fns';
+import { Input } from '@/components/ui/input';
+import { Loader2, MessageCircle, User, ArrowLeft, Search, Clock, CheckCheck } from 'lucide-react';
+import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -15,15 +16,31 @@ interface ChatsPageProps {
   client: Client;
 }
 
-function formatMessageDate(dateStr: string): string {
+function formatMessageTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  return format(date, 'HH:mm', { locale: ptBR });
+}
+
+function formatConversationDate(dateStr: string): string {
   const date = new Date(dateStr);
   if (isToday(date)) {
     return format(date, 'HH:mm', { locale: ptBR });
   }
   if (isYesterday(date)) {
-    return 'Ontem ' + format(date, 'HH:mm', { locale: ptBR });
+    return 'Ontem';
   }
-  return format(date, 'dd/MM HH:mm', { locale: ptBR });
+  return format(date, 'dd/MM', { locale: ptBR });
+}
+
+function formatDateSeparator(dateStr: string): string {
+  const date = new Date(dateStr);
+  if (isToday(date)) {
+    return 'Hoje';
+  }
+  if (isYesterday(date)) {
+    return 'Ontem';
+  }
+  return format(date, "d 'de' MMMM", { locale: ptBR });
 }
 
 function getInitials(name: string): string {
@@ -38,6 +55,20 @@ function getInitials(name: string): string {
 export const ChatsPage = ({ client }: ChatsPageProps) => {
   const { data: conversations, isLoading } = useTelegramConversations(client.id);
   const [selectedChat, setSelectedChat] = useState<ChatConversation | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const filteredConversations = conversations?.filter(conv => 
+    conv.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    conv.customer_username?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (selectedChat && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [selectedChat?.messages]);
 
   if (isLoading) {
     return (
@@ -61,12 +92,19 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
             Visualize as conversas do seu bot com os clientes
           </p>
         </div>
+        {hasConversations && (
+          <Badge variant="secondary" className="text-sm">
+            {conversations.length} conversa{conversations.length !== 1 && 's'}
+          </Badge>
+        )}
       </div>
 
       {!hasConversations ? (
         <Card className="glass-card">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <MessageCircle className="w-12 h-12 text-muted-foreground mb-4" />
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <MessageCircle className="w-8 h-8 text-primary" />
+            </div>
             <h3 className="text-lg font-semibold mb-2">Nenhuma conversa ainda</h3>
             <p className="text-muted-foreground text-center max-w-md">
               As conversas aparecerão aqui quando clientes interagirem com seu bot no Telegram.
@@ -76,43 +114,52 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-220px)] min-h-[500px]">
           {/* Conversations List */}
-          <Card className={cn("glass-card lg:col-span-1", selectedChat && "hidden lg:block")}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Conversas ({conversations.length})</CardTitle>
+          <Card className={cn("glass-card lg:col-span-1 overflow-hidden", selectedChat && "hidden lg:flex lg:flex-col")}>
+            <CardHeader className="pb-3 border-b shrink-0">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar conversa..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 bg-secondary/50"
+                />
+              </div>
             </CardHeader>
-            <CardContent className="p-0">
-              <ScrollArea className="h-[calc(100vh-320px)] min-h-[400px]">
-                <div className="space-y-1 px-2 pb-2">
-                  {conversations.map((conv) => (
+            <CardContent className="p-0 flex-1 overflow-hidden">
+              <ScrollArea className="h-full">
+                <div className="divide-y divide-border/50">
+                  {filteredConversations?.map((conv) => (
                     <button
                       key={conv.customer_id}
                       onClick={() => setSelectedChat(conv)}
                       className={cn(
-                        "w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left",
-                        "hover:bg-secondary/80",
+                        "w-full flex items-center gap-3 p-4 transition-colors text-left",
+                        "hover:bg-secondary/60",
                         selectedChat?.customer_id === conv.customer_id && "bg-secondary"
                       )}
                     >
-                      <Avatar className="h-10 w-10 shrink-0">
-                        <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                      <Avatar className="h-12 w-12 shrink-0 ring-2 ring-background">
+                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/5 text-primary text-sm font-medium">
                           {getInitials(conv.customer_name)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-medium text-sm truncate">
+                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                          <span className="font-semibold text-sm truncate">
                             {conv.customer_name}
                           </span>
-                          <span className="text-xs text-muted-foreground shrink-0">
-                            {formatMessageDate(conv.last_message_at)}
+                          <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatConversationDate(conv.last_message_at)}
                           </span>
                         </div>
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="text-xs text-muted-foreground truncate flex-1">
                             {conv.last_message || 'Sem mensagem'}
                           </p>
                           {conv.customer_username && (
-                            <Badge variant="outline" className="text-[10px] shrink-0">
+                            <Badge variant="outline" className="text-[10px] shrink-0 font-normal">
                               @{conv.customer_username}
                             </Badge>
                           )}
@@ -120,58 +167,88 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
                       </div>
                     </button>
                   ))}
+                  {filteredConversations?.length === 0 && (
+                    <div className="p-8 text-center text-muted-foreground">
+                      <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Nenhuma conversa encontrada</p>
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
             </CardContent>
           </Card>
 
           {/* Chat Messages */}
-          <Card className={cn("glass-card lg:col-span-2", !selectedChat && "hidden lg:flex lg:items-center lg:justify-center")}>
+          <Card className={cn(
+            "glass-card lg:col-span-2 flex flex-col overflow-hidden",
+            !selectedChat && "hidden lg:flex"
+          )}>
             {selectedChat ? (
               <>
                 {/* Chat Header */}
-                <CardHeader className="border-b pb-3">
+                <CardHeader className="border-b py-3 px-4 shrink-0">
                   <div className="flex items-center gap-3">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="lg:hidden"
+                      className="lg:hidden shrink-0"
                       onClick={() => setSelectedChat(null)}
                     >
                       <ArrowLeft className="h-5 w-5" />
                     </Button>
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-primary/10 text-primary">
+                    <Avatar className="h-10 w-10 ring-2 ring-background">
+                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-medium">
                         {getInitials(selectedChat.customer_name)}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <CardTitle className="text-base">{selectedChat.customer_name}</CardTitle>
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base truncate">{selectedChat.customer_name}</CardTitle>
                       {selectedChat.customer_username && (
                         <p className="text-xs text-muted-foreground">
                           @{selectedChat.customer_username}
                         </p>
                       )}
                     </div>
+                    <Badge variant="outline" className="shrink-0">
+                      {selectedChat.messages.length} mensagem{selectedChat.messages.length !== 1 && 's'}
+                    </Badge>
                   </div>
                 </CardHeader>
 
                 {/* Messages */}
-                <CardContent className="p-0 flex-1">
-                  <ScrollArea className="h-[calc(100vh-380px)] min-h-[350px]">
-                    <div className="flex flex-col gap-2 p-4">
-                      {selectedChat.messages.map((msg) => (
-                        <MessageBubble key={msg.id} message={msg} />
-                      ))}
+                <CardContent className="p-0 flex-1 overflow-hidden">
+                  <ScrollArea className="h-full">
+                    <div className="flex flex-col gap-1 p-4">
+                      {selectedChat.messages.map((msg, index) => {
+                        const prevMsg = selectedChat.messages[index - 1];
+                        const showDateSeparator = !prevMsg || !isSameDay(new Date(msg.created_at), new Date(prevMsg.created_at));
+                        
+                        return (
+                          <div key={msg.id}>
+                            {showDateSeparator && (
+                              <div className="flex items-center justify-center my-4">
+                                <div className="bg-secondary/80 text-muted-foreground text-xs px-3 py-1 rounded-full">
+                                  {formatDateSeparator(msg.created_at)}
+                                </div>
+                              </div>
+                            )}
+                            <MessageBubble message={msg} />
+                          </div>
+                        );
+                      })}
+                      <div ref={messagesEndRef} />
                     </div>
                   </ScrollArea>
                 </CardContent>
               </>
             ) : (
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <User className="w-12 h-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  Selecione uma conversa para visualizar
+              <CardContent className="flex flex-col items-center justify-center flex-1 py-12">
+                <div className="w-20 h-20 rounded-full bg-secondary/50 flex items-center justify-center mb-4">
+                  <User className="w-10 h-10 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-medium mb-1">Selecione uma conversa</h3>
+                <p className="text-muted-foreground text-sm text-center max-w-xs">
+                  Escolha uma conversa da lista para visualizar as mensagens
                 </p>
               </CardContent>
             )}
@@ -186,24 +263,27 @@ function MessageBubble({ message }: { message: TelegramMessage }) {
   const isOutgoing = message.direction === 'outgoing';
 
   return (
-    <div className={cn("flex", isOutgoing ? "justify-end" : "justify-start")}>
+    <div className={cn("flex mb-1", isOutgoing ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "max-w-[80%] rounded-2xl px-4 py-2 text-sm",
+          "max-w-[75%] rounded-2xl px-4 py-2.5 shadow-sm",
           isOutgoing
             ? "bg-primary text-primary-foreground rounded-br-md"
-            : "bg-secondary rounded-bl-md"
+            : "bg-secondary/80 rounded-bl-md"
         )}
       >
-        <p className="whitespace-pre-wrap break-words">{message.message_content}</p>
-        <p
-          className={cn(
-            "text-[10px] mt-1",
-            isOutgoing ? "text-primary-foreground/70" : "text-muted-foreground"
-          )}
-        >
-          {formatMessageDate(message.created_at)}
+        <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+          {message.message_content}
         </p>
+        <div className={cn(
+          "flex items-center justify-end gap-1 mt-1",
+          isOutgoing ? "text-primary-foreground/60" : "text-muted-foreground"
+        )}>
+          <span className="text-[10px]">
+            {formatMessageTime(message.created_at)}
+          </span>
+          {isOutgoing && <CheckCheck className="w-3 h-3" />}
+        </div>
       </div>
     </div>
   );
