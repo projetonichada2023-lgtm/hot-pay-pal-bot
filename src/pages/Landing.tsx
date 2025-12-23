@@ -1266,24 +1266,24 @@ export default function Landing() {
               <h4 className="font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <a href="#" className="hover:text-primary transition-colors">
+                  <Link to="/termos-de-uso" className="hover:text-primary transition-colors">
                     Termos de Uso
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-primary transition-colors">
+                  <Link to="/politica-de-privacidade" className="hover:text-primary transition-colors">
                     Política de Privacidade
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-primary transition-colors">
+                  <Link to="/politica-de-cookies" className="hover:text-primary transition-colors">
                     Política de Cookies
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-primary transition-colors">
+                  <Link to="/lgpd" className="hover:text-primary transition-colors">
                     LGPD
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
