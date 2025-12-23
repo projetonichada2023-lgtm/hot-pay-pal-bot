@@ -152,9 +152,22 @@ async function getClientMessage(clientId: string, messageType: string): Promise<
     .eq('client_id', clientId)
     .eq('message_type', messageType)
     .eq('is_active', true)
-    .maybeSingle();
+    .order('display_order', { ascending: true })
+    .limit(1);
   
-  return data?.message_content || '';
+  return data?.[0]?.message_content || '';
+}
+
+async function getClientMessages(clientId: string, messageType: string): Promise<string[]> {
+  const { data } = await supabase
+    .from('bot_messages')
+    .select('message_content')
+    .eq('client_id', clientId)
+    .eq('message_type', messageType)
+    .eq('is_active', true)
+    .order('display_order', { ascending: true });
+  
+  return data?.map(m => m.message_content) || [];
 }
 
 async function getOrCreateCustomer(clientId: string, telegramUser: any) {
@@ -432,13 +445,30 @@ serve(async (req) => {
 
       // Handle /start command
       if (text.startsWith('/start')) {
-        const welcomeMessage = await getClientMessage(clientId, 'welcome');
-        const msgText = welcomeMessage || '👋 Bem-vindo! Use o botão abaixo para ver nossos produtos.';
-        const sent = await sendTelegramMessage(botToken, chatId, msgText, {
-          inline_keyboard: [[{ text: '🛍️ Ver Produtos', callback_data: 'products' }]]
-        });
-        if (sent?.result?.message_id) {
-          await saveMessage(clientId, chatId, customer?.id || null, 'outgoing', msgText, sent.result.message_id);
+        const welcomeMessages = await getClientMessages(clientId, 'welcome');
+        
+        if (welcomeMessages.length > 0) {
+          // Send all welcome messages in sequence
+          for (const msgText of welcomeMessages) {
+            const sent = await sendTelegramMessage(botToken, chatId, msgText, 
+              // Only add button on the last message
+              welcomeMessages.indexOf(msgText) === welcomeMessages.length - 1 
+                ? { inline_keyboard: [[{ text: '🛍️ Ver Produtos', callback_data: 'products' }]] }
+                : undefined
+            );
+            if (sent?.result?.message_id) {
+              await saveMessage(clientId, chatId, customer?.id || null, 'outgoing', msgText, sent.result.message_id);
+            }
+          }
+        } else {
+          // Fallback message
+          const msgText = '👋 Bem-vindo! Use o botão abaixo para ver nossos produtos.';
+          const sent = await sendTelegramMessage(botToken, chatId, msgText, {
+            inline_keyboard: [[{ text: '🛍️ Ver Produtos', callback_data: 'products' }]]
+          });
+          if (sent?.result?.message_id) {
+            await saveMessage(clientId, chatId, customer?.id || null, 'outgoing', msgText, sent.result.message_id);
+          }
         }
       }
 
