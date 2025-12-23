@@ -30,10 +30,10 @@ const DEFAULT_WIDGETS: WidgetConfig[] = [
   { id: 'salesChart', label: 'Gráfico de Vendas', visible: true, order: 0 },
   { id: 'recentOrders', label: 'Pedidos Recentes', visible: true, order: 1 },
   { id: 'funnelInsights', label: 'Insights do Funil', visible: true, order: 2 },
-  { id: 'topProducts', label: 'Top Produtos', visible: true, order: 3 },
-  { id: 'orderStatus', label: 'Status dos Pedidos', visible: true, order: 4 },
-  { id: 'recentCustomers', label: 'Clientes Recentes', visible: true, order: 5 },
-  { id: 'salesByHour', label: 'Vendas por Hora', visible: true, order: 6 },
+  { id: 'topProducts', label: 'Top Produtos', visible: false, order: 3 },
+  { id: 'orderStatus', label: 'Status dos Pedidos', visible: false, order: 4 },
+  { id: 'recentCustomers', label: 'Clientes Recentes', visible: false, order: 5 },
+  { id: 'salesByHour', label: 'Vendas por Hora', visible: false, order: 6 },
 ];
 
 const METRICS_STORAGE_KEY = 'dashboard-metrics-preferences';
