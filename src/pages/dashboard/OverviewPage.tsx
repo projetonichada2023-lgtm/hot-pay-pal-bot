@@ -72,36 +72,36 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       value: isLoading ? null : String(stats?.ordersTotal || 0),
       change: stats?.ordersChange || 0,
       icon: ShoppingCart,
-      gradient: 'from-blue-500/20 to-cyan-500/20',
-      iconBg: 'bg-blue-500/20',
-      iconColor: 'text-blue-500'
+      gradient: 'from-primary/20 to-primary/5',
+      iconBg: 'bg-primary/20',
+      iconColor: 'text-primary'
     },
     { 
       label: 'Receita Total', 
       value: isLoading ? null : formatPrice(stats?.salesTotal || 0),
       change: stats?.salesChange || 0,
       icon: DollarSign,
-      gradient: 'from-emerald-500/20 to-green-500/20',
-      iconBg: 'bg-emerald-500/20',
-      iconColor: 'text-emerald-500'
+      gradient: 'from-success/20 to-success/5',
+      iconBg: 'bg-success/20',
+      iconColor: 'text-success'
     },
     { 
       label: 'Taxa de Conversão', 
       value: isLoading ? null : `${(stats?.conversionRate || 0).toFixed(1)}%`,
       change: stats?.conversionChange || 0,
       icon: TrendingUp,
-      gradient: 'from-amber-500/20 to-orange-500/20',
-      iconBg: 'bg-amber-500/20',
-      iconColor: 'text-amber-500'
+      gradient: 'from-warning/20 to-warning/5',
+      iconBg: 'bg-warning/20',
+      iconColor: 'text-warning'
     },
     { 
       label: 'Ticket Médio', 
       value: isLoading ? null : formatPrice(stats?.averageTicket || 0),
       change: stats?.averageTicketChange || 0,
       icon: Receipt,
-      gradient: 'from-violet-500/20 to-purple-500/20',
-      iconBg: 'bg-violet-500/20',
-      iconColor: 'text-violet-500'
+      gradient: 'from-accent/20 to-accent/5',
+      iconBg: 'bg-accent/20',
+      iconColor: 'text-accent'
     },
   ];
 
