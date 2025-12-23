@@ -1,6 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  playNotificationSound, 
+  showBrowserNotification, 
+  requestNotificationPermission 
+} from '@/lib/notifications';
 
 interface Notification {
   id: string;
@@ -19,7 +24,25 @@ interface NotificationCounts {
 export const useRealtimeNotifications = (clientId: string) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [counts, setCounts] = useState<NotificationCounts>({ orders: 0, chats: 0 });
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [browserNotificationsEnabled, setBrowserNotificationsEnabled] = useState(false);
   const { toast } = useToast();
+
+  // Request notification permission on mount
+  useEffect(() => {
+    const checkPermission = async () => {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        setBrowserNotificationsEnabled(true);
+      }
+    };
+    checkPermission();
+  }, []);
+
+  const enableBrowserNotifications = useCallback(async () => {
+    const granted = await requestNotificationPermission();
+    setBrowserNotificationsEnabled(granted);
+    return granted;
+  }, []);
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -28,7 +51,10 @@ export const useRealtimeNotifications = (clientId: string) => {
     }).format(value);
   };
 
-  const addNotification = useCallback((notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) => {
+  const addNotification = useCallback((
+    notification: Omit<Notification, 'id' | 'createdAt' | 'read'>,
+    soundType: 'order' | 'payment' | 'message' = 'order'
+  ) => {
     const newNotification: Notification = {
       ...notification,
       id: crypto.randomUUID(),
@@ -43,12 +69,24 @@ export const useRealtimeNotifications = (clientId: string) => {
       setCounts(prev => ({ ...prev, orders: prev.orders + 1 }));
     }
     
+    // Play sound
+    if (soundEnabled) {
+      playNotificationSound(soundType);
+    }
+
+    // Show browser notification
+    if (browserNotificationsEnabled) {
+      showBrowserNotification(notification.title, {
+        body: notification.message,
+      });
+    }
+    
     // Show toast
     toast({
       title: notification.title,
       description: notification.message,
     });
-  }, [toast]);
+  }, [toast, soundEnabled, browserNotificationsEnabled]);
 
   const clearOrdersCount = useCallback(() => {
     setCounts(prev => ({ ...prev, orders: 0 }));
@@ -61,6 +99,10 @@ export const useRealtimeNotifications = (clientId: string) => {
   const markAllAsRead = useCallback(() => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     setCounts({ orders: 0, chats: 0 });
+  }, []);
+
+  const toggleSound = useCallback(() => {
+    setSoundEnabled(prev => !prev);
   }, []);
 
   useEffect(() => {
@@ -83,7 +125,7 @@ export const useRealtimeNotifications = (clientId: string) => {
             type: 'new_order',
             title: '🛒 Novo Pedido!',
             message: `Novo pedido de ${formatPrice(order.amount)} criado`,
-          });
+          }, 'order');
         }
       )
       .on(
@@ -104,7 +146,7 @@ export const useRealtimeNotifications = (clientId: string) => {
               type: 'payment_received',
               title: '💰 Pagamento Confirmado!',
               message: `Pagamento de ${formatPrice(newOrder.amount)} recebido`,
-            });
+            }, 'payment');
           }
           
           // Order delivered
@@ -113,7 +155,7 @@ export const useRealtimeNotifications = (clientId: string) => {
               type: 'order_delivered',
               title: '📦 Pedido Entregue!',
               message: `Pedido de ${formatPrice(newOrder.amount)} foi entregue`,
-            });
+            }, 'order');
           }
         }
       )
@@ -134,6 +176,9 @@ export const useRealtimeNotifications = (clientId: string) => {
           const message = payload.new as { direction: string };
           if (message.direction === 'incoming') {
             setCounts(prev => ({ ...prev, chats: prev.chats + 1 }));
+            if (soundEnabled) {
+              playNotificationSound('message');
+            }
           }
         }
       )
@@ -143,13 +188,17 @@ export const useRealtimeNotifications = (clientId: string) => {
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(messagesChannel);
     };
-  }, [clientId, addNotification]);
+  }, [clientId, addNotification, soundEnabled]);
 
   return {
     notifications,
     counts,
+    soundEnabled,
+    browserNotificationsEnabled,
     clearOrdersCount,
     clearChatsCount,
     markAllAsRead,
+    toggleSound,
+    enableBrowserNotifications,
   };
 };
