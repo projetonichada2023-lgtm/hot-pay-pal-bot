@@ -92,6 +92,14 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       color: 'text-primary'
     },
     { 
+      label: 'Valor Total Pedidos', 
+      value: isLoading ? null : formatPrice(stats?.ordersValueTotal || 0),
+      change: stats?.ordersValueChange || 0,
+      changeLabel: 'vs período anterior',
+      icon: DollarSign,
+      color: 'text-primary'
+    },
+    { 
       label: 'Clientes', 
       value: isLoading ? null : String(stats?.customersTotal || 0),
       change: stats?.customersNew || 0,

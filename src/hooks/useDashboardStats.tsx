@@ -14,6 +14,9 @@ interface DashboardStats {
   ordersTotal: number;
   ordersPrevious: number;
   ordersChange: number;
+  ordersValueTotal: number;
+  ordersValuePrevious: number;
+  ordersValueChange: number;
   paidOrdersCount: number;
   paidOrdersPrevious: number;
   paidOrdersChange: number;
@@ -109,6 +112,13 @@ export const useDashboardStats = (clientId: string, dateRange: DateRange) => {
         ? ((ordersTotal - ordersPrevious) / ordersPrevious) * 100
         : ordersTotal > 0 ? 100 : 0;
 
+      // Total value of all orders (regardless of status)
+      const ordersValueTotal = selectedOrders.reduce((sum, o) => sum + Number(o.amount), 0);
+      const ordersValuePrevious = previousOrders.reduce((sum, o) => sum + Number(o.amount), 0);
+      const ordersValueChange = ordersValuePrevious > 0
+        ? ((ordersValueTotal - ordersValuePrevious) / ordersValuePrevious) * 100
+        : ordersValueTotal > 0 ? 100 : 0;
+
       // Paid orders count
       const selectedPaid = selectedOrders.filter(o => paidStatuses.includes(o.status || '')).length;
       const previousPaid = previousOrders.filter(o => paidStatuses.includes(o.status || '')).length;
@@ -162,6 +172,9 @@ export const useDashboardStats = (clientId: string, dateRange: DateRange) => {
         ordersTotal,
         ordersPrevious,
         ordersChange,
+        ordersValueTotal,
+        ordersValuePrevious,
+        ordersValueChange,
         paidOrdersCount: selectedPaid,
         paidOrdersPrevious: previousPaid,
         paidOrdersChange,
