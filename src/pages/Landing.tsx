@@ -22,7 +22,10 @@ import {
   BookOpen,
   Mail,
   ExternalLink,
-  Menu
+  Menu,
+  Star,
+  Rocket,
+  Crown
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link } from "react-router-dom";
@@ -983,6 +986,221 @@ export default function Landing() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <BadgeCheck className="w-5 h-5 text-emerald-500" />
               <span>PIX em tempo real</span>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 px-4 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
+        <div className="container mx-auto relative z-10">
+          <ScrollReveal className="text-center mb-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary mb-4"
+            >
+              <Zap className="w-4 h-4" />
+              Planos flexíveis
+            </motion.div>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Escolha o plano ideal para
+              <span className="text-primary block md:inline md:ml-2">seu negócio</span>
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Comece grátis e escale conforme seu negócio cresce. Sem surpresas, sem taxas ocultas.
+            </p>
+          </ScrollReveal>
+
+          <motion.div 
+            className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+          >
+            {/* Starter Plan */}
+            <motion.div variants={scaleIn}>
+              <motion.div
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300 }}
+                className="h-full"
+              >
+                <Card className="relative h-full p-6 md:p-8 bg-card/50 border-border/50 backdrop-blur-sm overflow-hidden">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+                      <Star className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold">Starter</h3>
+                      <p className="text-sm text-muted-foreground">Para começar a vender</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-6">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-bold">Grátis</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">+ 5% por transação</p>
+                  </div>
+
+                  <ul className="space-y-3 mb-8">
+                    {[
+                      "Até 50 vendas/mês",
+                      "1 produto cadastrado",
+                      "Bot automatizado",
+                      "Pagamento PIX",
+                      "Entrega automática",
+                      "Suporte via chat"
+                    ].map((feature, i) => (
+                      <li key={i} className="flex items-center gap-3 text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link to="/auth" className="block">
+                    <Button variant="outline" className="w-full gap-2">
+                      Começar Grátis
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                </Card>
+              </motion.div>
+            </motion.div>
+
+            {/* Pro Plan - Popular */}
+            <motion.div variants={scaleIn}>
+              <motion.div
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300 }}
+                className="h-full"
+              >
+                <Card className="relative h-full p-6 md:p-8 bg-gradient-to-br from-primary/10 via-card to-card border-primary/30 backdrop-blur-sm overflow-hidden">
+                  {/* Popular badge */}
+                  <div className="absolute -top-px left-1/2 -translate-x-1/2">
+                    <div className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-b-lg">
+                      MAIS POPULAR
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 mb-6 mt-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                      <Rocket className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold">Pro</h3>
+                      <p className="text-sm text-muted-foreground">Para escalar vendas</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-6">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-lg text-muted-foreground">R$</span>
+                      <span className="text-4xl font-bold">97</span>
+                      <span className="text-muted-foreground">/mês</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">+ 3% por transação</p>
+                  </div>
+
+                  <ul className="space-y-3 mb-8">
+                    {[
+                      "Vendas ilimitadas",
+                      "Produtos ilimitados",
+                      "Recuperação de carrinho",
+                      "Funil de upsell/downsell",
+                      "Relatórios avançados",
+                      "Webhooks e API",
+                      "Suporte prioritário"
+                    ].map((feature, i) => (
+                      <li key={i} className="flex items-center gap-3 text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link to="/auth" className="block">
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button className="w-full gap-2 glow-hot">
+                        Assinar Agora
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </motion.div>
+                  </Link>
+                </Card>
+              </motion.div>
+            </motion.div>
+
+            {/* Business Plan */}
+            <motion.div variants={scaleIn}>
+              <motion.div
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300 }}
+                className="h-full"
+              >
+                <Card className="relative h-full p-6 md:p-8 bg-card/50 border-border/50 backdrop-blur-sm overflow-hidden">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                      <Crown className="w-6 h-6 text-amber-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold">Business</h3>
+                      <p className="text-sm text-muted-foreground">Para grandes operações</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-6">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-lg text-muted-foreground">R$</span>
+                      <span className="text-4xl font-bold">297</span>
+                      <span className="text-muted-foreground">/mês</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">+ 1.5% por transação</p>
+                  </div>
+
+                  <ul className="space-y-3 mb-8">
+                    {[
+                      "Tudo do Pro, mais:",
+                      "Multi-bots (até 5)",
+                      "White-label",
+                      "Gerente de conta dedicado",
+                      "Integrações personalizadas",
+                      "SLA de 99.9% uptime",
+                      "Suporte 24/7"
+                    ].map((feature, i) => (
+                      <li key={i} className="flex items-center gap-3 text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link to="/auth" className="block">
+                    <Button variant="outline" className="w-full gap-2">
+                      Falar com Vendas
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                </Card>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+
+          {/* Money-back guarantee */}
+          <motion.div 
+            className="text-center mt-10"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-500">
+              <Shield className="w-4 h-4" />
+              <span>7 dias de garantia incondicional em todos os planos pagos</span>
             </div>
           </motion.div>
         </div>
