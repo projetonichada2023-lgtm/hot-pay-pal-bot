@@ -224,6 +224,54 @@ export type Database = {
           },
         ]
       }
+      product_upsells: {
+        Row: {
+          created_at: string | null
+          display_order: number
+          id: string
+          is_active: boolean | null
+          product_id: string
+          updated_at: string | null
+          upsell_message: string | null
+          upsell_product_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean | null
+          product_id: string
+          updated_at?: string | null
+          upsell_message?: string | null
+          upsell_product_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean | null
+          product_id?: string
+          updated_at?: string | null
+          upsell_message?: string | null
+          upsell_product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_upsells_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_upsells_upsell_product_id_fkey"
+            columns: ["upsell_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           client_id: string
