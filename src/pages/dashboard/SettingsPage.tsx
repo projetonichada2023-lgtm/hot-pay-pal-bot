@@ -27,6 +27,7 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
     toast({ title: 'Redirecionando para o tour...' });
     setTimeout(() => {
       navigate('/dashboard');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 500);
   };
 
