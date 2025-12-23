@@ -804,10 +804,11 @@ serve(async (req) => {
         
         await handleBuyProduct(botToken, chatId, clientId, customer.id, productId, { isUpsell, isDownsell, parentOrderId });
       }
-      // Confirm payment (demo mode)
-      if (data.startsWith('paid_')) {
-        const orderId = data.replace('paid_', '');
-        await handlePaymentConfirmed(botToken, chatId, clientId, orderId, telegramUser.id);
+
+      // Copy PIX code - send it again for easy copy
+      if (data.startsWith('copypix_')) {
+        const orderId = data.replace('copypix_', '');
+        await handleCopyPixCode(botToken, chatId, clientId, orderId);
       }
 
       // Cancel order
@@ -961,8 +962,12 @@ async function handleBuyProduct(botToken: string, chatId: number, clientId: stri
     `<code>${order.pix_code}</code>\n\n` +
     `⏰ <i>Você tem 15 minutos para efetuar o pagamento.</i>`;
 
+  // Create copy button URL - using Telegram's copy_text feature
+  const copyPixButton = { text: '📋 Copiar Código PIX', callback_data: `copypix_${order.id}` };
+  
   const sent = await sendTelegramMessage(botToken, chatId, message, {
     inline_keyboard: [
+      [copyPixButton],
       [{ text: '✅ Já Paguei', callback_data: `paid_${order.id}` }],
       [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${order.id}` }]
     ]
@@ -1101,6 +1106,26 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
   
   // Check for upsells - start with index 0
   await handleUpsell(botToken, chatId, clientId, product.id, product, orderId, 0, customerId);
+}
+
+async function handleCopyPixCode(botToken: string, chatId: number, clientId: string, orderId: string) {
+  const order = await getOrder(orderId);
+  
+  if (!order) {
+    await answerCallbackQuery(botToken, '', '❌ Pedido não encontrado.');
+    return;
+  }
+
+  const pixCode = (order as any).pix_code;
+  
+  if (!pixCode) {
+    await sendTelegramMessage(botToken, chatId, '⚠️ Código PIX não disponível para este pedido.');
+    return;
+  }
+
+  // Send the PIX code as a separate message for easy copying
+  const copyMessage = `📋 <b>Código PIX para copiar:</b>\n\n<code>${pixCode}</code>\n\n👆 Toque no código acima para copiar!`;
+  await sendTelegramMessage(botToken, chatId, copyMessage);
 }
 
 async function handleCancelOrder(botToken: string, chatId: number, clientId: string, orderId: string, messageId: number) {
