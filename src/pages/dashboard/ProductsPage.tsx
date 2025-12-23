@@ -49,9 +49,10 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
           price: data.price,
           image_url: data.image_url || null,
           file_url: data.file_url || null,
+          telegram_group_id: data.telegram_group_id || null,
           is_active: data.is_active,
           is_hot: data.is_hot,
-        });
+        } as any);
         toast.success('Produto atualizado com sucesso!');
       } else {
         await createProduct.mutateAsync({
@@ -61,9 +62,10 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
           price: data.price,
           image_url: data.image_url || null,
           file_url: data.file_url || null,
+          telegram_group_id: data.telegram_group_id || null,
           is_active: data.is_active,
           is_hot: data.is_hot,
-        });
+        } as any);
         toast.success('Produto criado com sucesso!');
       }
       setIsFormOpen(false);
