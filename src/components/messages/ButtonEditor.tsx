@@ -51,7 +51,7 @@ export const ButtonEditor = ({ buttons, onChange }: ButtonEditorProps) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 border border-border/40 rounded-xl p-4 bg-secondary/20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -71,16 +71,16 @@ export const ButtonEditor = ({ buttons, onChange }: ButtonEditorProps) => {
       {/* Preview */}
       {buttons.length > 0 && (
         <div className="rounded-xl bg-gradient-to-br from-[#1a1a2e] to-[#16213e] p-4">
-          <p className="text-xs text-muted-foreground mb-2 text-center">Preview Telegram</p>
+          <p className="text-xs text-zinc-400 mb-2 text-center">Preview Telegram</p>
           <div className="flex flex-col gap-1.5">
             {buttons.map((btn, idx) => (
-              <button
+              <div
                 key={idx}
-                className="w-full py-2 px-4 bg-[#3390ec] hover:bg-[#2b7bc9] text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2 px-4 bg-[#3390ec] text-white text-sm font-medium rounded-lg flex items-center justify-center gap-2"
               >
                 {btn.type === 'url' && <ExternalLink className="h-3.5 w-3.5" />}
                 {btn.text}
-              </button>
+              </div>
             ))}
           </div>
         </div>
