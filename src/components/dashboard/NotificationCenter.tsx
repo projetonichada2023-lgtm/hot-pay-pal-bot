@@ -19,7 +19,6 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface NotificationCenterProps {
   clientId: string;
@@ -39,7 +38,7 @@ export const NotificationCenter = ({ clientId, onNavigate }: NotificationCenterP
     enableBrowserNotifications,
   } = useRealtimeNotifications(clientId);
 
-  const totalNotifications = counts.orders + counts.chats;
+  const totalNotifications = counts.orders;
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -47,15 +46,13 @@ export const NotificationCenter = ({ clientId, onNavigate }: NotificationCenterP
         return <ShoppingCart className="w-4 h-4 text-primary" />;
       case 'payment_received':
         return <span className="text-success">💰</span>;
-      case 'order_delivered':
-        return <span className="text-telegram">📦</span>;
       default:
         return <Bell className="w-4 h-4" />;
     }
   };
 
   const handleNotificationClick = (type: string) => {
-    if (type === 'new_order' || type === 'payment_received' || type === 'order_delivered') {
+    if (type === 'new_order' || type === 'payment_received') {
       clearOrdersCount();
       onNavigate?.('/orders');
     }
@@ -91,45 +88,44 @@ export const NotificationCenter = ({ clientId, onNavigate }: NotificationCenterP
           <div className="flex items-center justify-between p-3 border-b border-border">
             <h4 className="font-semibold text-sm">Notificações</h4>
             <div className="flex items-center gap-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8"
-                    onClick={toggleSound}
-                  >
-                    {soundEnabled ? (
-                      <Volume2 className="w-4 h-4 text-success" />
-                    ) : (
-                      <VolumeX className="w-4 h-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  {soundEnabled ? 'Som ativado' : 'Som desativado'}
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8"
-                    onClick={enableBrowserNotifications}
-                  >
-                    <BellRing className={cn(
-                      "w-4 h-4",
-                      browserNotificationsEnabled ? "text-success" : "text-muted-foreground"
-                    )} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  {browserNotificationsEnabled 
-                    ? 'Notificações do navegador ativadas' 
-                    : 'Ativar notificações do navegador'}
-                </TooltipContent>
-              </Tooltip>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={toggleSound}
+                title={soundEnabled ? 'Som ativado' : 'Som desativado'}
+                aria-label={soundEnabled ? 'Som ativado' : 'Som desativado'}
+              >
+                {soundEnabled ? (
+                  <Volume2 className="w-4 h-4 text-success" />
+                ) : (
+                  <VolumeX className="w-4 h-4 text-muted-foreground" />
+                )}
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={enableBrowserNotifications}
+                title={
+                  browserNotificationsEnabled
+                    ? 'Notificações do navegador ativadas'
+                    : 'Ativar notificações do navegador'
+                }
+                aria-label={
+                  browserNotificationsEnabled
+                    ? 'Notificações do navegador ativadas'
+                    : 'Ativar notificações do navegador'
+                }
+              >
+                <BellRing
+                  className={cn(
+                    'w-4 h-4',
+                    browserNotificationsEnabled ? 'text-success' : 'text-muted-foreground'
+                  )}
+                />
+              </Button>
               {notifications.length > 0 && (
                 <Button 
                   variant="ghost" 
@@ -157,7 +153,7 @@ export const NotificationCenter = ({ clientId, onNavigate }: NotificationCenterP
               <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
                 <Bell className="w-10 h-10 mb-3 opacity-50" />
                 <p className="text-sm font-medium">Nenhuma notificação</p>
-                <p className="text-xs mt-1">Você será notificado sobre novos pedidos</p>
+                <p className="text-xs mt-1">Você será notificado sobre pedidos e pagamentos</p>
               </div>
             ) : (
               <div className="divide-y divide-border">
