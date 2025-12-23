@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.fastsoft-webhook]
 verify_jwt = false
+
+[functions.expire-pending-orders]
+verify_jwt = false
