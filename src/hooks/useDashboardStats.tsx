@@ -19,6 +19,14 @@ interface DashboardStats {
   conversionRate: number;
   conversionPrevious: number;
   conversionChange: number;
+  averageTicket: number;
+  averageTicketPrevious: number;
+  averageTicketChange: number;
+  abandonmentRate: number;
+  abandonmentRatePrevious: number;
+  abandonmentRateChange: number;
+  recurringCustomers: number;
+  recurringCustomersChange: number;
 }
 
 interface DailySales {
@@ -108,6 +116,38 @@ export const useDashboardStats = (clientId: string, dateRange: DateRange) => {
         ? conversionRate - conversionPrevious
         : conversionRate > 0 ? conversionRate : 0;
 
+      // Average ticket
+      const averageTicket = selectedPaid > 0 ? salesTotal / selectedPaid : 0;
+      const averageTicketPrevious = previousPaid > 0 ? salesPrevious / previousPaid : 0;
+      const averageTicketChange = averageTicketPrevious > 0
+        ? ((averageTicket - averageTicketPrevious) / averageTicketPrevious) * 100
+        : averageTicket > 0 ? 100 : 0;
+
+      // Abandonment rate (pending orders / total orders)
+      const pendingOrders = selectedOrders.filter(o => o.status === 'pending').length;
+      const abandonmentRate = ordersTotal > 0 ? (pendingOrders / ordersTotal) * 100 : 0;
+      const previousPending = previousOrders.filter(o => o.status === 'pending').length;
+      const abandonmentRatePrevious = ordersPrevious > 0 ? (previousPending / ordersPrevious) * 100 : 0;
+      const abandonmentRateChange = abandonmentRatePrevious > 0
+        ? abandonmentRate - abandonmentRatePrevious
+        : abandonmentRate > 0 ? abandonmentRate : 0;
+
+      // Recurring customers (customers with more than 1 order in the period)
+      const { data: allOrders } = await supabase
+        .from('orders')
+        .select('customer_id')
+        .eq('client_id', clientId)
+        .in('status', ['paid', 'delivered'] as const);
+
+      const customerOrderCount: Record<string, number> = {};
+      allOrders?.forEach(o => {
+        if (o.customer_id) {
+          customerOrderCount[o.customer_id] = (customerOrderCount[o.customer_id] || 0) + 1;
+        }
+      });
+      const recurringCustomers = Object.values(customerOrderCount).filter(count => count > 1).length;
+      const recurringCustomersChange = customersNew || 0;
+
       return {
         salesTotal,
         salesPrevious,
@@ -120,6 +160,14 @@ export const useDashboardStats = (clientId: string, dateRange: DateRange) => {
         conversionRate,
         conversionPrevious,
         conversionChange,
+        averageTicket,
+        averageTicketPrevious,
+        averageTicketChange,
+        abandonmentRate,
+        abandonmentRatePrevious,
+        abandonmentRateChange,
+        recurringCustomers,
+        recurringCustomersChange,
       };
     },
     enabled: !!clientId,
