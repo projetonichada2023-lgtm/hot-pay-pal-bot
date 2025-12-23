@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Client } from '@/hooks/useClient';
@@ -19,7 +19,10 @@ import {
   X,
   GitBranch,
   BarChart3,
-  Bell
+  Bell,
+  Volume2,
+  VolumeX,
+  BellRing
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -30,6 +33,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SidebarProps {
   client: Client;
@@ -40,7 +44,17 @@ export const Sidebar = ({ client }: SidebarProps) => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { notifications, counts, clearOrdersCount, clearChatsCount, markAllAsRead } = useRealtimeNotifications(client.id);
+  const { 
+    notifications, 
+    counts, 
+    soundEnabled,
+    browserNotificationsEnabled,
+    clearOrdersCount, 
+    clearChatsCount, 
+    markAllAsRead,
+    toggleSound,
+    enableBrowserNotifications,
+  } = useRealtimeNotifications(client.id);
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/', badge: 0 },
@@ -141,11 +155,52 @@ export const Sidebar = ({ client }: SidebarProps) => {
             <PopoverContent className="w-80 p-0" align="start" side="right">
               <div className="flex items-center justify-between p-3 border-b border-border">
                 <h4 className="font-semibold text-sm">Notificações</h4>
-                {notifications.length > 0 && (
-                  <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-xs h-7">
-                    Marcar todas como lidas
-                  </Button>
-                )}
+                <div className="flex items-center gap-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7"
+                        onClick={toggleSound}
+                      >
+                        {soundEnabled ? (
+                          <Volume2 className="w-4 h-4 text-success" />
+                        ) : (
+                          <VolumeX className="w-4 h-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {soundEnabled ? 'Som ativado' : 'Som desativado'}
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7"
+                        onClick={enableBrowserNotifications}
+                      >
+                        <BellRing className={cn(
+                          "w-4 h-4",
+                          browserNotificationsEnabled ? "text-success" : "text-muted-foreground"
+                        )} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {browserNotificationsEnabled 
+                        ? 'Notificações do navegador ativadas' 
+                        : 'Ativar notificações do navegador'}
+                    </TooltipContent>
+                  </Tooltip>
+                  {notifications.length > 0 && (
+                    <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-xs h-7 ml-1">
+                      Limpar
+                    </Button>
+                  )}
+                </div>
               </div>
               <ScrollArea className="h-[300px]">
                 {notifications.length === 0 ? (
