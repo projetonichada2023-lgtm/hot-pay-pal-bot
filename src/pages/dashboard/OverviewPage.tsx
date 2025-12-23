@@ -1,21 +1,38 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Client } from '@/hooks/useClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, ShoppingCart, DollarSign, Bot, CalendarIcon, Receipt } from 'lucide-react';
+import { 
+  TrendingUp, ShoppingCart, DollarSign, Bot, CalendarIcon, Receipt, 
+  Users, UserCheck, AlertCircle, CheckCircle 
+} from 'lucide-react';
 import { useDashboardStats, DateRange } from '@/hooks/useDashboardStats';
+import { useDashboardPreferences } from '@/hooks/useDashboardPreferences';
 import { SalesChart } from '@/components/dashboard/SalesChart';
 import { RecentOrdersCard } from '@/components/dashboard/RecentOrdersCard';
 import { FunnelInsightsCard } from '@/components/dashboard/FunnelInsightsCard';
+import { CustomizeDashboardDialog } from '@/components/dashboard/CustomizeDashboardDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, subDays } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { LucideIcon } from 'lucide-react';
 
 interface OverviewPageProps {
   client: Client;
+}
+
+interface MetricDefinition {
+  id: string;
+  label: string;
+  getValue: (stats: any, formatPrice: (v: number) => string) => string | null;
+  getChange: (stats: any) => number;
+  icon: LucideIcon;
+  gradient: string;
+  iconBg: string;
+  iconColor: string;
+  invertColors?: boolean;
 }
 
 const presetRanges = [
@@ -23,6 +40,100 @@ const presetRanges = [
   { label: '7 dias', days: 7 },
   { label: '30 dias', days: 30 },
   { label: '90 dias', days: 90 },
+];
+
+const METRIC_DEFINITIONS: MetricDefinition[] = [
+  { 
+    id: 'ordersTotal',
+    label: 'Total Pedidos', 
+    getValue: (stats) => String(stats?.ordersTotal || 0),
+    getChange: (stats) => stats?.ordersChange || 0,
+    icon: ShoppingCart,
+    gradient: 'from-primary/20 to-primary/5',
+    iconBg: 'bg-primary/20',
+    iconColor: 'text-primary'
+  },
+  { 
+    id: 'salesTotal',
+    label: 'Receita Total', 
+    getValue: (stats, formatPrice) => formatPrice(stats?.salesTotal || 0),
+    getChange: (stats) => stats?.salesChange || 0,
+    icon: DollarSign,
+    gradient: 'from-success/20 to-success/5',
+    iconBg: 'bg-success/20',
+    iconColor: 'text-success'
+  },
+  { 
+    id: 'conversionRate',
+    label: 'Taxa de Conversão', 
+    getValue: (stats) => `${(stats?.conversionRate || 0).toFixed(1)}%`,
+    getChange: (stats) => stats?.conversionChange || 0,
+    icon: TrendingUp,
+    gradient: 'from-warning/20 to-warning/5',
+    iconBg: 'bg-warning/20',
+    iconColor: 'text-warning'
+  },
+  { 
+    id: 'averageTicket',
+    label: 'Ticket Médio', 
+    getValue: (stats, formatPrice) => formatPrice(stats?.averageTicket || 0),
+    getChange: (stats) => stats?.averageTicketChange || 0,
+    icon: Receipt,
+    gradient: 'from-accent/20 to-accent/5',
+    iconBg: 'bg-accent/20',
+    iconColor: 'text-accent'
+  },
+  { 
+    id: 'paidOrdersCount',
+    label: 'Pedidos Pagos', 
+    getValue: (stats) => String(stats?.paidOrdersCount || 0),
+    getChange: (stats) => stats?.paidOrdersChange || 0,
+    icon: CheckCircle,
+    gradient: 'from-success/20 to-success/5',
+    iconBg: 'bg-success/20',
+    iconColor: 'text-success'
+  },
+  { 
+    id: 'ordersValueTotal',
+    label: 'Valor Total Pedidos', 
+    getValue: (stats, formatPrice) => formatPrice(stats?.ordersValueTotal || 0),
+    getChange: (stats) => stats?.ordersValueChange || 0,
+    icon: DollarSign,
+    gradient: 'from-primary/20 to-primary/5',
+    iconBg: 'bg-primary/20',
+    iconColor: 'text-primary'
+  },
+  { 
+    id: 'abandonmentRate',
+    label: 'Taxa de Abandono', 
+    getValue: (stats) => `${(stats?.abandonmentRate || 0).toFixed(1)}%`,
+    getChange: (stats) => stats?.abandonmentRateChange || 0,
+    icon: AlertCircle,
+    gradient: 'from-destructive/20 to-destructive/5',
+    iconBg: 'bg-destructive/20',
+    iconColor: 'text-destructive',
+    invertColors: true
+  },
+  { 
+    id: 'customersTotal',
+    label: 'Clientes', 
+    getValue: (stats) => String(stats?.customersTotal || 0),
+    getChange: (stats) => stats?.customersNew || 0,
+    icon: Users,
+    gradient: 'from-telegram/20 to-telegram/5',
+    iconBg: 'bg-telegram/20',
+    iconColor: 'text-telegram'
+  },
+  { 
+    id: 'recurringCustomers',
+    label: 'Clientes Recorrentes', 
+    getValue: (stats) => String(stats?.recurringCustomers || 0),
+    getChange: (stats) => stats?.recurringCustomersChange || 0,
+    icon: UserCheck,
+    gradient: 'from-success/20 to-success/5',
+    iconBg: 'bg-success/20',
+    iconColor: 'text-success'
+  },
 ];
 
 export const OverviewPage = ({ client }: OverviewPageProps) => {
@@ -33,6 +144,7 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
   const [activePreset, setActivePreset] = useState<number | null>(1);
   
   const { data: stats, isLoading } = useDashboardStats(client.id, dateRange);
+  const { metrics, visibleMetrics, toggleMetric, reorderMetrics, resetToDefaults } = useDashboardPreferences(client.id);
 
   const handlePresetClick = (days: number) => {
     const to = new Date();
@@ -58,52 +170,24 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
     }).format(value);
   };
 
-  const formatChange = (value: number, isPercent = true) => {
+  const formatChange = (value: number) => {
     const sign = value >= 0 ? '+' : '';
-    if (isPercent) {
-      return `${sign}${value.toFixed(0)}%`;
-    }
-    return `${sign}${value}`;
+    return `${sign}${value.toFixed(0)}%`;
   };
 
-  const statsCards = [
-    { 
-      label: 'Total Pedidos', 
-      value: isLoading ? null : String(stats?.ordersTotal || 0),
-      change: stats?.ordersChange || 0,
-      icon: ShoppingCart,
-      gradient: 'from-primary/20 to-primary/5',
-      iconBg: 'bg-primary/20',
-      iconColor: 'text-primary'
-    },
-    { 
-      label: 'Receita Total', 
-      value: isLoading ? null : formatPrice(stats?.salesTotal || 0),
-      change: stats?.salesChange || 0,
-      icon: DollarSign,
-      gradient: 'from-success/20 to-success/5',
-      iconBg: 'bg-success/20',
-      iconColor: 'text-success'
-    },
-    { 
-      label: 'Taxa de Conversão', 
-      value: isLoading ? null : `${(stats?.conversionRate || 0).toFixed(1)}%`,
-      change: stats?.conversionChange || 0,
-      icon: TrendingUp,
-      gradient: 'from-warning/20 to-warning/5',
-      iconBg: 'bg-warning/20',
-      iconColor: 'text-warning'
-    },
-    { 
-      label: 'Ticket Médio', 
-      value: isLoading ? null : formatPrice(stats?.averageTicket || 0),
-      change: stats?.averageTicketChange || 0,
-      icon: Receipt,
-      gradient: 'from-accent/20 to-accent/5',
-      iconBg: 'bg-accent/20',
-      iconColor: 'text-accent'
-    },
-  ];
+  const displayedCards = useMemo(() => {
+    return visibleMetrics
+      .map(config => {
+        const definition = METRIC_DEFINITIONS.find(d => d.id === config.id);
+        if (!definition) return null;
+        return {
+          ...definition,
+          value: isLoading ? null : definition.getValue(stats, formatPrice),
+          change: definition.getChange(stats),
+        };
+      })
+      .filter(Boolean);
+  }, [visibleMetrics, stats, isLoading]);
 
   return (
     <div className="space-y-6">
@@ -122,54 +206,73 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
           </div>
         </div>
         
-        {/* Date filters */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex gap-1 flex-wrap">
-            {presetRanges.map((preset) => (
-              <Button
-                key={preset.days}
-                variant={activePreset === preset.days ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs sm:text-sm"
-                onClick={() => handlePresetClick(preset.days)}
-              >
-                {preset.label}
-              </Button>
-            ))}
+        {/* Date filters + Customize */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex gap-1 flex-wrap">
+              {presetRanges.map((preset) => (
+                <Button
+                  key={preset.days}
+                  variant={activePreset === preset.days ? 'default' : 'outline'}
+                  size="sm"
+                  className="text-xs sm:text-sm"
+                  onClick={() => handlePresetClick(preset.days)}
+                >
+                  {preset.label}
+                </Button>
+              ))}
+            </div>
+            
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm">
+                  <CalendarIcon className="w-3.5 h-3.5" />
+                  <span className="hidden xs:inline">
+                    {format(dateRange.from, "dd/MM")} - {format(dateRange.to, "dd/MM/yy")}
+                  </span>
+                  <span className="xs:hidden">Período</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={{ from: dateRange.from, to: dateRange.to }}
+                  onSelect={(range) => handleDateRangeChange(range || {})}
+                  disabled={(date) => date > new Date()}
+                  numberOfMonths={1}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
-          
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm">
-                <CalendarIcon className="w-3.5 h-3.5" />
-                <span className="hidden xs:inline">
-                  {format(dateRange.from, "dd/MM")} - {format(dateRange.to, "dd/MM/yy")}
-                </span>
-                <span className="xs:hidden">Período</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="range"
-                selected={{ from: dateRange.from, to: dateRange.to }}
-                onSelect={(range) => handleDateRangeChange(range || {})}
-                disabled={(date) => date > new Date()}
-                numberOfMonths={1}
-                initialFocus
-                className="p-3 pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
+
+          <CustomizeDashboardDialog
+            metrics={metrics}
+            onToggle={toggleMetric}
+            onReorder={reorderMetrics}
+            onReset={resetToDefaults}
+          />
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stats-cards">
-        {statsCards.map((stat) => {
-          const isPositive = stat.change >= 0;
+      <div 
+        className={cn(
+          "grid gap-4",
+          displayedCards.length <= 2 ? "grid-cols-1 sm:grid-cols-2" :
+          displayedCards.length === 3 ? "grid-cols-1 sm:grid-cols-3" :
+          "grid-cols-2 lg:grid-cols-4"
+        )}
+        data-tour="stats-cards"
+      >
+        {displayedCards.map((stat) => {
+          if (!stat) return null;
+          const isPositive = stat.invertColors ? stat.change <= 0 : stat.change >= 0;
+          const IconComponent = stat.icon;
           return (
             <Card 
-              key={stat.label} 
+              key={stat.id} 
               className={cn(
                 "relative overflow-hidden border-0 bg-gradient-to-br",
                 stat.gradient,
@@ -179,13 +282,13 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className={cn("p-2.5 rounded-xl", stat.iconBg)}>
-                    <stat.icon className={cn("w-5 h-5", stat.iconColor)} />
+                    <IconComponent className={cn("w-5 h-5", stat.iconColor)} />
                   </div>
                   <span className={cn(
                     "text-xs font-medium px-2 py-0.5 rounded-full",
                     isPositive 
-                      ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" 
-                      : "bg-red-500/20 text-red-600 dark:text-red-400"
+                      ? "bg-success/20 text-success" 
+                      : "bg-destructive/20 text-destructive"
                   )}>
                     {formatChange(stat.change)}
                   </span>
