@@ -52,10 +52,8 @@ export function useTelegramConversations(clientId: string) {
         },
         (payload) => {
           console.log('New message received:', payload);
-          // Keep it robust: just refetch and regroup (avoids missing messages / ordering bugs)
           queryClient.invalidateQueries({ queryKey: ['telegram-conversations', clientId] });
         }
-      )
       )
       .subscribe((status) => {
         console.log('Realtime subscription status:', status);
@@ -70,7 +68,6 @@ export function useTelegramConversations(clientId: string) {
   return useQuery({
     queryKey: ['telegram-conversations', clientId],
     queryFn: async () => {
-      // Fetch all messages with customer info
       const { data: messages, error } = await supabase
         .from('telegram_messages')
         .select(`
@@ -83,7 +80,6 @@ export function useTelegramConversations(clientId: string) {
 
       if (error) throw error;
 
-      // Group by customer/chat
       const conversationsMap = new Map<string, ChatConversation>();
 
       for (const msg of messages || []) {
@@ -109,18 +105,16 @@ export function useTelegramConversations(clientId: string) {
         conv.messages.push(msg as TelegramMessage);
       }
 
-      // Sort messages within each conversation (oldest first for display)
       for (const conv of conversationsMap.values()) {
         conv.messages.reverse();
       }
 
-      // Return as array sorted by most recent message
       return Array.from(conversationsMap.values()).sort(
         (a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
       );
     },
     enabled: !!clientId,
-    staleTime: 30000, // Consider data fresh for 30 seconds
+    staleTime: 30000,
   });
 }
 
