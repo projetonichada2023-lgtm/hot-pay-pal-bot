@@ -20,10 +20,10 @@ const statusConfig = {
 };
 
 export const RecentOrdersCard = ({ clientId }: RecentOrdersCardProps) => {
-  const { data: orders, isLoading } = useOrders(clientId);
+  const { data, isLoading } = useOrders(clientId, null, 1, 5);
   const navigate = useNavigate();
 
-  const recentOrders = orders?.slice(0, 5) || [];
+  const recentOrders = data?.orders || [];
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
