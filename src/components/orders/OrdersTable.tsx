@@ -17,10 +17,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Package, CheckCircle, XCircle, RefreshCw, Eye, ShoppingCart } from 'lucide-react';
+import { MoreHorizontal, Package, CheckCircle, XCircle, RefreshCw, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { EmptyState } from '@/components/ui/empty-state';
 
 interface OrdersTableProps {
   orders: Order[];
@@ -104,12 +103,9 @@ export const OrdersTable = ({ orders, onUpdateStatus, onViewDetails, isUpdating 
 
   if (orders.length === 0) {
     return (
-      <EmptyState
-        variant="orders"
-        icon={ShoppingCart}
-        title="Nenhum pedido encontrado"
-        description="Os pedidos aparecerão aqui quando seus clientes comprarem produtos."
-      />
+      <div className="flex items-center justify-center py-12 text-muted-foreground">
+        Nenhum pedido encontrado.
+      </div>
     );
   }
 

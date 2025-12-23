@@ -6,7 +6,6 @@ import {
   showBrowserNotification, 
   requestNotificationPermission 
 } from '@/lib/notifications';
-import { useConfetti } from '@/hooks/useConfetti';
 
 interface Notification {
   id: string;
@@ -28,7 +27,6 @@ export const useRealtimeNotifications = (clientId: string) => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [browserNotificationsEnabled, setBrowserNotificationsEnabled] = useState(false);
   const { toast } = useToast();
-  const { fire: fireConfetti } = useConfetti();
 
   // Request notification permission on mount
   useEffect(() => {
@@ -55,8 +53,7 @@ export const useRealtimeNotifications = (clientId: string) => {
 
   const addNotification = useCallback((
     notification: Omit<Notification, 'id' | 'createdAt' | 'read'>,
-    soundType: 'order' | 'payment' | 'message' = 'order',
-    showConfetti: boolean = false
+    soundType: 'order' | 'payment' | 'message' = 'order'
   ) => {
     const newNotification: Notification = {
       ...notification,
@@ -77,11 +74,6 @@ export const useRealtimeNotifications = (clientId: string) => {
       playNotificationSound(soundType);
     }
 
-    // Fire confetti for payments
-    if (showConfetti) {
-      fireConfetti({ type: 'payment' });
-    }
-
     // Show browser notification
     if (browserNotificationsEnabled) {
       showBrowserNotification(notification.title, {
@@ -94,7 +86,7 @@ export const useRealtimeNotifications = (clientId: string) => {
       title: notification.title,
       description: notification.message,
     });
-  }, [toast, soundEnabled, browserNotificationsEnabled, fireConfetti]);
+  }, [toast, soundEnabled, browserNotificationsEnabled]);
 
   const clearOrdersCount = useCallback(() => {
     setCounts(prev => ({ ...prev, orders: 0 }));
@@ -154,7 +146,7 @@ export const useRealtimeNotifications = (clientId: string) => {
               type: 'payment_received',
               title: '💰 Pagamento Confirmado!',
               message: `Pagamento de ${formatPrice(newOrder.amount)} recebido`,
-            }, 'payment', true); // true = show confetti
+            }, 'payment');
           }
           
         }

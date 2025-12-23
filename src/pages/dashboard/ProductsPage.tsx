@@ -7,8 +7,6 @@ import { Package, Plus, Loader2 } from 'lucide-react';
 import { ProductsTable } from '@/components/products/ProductsTable';
 import { ProductForm, ProductFormData } from '@/components/products/ProductForm';
 import { DeleteProductDialog } from '@/components/products/DeleteProductDialog';
-import { EmptyState } from '@/components/ui/empty-state';
-import { useConfetti } from '@/hooks/useConfetti';
 import { toast } from 'sonner';
 
 interface ProductsPageProps {
@@ -24,7 +22,6 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
-  const { fire: fireConfetti } = useConfetti();
 
   const handleCreate = () => {
     setSelectedProduct(null);
@@ -70,7 +67,6 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
           is_hot: data.is_hot,
         } as any);
         toast.success('Produto criado com sucesso!');
-        fireConfetti({ type: 'success' });
       }
       setIsFormOpen(false);
     } catch (error) {
@@ -119,19 +115,11 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : products && products.length > 0 ? (
+          ) : (
             <ProductsTable
-              products={products}
+              products={products || []}
               onEdit={handleEdit}
               onDelete={handleDelete}
-            />
-          ) : (
-            <EmptyState
-              variant="products"
-              title="Nenhum produto cadastrado"
-              description="Comece criando seu primeiro produto digital para vender pelo Telegram."
-              actionLabel="Criar Primeiro Produto"
-              onAction={handleCreate}
             />
           )}
         </CardContent>
