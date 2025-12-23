@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Client } from '@/hooks/useClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, ShoppingCart, Users, DollarSign, Bot, CalendarIcon } from 'lucide-react';
+import { TrendingUp, ShoppingCart, Users, DollarSign, Bot, CalendarIcon, Receipt, AlertCircle, UserCheck } from 'lucide-react';
 import { useDashboardStats, DateRange } from '@/hooks/useDashboardStats';
 import { SalesChart } from '@/components/dashboard/SalesChart';
 import { RecentOrdersCard } from '@/components/dashboard/RecentOrdersCard';
@@ -100,6 +100,32 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       icon: TrendingUp,
       color: 'text-warning'
     },
+    { 
+      label: 'Ticket Médio', 
+      value: isLoading ? null : formatPrice(stats?.averageTicket || 0),
+      change: stats?.averageTicketChange || 0,
+      changeLabel: 'vs período anterior',
+      icon: Receipt,
+      color: 'text-primary'
+    },
+    { 
+      label: 'Taxa de Abandono', 
+      value: isLoading ? null : `${(stats?.abandonmentRate || 0).toFixed(0)}%`,
+      change: stats?.abandonmentRateChange || 0,
+      changeLabel: 'vs período anterior',
+      invertColors: true,
+      icon: AlertCircle,
+      color: 'text-destructive'
+    },
+    { 
+      label: 'Clientes Recorrentes', 
+      value: isLoading ? null : String(stats?.recurringCustomers || 0),
+      change: stats?.recurringCustomersChange || 0,
+      changeLabel: 'novos no período',
+      isPercent: false,
+      icon: UserCheck,
+      color: 'text-success'
+    },
   ];
 
   return (
@@ -162,31 +188,34 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stats-cards">
-        {statsCards.map((stat) => (
-          <Card key={stat.label} className="glass-card hover-scale">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.label}
-              </CardTitle>
-              <stat.icon className={`w-4 h-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              {stat.value === null ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className={cn(
-                    "text-xs",
-                    stat.change >= 0 ? "text-success" : "text-destructive"
-                  )}>
-                    {formatChange(stat.change, stat.isPercent !== false)} {stat.changeLabel}
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+        {statsCards.map((stat) => {
+          const isPositive = stat.invertColors ? stat.change <= 0 : stat.change >= 0;
+          return (
+            <Card key={stat.label} className="glass-card hover-scale">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {stat.label}
+                </CardTitle>
+                <stat.icon className={`w-4 h-4 ${stat.color}`} />
+              </CardHeader>
+              <CardContent>
+                {stat.value === null ? (
+                  <Skeleton className="h-8 w-24" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{stat.value}</div>
+                    <p className={cn(
+                      "text-xs",
+                      isPositive ? "text-success" : "text-destructive"
+                    )}>
+                      {formatChange(stat.change, stat.isPercent !== false)} {stat.changeLabel}
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Chart */}
