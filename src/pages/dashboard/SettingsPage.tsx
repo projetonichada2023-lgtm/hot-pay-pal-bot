@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Settings, Loader2, CreditCard, Eye, EyeOff, ExternalLink, CheckCircle2, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { useOnboarding } from '@/hooks/useOnboarding';
-
+import { useNavigate } from 'react-router-dom';
 interface SettingsPageProps {
   client: Client;
 }
@@ -17,9 +17,18 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   const { data: settings, isLoading } = useClientSettings(client.id);
   const updateSettings = useUpdateClientSettings();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [showApiKey, setShowApiKey] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const { resetOnboarding, isResetting } = useOnboarding(client.id, client.onboarding_completed);
+
+  const handleRestartTour = () => {
+    resetOnboarding();
+    toast({ title: 'Redirecionando para o tour...' });
+    setTimeout(() => {
+      navigate('/dashboard');
+    }, 500);
+  };
 
   const handleToggle = async (field: string, value: boolean) => {
     if (!settings) return;
@@ -283,7 +292,7 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
             </div>
             <Button 
               variant="outline" 
-              onClick={() => resetOnboarding()}
+              onClick={handleRestartTour}
               disabled={isResetting}
             >
               {isResetting ? (
