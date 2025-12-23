@@ -430,16 +430,24 @@ async function createOrder(clientId: string, customerId: string, productId: stri
   }
   
   // Update order with PIX data
-  await supabase
+  const { data: updatedOrder, error: updateError } = await supabase
     .from('orders')
     .update({
       pix_code: pix.pixCode,
       pix_qrcode: pix.qrCodeUrl,
       payment_id: pix.paymentId,
     })
-    .eq('id', order.id);
+    .eq('id', order.id)
+    .select()
+    .single();
 
-  return { ...order, pix_code: pix.pixCode, pix_qrcode: pix.qrCodeUrl, payment_id: pix.paymentId };
+  if (updateError) {
+    console.error('Error updating order with PIX:', updateError);
+  }
+
+  console.log('Order created with PIX:', { orderId: order.id, pixCode: pix.pixCode?.substring(0, 50) + '...' });
+
+  return updatedOrder || { ...order, pix_code: pix.pixCode, pix_qrcode: pix.qrCodeUrl, payment_id: pix.paymentId };
 }
 
 async function getOrder(orderId: string) {
