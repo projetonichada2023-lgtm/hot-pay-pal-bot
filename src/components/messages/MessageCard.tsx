@@ -19,7 +19,9 @@ import {
   Upload,
   GripVertical,
   Eye,
-  EyeOff
+  EyeOff,
+  MoreVertical,
+  Pencil
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -32,6 +34,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ButtonEditor } from './ButtonEditor';
 import { TelegramPreview } from './TelegramPreview';
 
@@ -117,9 +126,10 @@ export const MessageCard = ({
     <Card className="group overflow-hidden border-border/40 bg-card/50 backdrop-blur-sm hover:border-border/60 transition-all duration-300">
       <CardContent className="p-0">
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-border/30">
+        <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 border-b border-border/30">
+          {/* Reorder controls - hidden on mobile, use dropdown instead */}
           {showOrder && (
-            <div className="flex flex-col gap-0.5">
+            <div className="hidden sm:flex flex-col gap-0.5">
               <Button
                 size="icon"
                 variant="ghost"
@@ -142,15 +152,16 @@ export const MessageCard = ({
             </div>
           )}
 
-          <div className="flex-1 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-              <span className="text-lg">{index + 1}</span>
+          {/* Message info */}
+          <div className="flex-1 flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+              <span className="text-base sm:text-lg font-medium">{index + 1}</span>
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Mensagem {index + 1}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="text-sm font-medium">Msg {index + 1}</span>
                 {message.media_type && (
-                  <Badge variant="secondary" className="text-[10px] gap-1">
+                  <Badge variant="secondary" className="text-[10px] gap-1 hidden xs:flex">
                     {message.media_type === 'video' ? (
                       <><Video className="h-2.5 w-2.5" /> Vídeo</>
                     ) : (
@@ -159,7 +170,7 @@ export const MessageCard = ({
                   </Badge>
                 )}
                 {(message.buttons?.length || 0) > 0 && (
-                  <Badge variant="outline" className="text-[10px]">
+                  <Badge variant="outline" className="text-[10px] hidden sm:flex">
                     {message.buttons?.length} botões
                   </Badge>
                 )}
@@ -167,25 +178,72 @@ export const MessageCard = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-secondary/50 rounded-full px-3 py-1.5">
-              <span className={`text-xs font-medium ${message.is_active ? 'text-emerald-400' : 'text-muted-foreground'}`}>
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Status toggle - simplified on mobile */}
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-secondary/50 rounded-full px-2 sm:px-3 py-1 sm:py-1.5">
+              <span className={`text-[10px] sm:text-xs font-medium hidden sm:inline ${message.is_active ? 'text-emerald-400' : 'text-muted-foreground'}`}>
                 {message.is_active ? 'Ativo' : 'Inativo'}
               </span>
               <Switch
                 checked={message.is_active ?? false}
                 onCheckedChange={(checked) => onUpdate(message.id, { is_active: checked })}
-                className="scale-75"
+                className="scale-[0.65] sm:scale-75"
               />
             </div>
 
+            {/* Mobile menu with all actions */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost" className="h-8 w-8 sm:hidden">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-popover">
+                <DropdownMenuItem onClick={handleStartEdit}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Editar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowPreview(!showPreview)}>
+                  {showPreview ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+                  {showPreview ? 'Ocultar Preview' : 'Ver Preview'}
+                </DropdownMenuItem>
+                {showOrder && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={onMoveUp} disabled={index === 0}>
+                      <ChevronUp className="h-4 w-4 mr-2" />
+                      Mover para cima
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={onMoveDown} disabled={index === totalCount - 1}>
+                      <ChevronDown className="h-4 w-4 mr-2" />
+                      Mover para baixo
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {allowDelete && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => onDelete(message.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Remover
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Desktop delete button */}
             {allowDelete && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button 
                     size="icon" 
                     variant="ghost" 
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
