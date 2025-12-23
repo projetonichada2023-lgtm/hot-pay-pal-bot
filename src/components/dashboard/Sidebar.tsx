@@ -103,7 +103,7 @@ export const Sidebar = ({ client }: SidebarProps) => {
       >
         <div className="flex flex-col h-full p-4">
           {/* Logo */}
-          <div className="flex items-center gap-3 px-2 py-4 mb-6">
+          <div className="flex items-center gap-3 px-2 py-4 mb-6" data-tour="sidebar-logo">
             <div className="w-10 h-10 rounded-xl gradient-hot flex items-center justify-center glow-hot">
               <Bot className="w-5 h-5 text-primary-foreground" />
             </div>
@@ -119,6 +119,13 @@ export const Sidebar = ({ client }: SidebarProps) => {
           <nav className="flex-1 space-y-1 overflow-auto">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.path;
+              const getTourAttribute = () => {
+                if (item.path === '/dashboard/products') return 'menu-products';
+                if (item.path === '/dashboard/bot-config') return 'menu-bot-config';
+                if (item.path === '/dashboard/funnel') return 'menu-funnel';
+                return undefined;
+              };
+              const tourAttr = getTourAttribute();
               return (
                 <Button
                   key={item.path}
@@ -130,6 +137,7 @@ export const Sidebar = ({ client }: SidebarProps) => {
                       : 'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50'
                   )}
                   onClick={() => handleNavigate(item.path)}
+                  {...(tourAttr ? { 'data-tour': tourAttr } : {})}
                 >
                   <item.icon className={cn('w-5 h-5', isActive && 'text-primary')} />
                   {item.label}

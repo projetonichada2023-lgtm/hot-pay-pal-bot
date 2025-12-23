@@ -5,8 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Loader2, CreditCard, Eye, EyeOff, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Settings, Loader2, CreditCard, Eye, EyeOff, ExternalLink, CheckCircle2, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
+import { useOnboarding } from '@/hooks/useOnboarding';
 
 interface SettingsPageProps {
   client: Client;
@@ -18,6 +19,7 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   const { toast } = useToast();
   const [showApiKey, setShowApiKey] = useState(false);
   const [apiKey, setApiKey] = useState('');
+  const { resetOnboarding, isResetting } = useOnboarding(client.id, client.onboarding_completed);
 
   const handleToggle = async (field: string, value: boolean) => {
     if (!settings) return;
@@ -261,6 +263,36 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
                 onCheckedChange={(checked) => handleToggle('cart_reminder_enabled', checked)}
               />
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tour/Onboarding */}
+      <Card className="glass-card">
+        <CardHeader>
+          <CardTitle>Tour do Sistema</CardTitle>
+          <CardDescription>Reveja o tour de introdução da plataforma</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Refazer Tour Interativo</Label>
+              <p className="text-sm text-muted-foreground">
+                Reveja o passo a passo de todas as funcionalidades
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => resetOnboarding()}
+              disabled={isResetting}
+            >
+              {isResetting ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <RotateCcw className="w-4 h-4 mr-2" />
+              )}
+              Refazer Tour
+            </Button>
           </div>
         </CardContent>
       </Card>

@@ -210,6 +210,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          onboarding_completed: boolean | null
           telegram_bot_token: string | null
           telegram_bot_username: string | null
           updated_at: string | null
@@ -224,6 +225,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          onboarding_completed?: boolean | null
           telegram_bot_token?: string | null
           telegram_bot_username?: string | null
           updated_at?: string | null
@@ -238,6 +240,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          onboarding_completed?: boolean | null
           telegram_bot_token?: string | null
           telegram_bot_username?: string | null
           updated_at?: string | null
