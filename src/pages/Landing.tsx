@@ -530,6 +530,113 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Para Quem é Section */}
+      <section className="py-20 px-4">
+        <div className="container mx-auto">
+          <ScrollReveal className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Para Quem é o TeleGateway?
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Ideal para quem quer vender produtos digitais de forma automatizada e profissional.
+            </p>
+          </ScrollReveal>
+
+          <motion.div 
+            className="grid md:grid-cols-3 gap-6 lg:gap-8"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+          >
+            {/* Infoprodutores */}
+            <motion.div variants={fadeInUp}>
+              <motion.div
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className="relative group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <Card className="relative p-8 bg-card/50 backdrop-blur border-border/50 hover:border-violet-500/50 transition-all duration-300 h-full">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mb-6 shadow-lg shadow-violet-500/25">
+                    <TrendingUp className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-3">Infoprodutores</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Venda cursos, e-books, mentorias e templates direto no Telegram com entrega automática.
+                  </p>
+                  <ul className="space-y-2">
+                    {["Entrega instantânea de arquivos", "Upsell pós-compra automático", "Métricas de conversão"].map((item, i) => (
+                      <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              </motion.div>
+            </motion.div>
+
+            {/* Criadores de Conteúdo */}
+            <motion.div variants={fadeInUp}>
+              <motion.div
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className="relative group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <Card className="relative p-8 bg-card/50 backdrop-blur border-border/50 hover:border-cyan-500/50 transition-all duration-300 h-full">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center mb-6 shadow-lg shadow-cyan-500/25">
+                    <MessageCircle className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-3">Criadores de Conteúdo</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Monetize sua audiência vendendo conteúdo exclusivo direto onde ela já está.
+                  </p>
+                  <ul className="space-y-2">
+                    {["Presets e packs exclusivos", "Aulas e tutoriais premium", "Atendimento automatizado"].map((item, i) => (
+                      <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              </motion.div>
+            </motion.div>
+
+            {/* Comunidades VIP */}
+            <motion.div variants={fadeInUp}>
+              <motion.div
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className="relative group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <Card className="relative p-8 bg-card/50 backdrop-blur border-border/50 hover:border-amber-500/50 transition-all duration-300 h-full">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-6 shadow-lg shadow-amber-500/25">
+                    <Shield className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-3">Comunidades VIP</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Gerencie acessos a grupos exclusivos com cobrança recorrente ou única.
+                  </p>
+                  <ul className="space-y-2">
+                    {["Acesso automático ao grupo", "Gestão de membros integrada", "Renovação e cancelamento"].map((item, i) => (
+                      <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+
       {/* Testimonials Section */}
       <TestimonialsSection
         title="O que nossos clientes dizem"
