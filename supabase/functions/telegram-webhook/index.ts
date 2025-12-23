@@ -1028,16 +1028,25 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
     const txStatus = (tx?.status || 'UNKNOWN') as string;
 
     if (!tx) {
-      await sendTelegramMessage(botToken, chatId, '⚠️ Não consegui verificar seu pagamento agora. Tente novamente em instantes.');
+      const errorMsg = '⚠️ <b>Erro na verificação</b>\n\nNão conseguimos verificar seu pagamento no momento. Por favor, tente novamente em alguns segundos.\n\n💡 <i>Se o problema persistir, entre em contato com o suporte.</i>';
+      await sendTelegramMessage(botToken, chatId, errorMsg, {
+        inline_keyboard: [
+          [{ text: '🔄 Tentar Novamente', callback_data: `paid_${orderId}` }],
+          [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
+        ],
+      });
       return;
     }
 
     if (!isFastsoftPaidStatus(txStatus)) {
-      await sendTelegramMessage(
-        botToken,
-        chatId,
-        `⏳ Ainda não identificamos seu pagamento (status: ${txStatus}).\n\nSe você acabou de pagar, aguarde alguns segundos e toque em "✅ Já Paguei" novamente.`
-      );
+      const pendingMsg = `⏳ <b>Pagamento não detectado</b>\n\nAinda não identificamos o seu pagamento.\n\n💡 <b>O que fazer:</b>\n• Se você <b>já pagou</b>, aguarde alguns segundos e toque em "🔄 Verificar Novamente"\n• Pagamentos PIX podem levar até 1 minuto para serem confirmados\n• Verifique se o pagamento foi concluído no seu banco\n\n📱 <i>Status atual: ${txStatus}</i>`;
+      await sendTelegramMessage(botToken, chatId, pendingMsg, {
+        inline_keyboard: [
+          [{ text: '🔄 Verificar Novamente', callback_data: `paid_${orderId}` }],
+          [{ text: '📋 Copiar Código PIX', callback_data: `copypix_${orderId}` }],
+          [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
+        ],
+      });
       return;
     }
 
