@@ -15,7 +15,8 @@ import {
   LogOut,
   Menu,
   X,
-  GitBranch
+  GitBranch,
+  BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,7 @@ const menuItems = [
   { icon: GitBranch, label: 'Funil', path: '/funnel' },
   { icon: ShoppingCart, label: 'Pedidos', path: '/orders' },
   { icon: Users, label: 'Clientes', path: '/customers' },
+  { icon: BarChart3, label: 'Relatórios', path: '/reports' },
   { icon: Bot, label: 'Bot Config', path: '/bot-config' },
   { icon: Settings, label: 'Configurações', path: '/settings' },
 ];
