@@ -9,15 +9,47 @@ export type Order = Tables<'orders'> & {
 
 export type OrderStatus = 'pending' | 'paid' | 'delivered' | 'cancelled' | 'refunded';
 
-export const useOrders = (clientId: string, status?: OrderStatus | null) => {
+export interface PaginatedOrdersResult {
+  orders: Order[];
+  totalCount: number;
+  totalPages: number;
+}
+
+export const useOrders = (
+  clientId: string, 
+  status?: OrderStatus | null,
+  page: number = 1,
+  pageSize: number = 10
+) => {
   return useQuery({
-    queryKey: ['orders', clientId, status],
-    queryFn: async () => {
+    queryKey: ['orders', clientId, status, page, pageSize],
+    queryFn: async (): Promise<PaginatedOrdersResult> => {
+      // First get total count
+      let countQuery = supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', clientId);
+
+      if (status) {
+        countQuery = countQuery.eq('status', status);
+      }
+
+      const { count, error: countError } = await countQuery;
+      if (countError) throw countError;
+
+      const totalCount = count || 0;
+      const totalPages = Math.ceil(totalCount / pageSize);
+
+      // Then get paginated data
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
       let query = supabase
         .from('orders')
         .select('*, products(*), telegram_customers(*)')
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (status) {
         query = query.eq('status', status);
@@ -26,7 +58,12 @@ export const useOrders = (clientId: string, status?: OrderStatus | null) => {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as Order[];
+      
+      return {
+        orders: data as Order[],
+        totalCount,
+        totalPages,
+      };
     },
     enabled: !!clientId,
   });

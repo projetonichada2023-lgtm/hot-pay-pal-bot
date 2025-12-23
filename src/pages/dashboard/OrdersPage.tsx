@@ -3,7 +3,8 @@ import { Client } from '@/hooks/useClient';
 import { useOrders, useUpdateOrderStatus, useOrderStats, Order, OrderStatus } from '@/hooks/useOrders';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ShoppingCart, Loader2, Clock, CheckCircle, Package, XCircle, DollarSign } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ShoppingCart, Loader2, Clock, CheckCircle, Package, XCircle, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
 import { OrdersTable } from '@/components/orders/OrdersTable';
 import { OrderDetailsDialog } from '@/components/orders/OrderDetailsDialog';
 import { toast } from 'sonner';
@@ -21,17 +22,32 @@ const statusOptions = [
   { value: 'refunded', label: 'Reembolsados' },
 ];
 
+const PAGE_SIZE = 10;
+
 export const OrdersPage = ({ client }: OrdersPageProps) => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: orders, isLoading } = useOrders(
+  const { data, isLoading } = useOrders(
     client.id, 
-    statusFilter === 'all' ? null : statusFilter as OrderStatus
+    statusFilter === 'all' ? null : statusFilter as OrderStatus,
+    currentPage,
+    PAGE_SIZE
   );
   const { data: stats } = useOrderStats(client.id);
   const updateStatus = useUpdateOrderStatus();
+
+  const orders = data?.orders || [];
+  const totalCount = data?.totalCount || 0;
+  const totalPages = data?.totalPages || 1;
+
+  // Reset page when filter changes
+  const handleStatusChange = (value: string) => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  };
 
   const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
     try {
@@ -134,8 +150,15 @@ export const OrdersPage = ({ client }: OrdersPageProps) => {
       {/* Orders Table */}
       <Card className="glass-card">
         <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 space-y-0 pb-4">
-          <CardTitle className="text-base sm:text-lg">Lista de Pedidos</CardTitle>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <div className="flex items-center gap-3">
+            <CardTitle className="text-base sm:text-lg">Lista de Pedidos</CardTitle>
+            {totalCount > 0 && (
+              <span className="text-xs text-muted-foreground">
+                ({totalCount} {totalCount === 1 ? 'pedido' : 'pedidos'})
+              </span>
+            )}
+          </div>
+          <Select value={statusFilter} onValueChange={handleStatusChange}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Filtrar por status" />
             </SelectTrigger>
@@ -148,18 +171,49 @@ export const OrdersPage = ({ client }: OrdersPageProps) => {
             </SelectContent>
           </Select>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <OrdersTable
-              orders={orders || []}
-              onUpdateStatus={handleUpdateStatus}
-              onViewDetails={handleViewDetails}
-              isUpdating={updateStatus.isPending}
-            />
+            <>
+              <OrdersTable
+                orders={orders}
+                onUpdateStatus={handleUpdateStatus}
+                onViewDetails={handleViewDetails}
+                isUpdating={updateStatus.isPending}
+              />
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4 border-t border-border">
+                  <p className="text-sm text-muted-foreground">
+                    Página {currentPage} de {totalPages}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span className="hidden sm:inline ml-1">Anterior</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      <span className="hidden sm:inline mr-1">Próxima</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
