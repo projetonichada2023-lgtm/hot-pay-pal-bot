@@ -67,22 +67,7 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
   };
 
   const statsCards = [
-    { 
-      label: 'Pedidos Pagos', 
-      value: isLoading ? null : String(stats?.paidOrdersCount || 0),
-      change: stats?.paidOrdersChange || 0,
-      changeLabel: 'vs período anterior',
-      icon: CheckCircle,
-      color: 'text-success'
-    },
-    { 
-      label: 'Valor Pago', 
-      value: isLoading ? null : formatPrice(stats?.salesTotal || 0),
-      change: stats?.salesChange || 0,
-      changeLabel: 'vs período anterior',
-      icon: DollarSign,
-      color: 'text-success'
-    },
+    // Pedidos totais
     { 
       label: 'Total Pedidos', 
       value: isLoading ? null : String(stats?.ordersTotal || 0),
@@ -99,15 +84,24 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       icon: DollarSign,
       color: 'text-primary'
     },
+    // Pedidos pagos
     { 
-      label: 'Clientes', 
-      value: isLoading ? null : String(stats?.customersTotal || 0),
-      change: stats?.customersNew || 0,
-      changeLabel: 'novos no período',
-      isPercent: false,
-      icon: Users,
-      color: 'text-telegram'
+      label: 'Pedidos Pagos', 
+      value: isLoading ? null : String(stats?.paidOrdersCount || 0),
+      change: stats?.paidOrdersChange || 0,
+      changeLabel: 'vs período anterior',
+      icon: CheckCircle,
+      color: 'text-success'
     },
+    { 
+      label: 'Valor Pago', 
+      value: isLoading ? null : formatPrice(stats?.salesTotal || 0),
+      change: stats?.salesChange || 0,
+      changeLabel: 'vs período anterior',
+      icon: DollarSign,
+      color: 'text-success'
+    },
+    // Taxas
     { 
       label: 'Taxa de Conversão', 
       value: isLoading ? null : `${(stats?.conversionRate || 0).toFixed(0)}%`,
@@ -117,14 +111,6 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       color: 'text-warning'
     },
     { 
-      label: 'Ticket Médio', 
-      value: isLoading ? null : formatPrice(stats?.averageTicket || 0),
-      change: stats?.averageTicketChange || 0,
-      changeLabel: 'vs período anterior',
-      icon: Receipt,
-      color: 'text-primary'
-    },
-    { 
       label: 'Taxa de Abandono', 
       value: isLoading ? null : `${(stats?.abandonmentRate || 0).toFixed(0)}%`,
       change: stats?.abandonmentRateChange || 0,
@@ -132,6 +118,24 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       invertColors: true,
       icon: AlertCircle,
       color: 'text-destructive'
+    },
+    { 
+      label: 'Ticket Médio', 
+      value: isLoading ? null : formatPrice(stats?.averageTicket || 0),
+      change: stats?.averageTicketChange || 0,
+      changeLabel: 'vs período anterior',
+      icon: Receipt,
+      color: 'text-primary'
+    },
+    // Clientes
+    { 
+      label: 'Clientes', 
+      value: isLoading ? null : String(stats?.customersTotal || 0),
+      change: stats?.customersNew || 0,
+      changeLabel: 'novos no período',
+      isPercent: false,
+      icon: Users,
+      color: 'text-telegram'
     },
     { 
       label: 'Clientes Recorrentes', 
