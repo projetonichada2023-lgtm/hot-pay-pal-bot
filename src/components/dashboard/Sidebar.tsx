@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { 
   LayoutDashboard, 
   MessageSquare, 
+  MessageCircle,
   Settings, 
   Package, 
   Users, 
@@ -24,7 +25,8 @@ interface SidebarProps {
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-  { icon: MessageSquare, label: 'Mensagens', path: '/messages' },
+  { icon: MessageCircle, label: 'Conversas', path: '/chats' },
+  { icon: MessageSquare, label: 'Mensagens Bot', path: '/messages' },
   { icon: Package, label: 'Produtos', path: '/products' },
   { icon: GitBranch, label: 'Funil', path: '/funnel' },
   { icon: ShoppingCart, label: 'Pedidos', path: '/orders' },

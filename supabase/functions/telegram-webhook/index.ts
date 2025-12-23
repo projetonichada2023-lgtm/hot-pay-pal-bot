@@ -123,6 +123,28 @@ async function addUserToGroup(botToken: string, groupId: string, userId: number)
 
 // =============== DATABASE HELPERS ===============
 
+async function saveMessage(
+  clientId: string, 
+  chatId: number, 
+  customerId: string | null, 
+  direction: 'incoming' | 'outgoing', 
+  content: string | null,
+  messageId?: number
+) {
+  try {
+    await supabase.from('telegram_messages').insert({
+      client_id: clientId,
+      telegram_chat_id: chatId,
+      customer_id: customerId,
+      direction,
+      message_content: content,
+      telegram_message_id: messageId || null,
+    });
+  } catch (e) {
+    console.error('Failed to save message:', e);
+  }
+}
+
 async function getClientMessage(clientId: string, messageType: string): Promise<string> {
   const { data } = await supabase
     .from('bot_messages')
@@ -346,21 +368,29 @@ serve(async (req) => {
       const chatId = update.message.chat.id;
       const text = update.message.text || '';
       const telegramUser = update.message.from;
+      const messageId = update.message.message_id;
 
       // Ensure customer exists
-      await getOrCreateCustomer(clientId, telegramUser);
+      const customer = await getOrCreateCustomer(clientId, telegramUser);
+
+      // Save incoming message
+      await saveMessage(clientId, chatId, customer?.id || null, 'incoming', text, messageId);
 
       // Handle /start command
       if (text.startsWith('/start')) {
         const welcomeMessage = await getClientMessage(clientId, 'welcome');
-        await sendTelegramMessage(botToken, chatId, welcomeMessage || '👋 Bem-vindo! Use o botão abaixo para ver nossos produtos.', {
+        const msgText = welcomeMessage || '👋 Bem-vindo! Use o botão abaixo para ver nossos produtos.';
+        const sent = await sendTelegramMessage(botToken, chatId, msgText, {
           inline_keyboard: [[{ text: '🛍️ Ver Produtos', callback_data: 'products' }]]
         });
+        if (sent?.result?.message_id) {
+          await saveMessage(clientId, chatId, customer?.id || null, 'outgoing', msgText, sent.result.message_id);
+        }
       }
 
       // Handle /produtos command
       if (text.startsWith('/produtos')) {
-        await handleShowProducts(botToken, chatId, clientId);
+        await handleShowProducts(botToken, chatId, clientId, customer?.id || null);
       }
     }
 
@@ -380,7 +410,7 @@ serve(async (req) => {
 
       // Show products list
       if (data === 'products') {
-        await handleShowProducts(botToken, chatId, clientId);
+        await handleShowProducts(botToken, chatId, clientId, customer?.id || null);
       }
 
       // Show single product details
@@ -491,14 +521,18 @@ serve(async (req) => {
 
 // =============== HANDLER FUNCTIONS ===============
 
-async function handleShowProducts(botToken: string, chatId: number, clientId: string) {
+async function handleShowProducts(botToken: string, chatId: number, clientId: string, customerId?: string | null) {
   const products = await getProducts(clientId);
   
   if (products.length === 0) {
     const noProductsMessage = await getClientMessage(clientId, 'no_products');
-    await sendTelegramMessage(botToken, chatId, noProductsMessage || '😕 Nenhum produto disponível no momento.', {
+    const msgText = noProductsMessage || '😕 Nenhum produto disponível no momento.';
+    const sent = await sendTelegramMessage(botToken, chatId, msgText, {
       inline_keyboard: [[{ text: '🔙 Voltar ao Menu', callback_data: 'menu' }]]
     });
+    if (sent?.result?.message_id && customerId) {
+      await saveMessage(clientId, chatId, customerId, 'outgoing', msgText, sent.result.message_id);
+    }
     return;
   }
 
@@ -510,12 +544,16 @@ async function handleShowProducts(botToken: string, chatId: number, clientId: st
   
   keyboard.push([{ text: '🔙 Voltar ao Menu', callback_data: 'menu' }]);
 
-  await sendTelegramMessage(
+  const msgText = '🛍️ <b>Nossos Produtos</b>\n\nEscolha um produto para ver mais detalhes:';
+  const sent = await sendTelegramMessage(
     botToken, 
     chatId, 
-    '🛍️ <b>Nossos Produtos</b>\n\nEscolha um produto para ver mais detalhes:', 
+    msgText, 
     { inline_keyboard: keyboard }
   );
+  if (sent?.result?.message_id && customerId) {
+    await saveMessage(clientId, chatId, customerId, 'outgoing', msgText, sent.result.message_id);
+  }
 }
 
 async function handleShowProduct(botToken: string, chatId: number, clientId: string, productId: string) {

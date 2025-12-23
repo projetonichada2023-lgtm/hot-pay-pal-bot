@@ -404,6 +404,57 @@ export type Database = {
           },
         ]
       }
+      telegram_messages: {
+        Row: {
+          client_id: string
+          created_at: string
+          customer_id: string | null
+          direction: string
+          id: string
+          message_content: string | null
+          message_type: string
+          telegram_chat_id: number
+          telegram_message_id: number | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          customer_id?: string | null
+          direction: string
+          id?: string
+          message_content?: string | null
+          message_type?: string
+          telegram_chat_id: number
+          telegram_message_id?: number | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          customer_id?: string | null
+          direction?: string
+          id?: string
+          message_content?: string | null
+          message_type?: string
+          telegram_chat_id?: number
+          telegram_message_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_messages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telegram_messages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string

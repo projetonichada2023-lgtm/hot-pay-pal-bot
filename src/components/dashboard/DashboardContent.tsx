@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import { Client } from '@/hooks/useClient';
 import { OverviewPage } from '@/pages/dashboard/OverviewPage';
 import { MessagesPage } from '@/pages/dashboard/MessagesPage';
+import { ChatsPage } from '@/pages/dashboard/ChatsPage';
 import { BotConfigPage } from '@/pages/dashboard/BotConfigPage';
 import { SettingsPage } from '@/pages/dashboard/SettingsPage';
 import { ProductsPage } from '@/pages/dashboard/ProductsPage';
@@ -20,6 +21,7 @@ export const DashboardContent = ({ client }: DashboardContentProps) => {
         <Routes>
           <Route path="/" element={<OverviewPage client={client} />} />
           <Route path="/messages" element={<MessagesPage client={client} />} />
+          <Route path="/chats" element={<ChatsPage client={client} />} />
           <Route path="/products" element={<ProductsPage client={client} />} />
           <Route path="/funnel" element={<FunnelPage client={client} />} />
           <Route path="/orders" element={<OrdersPage client={client} />} />
