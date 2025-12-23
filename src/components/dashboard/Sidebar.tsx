@@ -20,7 +20,8 @@ import {
   BarChart3,
   Sun,
   Moon,
-  RefreshCw
+  RefreshCw,
+  Smartphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -39,6 +40,7 @@ const menuItems = [
   { icon: Users, label: 'Clientes', path: '/dashboard/customers' },
   { icon: BarChart3, label: 'Relatórios', path: '/dashboard/reports' },
   { icon: Bot, label: 'Bot Config', path: '/dashboard/bot-config' },
+  { icon: Smartphone, label: 'Simulador', path: '/dashboard/simulator' },
   { icon: Settings, label: 'Configurações', path: '/dashboard/settings' },
 ];
 
