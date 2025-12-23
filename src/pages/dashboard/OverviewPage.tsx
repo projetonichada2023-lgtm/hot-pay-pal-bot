@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Client } from '@/hooks/useClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, ShoppingCart, Users, DollarSign, Bot, CalendarIcon } from 'lucide-react';
-import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useDashboardStats, DateRange } from '@/hooks/useDashboardStats';
 import { SalesChart } from '@/components/dashboard/SalesChart';
 import { RecentOrdersCard } from '@/components/dashboard/RecentOrdersCard';
 import { FunnelInsightsCard } from '@/components/dashboard/FunnelInsightsCard';
@@ -11,16 +11,45 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format, isToday } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface OverviewPageProps {
   client: Client;
 }
 
+const presetRanges = [
+  { label: '7 dias', days: 7 },
+  { label: '30 dias', days: 30 },
+  { label: '90 dias', days: 90 },
+];
+
 export const OverviewPage = ({ client }: OverviewPageProps) => {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const { data: stats, isLoading } = useDashboardStats(client.id, selectedDate);
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: subDays(new Date(), 6),
+    to: new Date(),
+  });
+  const [activePreset, setActivePreset] = useState<number | null>(7);
+  
+  const { data: stats, isLoading } = useDashboardStats(client.id, dateRange);
+
+  const handlePresetClick = (days: number) => {
+    setDateRange({
+      from: subDays(new Date(), days - 1),
+      to: new Date(),
+    });
+    setActivePreset(days);
+  };
+
+  const handleDateRangeChange = (range: { from?: Date; to?: Date }) => {
+    if (range.from) {
+      setDateRange({
+        from: range.from,
+        to: range.to || range.from,
+      });
+      setActivePreset(null);
+    }
+  };
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -37,22 +66,20 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
     return `${sign}${value}`;
   };
 
-  const dateLabel = isToday(selectedDate) ? 'Hoje' : format(selectedDate, "dd 'de' MMM", { locale: ptBR });
-
   const statsCards = [
     { 
-      label: `Vendas ${dateLabel}`, 
-      value: isLoading ? null : formatPrice(stats?.salesSelected || 0),
+      label: 'Vendas', 
+      value: isLoading ? null : formatPrice(stats?.salesTotal || 0),
       change: stats?.salesChange || 0,
-      changeLabel: 'vs dia anterior',
+      changeLabel: 'vs período anterior',
       icon: DollarSign,
       color: 'text-success'
     },
     { 
-      label: `Pedidos ${dateLabel}`, 
-      value: isLoading ? null : String(stats?.ordersSelected || 0),
+      label: 'Pedidos', 
+      value: isLoading ? null : String(stats?.ordersTotal || 0),
       change: stats?.ordersChange || 0,
-      changeLabel: 'vs dia anterior',
+      changeLabel: 'vs período anterior',
       icon: ShoppingCart,
       color: 'text-primary'
     },
@@ -60,7 +87,7 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       label: 'Clientes', 
       value: isLoading ? null : String(stats?.customersTotal || 0),
       change: stats?.customersNew || 0,
-      changeLabel: `novos ${dateLabel.toLowerCase()}`,
+      changeLabel: 'novos no período',
       isPercent: false,
       icon: Users,
       color: 'text-telegram'
@@ -69,7 +96,7 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       label: 'Taxa de Conversão', 
       value: isLoading ? null : `${(stats?.conversionRate || 0).toFixed(0)}%`,
       change: stats?.conversionChange || 0,
-      changeLabel: 'vs dia anterior',
+      changeLabel: 'vs período anterior',
       icon: TrendingUp,
       color: 'text-warning'
     },
@@ -82,26 +109,43 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">Bem-vindo, {client.business_name}</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Preset buttons */}
+          <div className="flex gap-1">
+            {presetRanges.map((preset) => (
+              <Button
+                key={preset.days}
+                variant={activePreset === preset.days ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handlePresetClick(preset.days)}
+              >
+                {preset.label}
+              </Button>
+            ))}
+          </div>
+          
+          {/* Date range picker */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2">
                 <CalendarIcon className="w-4 h-4" />
-                {format(selectedDate, "dd/MM/yyyy")}
+                {format(dateRange.from, "dd/MM")} - {format(dateRange.to, "dd/MM/yy")}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
               <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
+                mode="range"
+                selected={{ from: dateRange.from, to: dateRange.to }}
+                onSelect={(range) => handleDateRangeChange(range || {})}
                 disabled={(date) => date > new Date()}
+                numberOfMonths={2}
                 initialFocus
                 className="p-3 pointer-events-auto"
               />
             </PopoverContent>
           </Popover>
-          <div className="flex items-center gap-2 text-sm">
+
+          <div className="flex items-center gap-2 text-sm ml-2">
             <div className={`w-2 h-2 rounded-full ${client.webhook_configured ? 'bg-success' : 'bg-warning'}`} />
             <span className="text-muted-foreground">
               Bot {client.webhook_configured ? 'Ativo' : 'Pendente'}
@@ -140,7 +184,7 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       </div>
 
       {/* Chart */}
-      <SalesChart clientId={client.id} />
+      <SalesChart clientId={client.id} dateRange={dateRange} />
 
       {/* Bottom Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

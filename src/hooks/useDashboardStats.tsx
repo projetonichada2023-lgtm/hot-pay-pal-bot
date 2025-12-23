@@ -2,11 +2,16 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 
+export interface DateRange {
+  from: Date;
+  to: Date;
+}
+
 interface DashboardStats {
-  salesSelected: number;
+  salesTotal: number;
   salesPrevious: number;
   salesChange: number;
-  ordersSelected: number;
+  ordersTotal: number;
   ordersPrevious: number;
   ordersChange: number;
   customersTotal: number;
@@ -22,14 +27,23 @@ interface DailySales {
   orders: number;
 }
 
-export const useDashboardStats = (clientId: string, selectedDate: Date = new Date()) => {
+const getDaysDiff = (from: Date, to: Date) => {
+  return Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+};
+
+export const useDashboardStats = (clientId: string, dateRange: DateRange) => {
+  const rangeKey = `${format(dateRange.from, 'yyyy-MM-dd')}_${format(dateRange.to, 'yyyy-MM-dd')}`;
+  
   return useQuery({
-    queryKey: ['dashboard-stats', clientId, format(selectedDate, 'yyyy-MM-dd')],
+    queryKey: ['dashboard-stats', clientId, rangeKey],
     queryFn: async (): Promise<DashboardStats> => {
-      const selectedStart = startOfDay(selectedDate);
-      const selectedEnd = endOfDay(selectedDate);
-      const previousStart = startOfDay(subDays(selectedDate, 1));
-      const previousEnd = endOfDay(subDays(selectedDate, 1));
+      const selectedStart = startOfDay(dateRange.from);
+      const selectedEnd = endOfDay(dateRange.to);
+      
+      // Calculate previous period with same duration
+      const daysDiff = getDaysDiff(dateRange.from, dateRange.to);
+      const previousStart = startOfDay(subDays(dateRange.from, daysDiff));
+      const previousEnd = endOfDay(subDays(dateRange.from, 1));
 
       // Fetch all orders
       const { data: orders, error } = await supabase
@@ -45,7 +59,7 @@ export const useDashboardStats = (clientId: string, selectedDate: Date = new Dat
         .select('*', { count: 'exact', head: true })
         .eq('client_id', clientId);
 
-      // Fetch new customers on selected date
+      // Fetch new customers in selected range
       const { count: customersNew } = await supabase
         .from('telegram_customers')
         .select('*', { count: 'exact', head: true })
@@ -66,7 +80,7 @@ export const useDashboardStats = (clientId: string, selectedDate: Date = new Dat
 
       const paidStatuses = ['paid', 'delivered'];
       
-      const salesSelected = selectedOrders
+      const salesTotal = selectedOrders
         .filter(o => paidStatuses.includes(o.status || ''))
         .reduce((sum, o) => sum + Number(o.amount), 0);
 
@@ -74,19 +88,19 @@ export const useDashboardStats = (clientId: string, selectedDate: Date = new Dat
         .filter(o => paidStatuses.includes(o.status || ''))
         .reduce((sum, o) => sum + Number(o.amount), 0);
 
-      const salesChange = salesPrevious > 0
-        ? ((salesSelected - salesPrevious) / salesPrevious) * 100 
-        : salesSelected > 0 ? 100 : 0;
+      const salesChange = salesPrevious > 0 
+        ? ((salesTotal - salesPrevious) / salesPrevious) * 100 
+        : salesTotal > 0 ? 100 : 0;
 
-      const ordersSelected = selectedOrders.length;
+      const ordersTotal = selectedOrders.length;
       const ordersPrevious = previousOrders.length;
       const ordersChange = ordersPrevious > 0
-        ? ((ordersSelected - ordersPrevious) / ordersPrevious) * 100
-        : ordersSelected > 0 ? 100 : 0;
+        ? ((ordersTotal - ordersPrevious) / ordersPrevious) * 100
+        : ordersTotal > 0 ? 100 : 0;
 
-      // Conversion rate for selected date
+      // Conversion rate for selected period
       const selectedPaid = selectedOrders.filter(o => paidStatuses.includes(o.status || '')).length;
-      const conversionRate = ordersSelected > 0 ? (selectedPaid / ordersSelected) * 100 : 0;
+      const conversionRate = ordersTotal > 0 ? (selectedPaid / ordersTotal) * 100 : 0;
 
       const previousPaid = previousOrders.filter(o => paidStatuses.includes(o.status || '')).length;
       const conversionPrevious = ordersPrevious > 0 ? (previousPaid / ordersPrevious) * 100 : 0;
@@ -95,10 +109,10 @@ export const useDashboardStats = (clientId: string, selectedDate: Date = new Dat
         : conversionRate > 0 ? conversionRate : 0;
 
       return {
-        salesSelected,
+        salesTotal,
         salesPrevious,
         salesChange,
-        ordersSelected,
+        ordersTotal,
         ordersPrevious,
         ordersChange,
         customersTotal: customersTotal || 0,
@@ -112,18 +126,22 @@ export const useDashboardStats = (clientId: string, selectedDate: Date = new Dat
   });
 };
 
-export const useSalesChart = (clientId: string) => {
+export const useSalesChart = (clientId: string, dateRange: DateRange) => {
+  const rangeKey = `${format(dateRange.from, 'yyyy-MM-dd')}_${format(dateRange.to, 'yyyy-MM-dd')}`;
+  
   return useQuery({
-    queryKey: ['sales-chart', clientId],
+    queryKey: ['sales-chart', clientId, rangeKey],
     queryFn: async (): Promise<DailySales[]> => {
-      const days = 7;
-      const startDate = startOfDay(subDays(new Date(), days - 1));
+      const startDate = startOfDay(dateRange.from);
+      const endDate = endOfDay(dateRange.to);
+      const daysDiff = getDaysDiff(dateRange.from, dateRange.to);
 
       const { data: orders, error } = await supabase
         .from('orders')
         .select('amount, status, created_at')
         .eq('client_id', clientId)
         .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString())
         .in('status', ['paid', 'delivered']);
 
       if (error) throw error;
@@ -131,8 +149,8 @@ export const useSalesChart = (clientId: string) => {
       // Group by day
       const salesByDay: Record<string, { total: number; orders: number }> = {};
       
-      for (let i = 0; i < days; i++) {
-        const date = format(subDays(new Date(), days - 1 - i), 'yyyy-MM-dd');
+      for (let i = 0; i < daysDiff; i++) {
+        const date = format(subDays(dateRange.to, daysDiff - 1 - i), 'yyyy-MM-dd');
         salesByDay[date] = { total: 0, orders: 0 };
       }
 

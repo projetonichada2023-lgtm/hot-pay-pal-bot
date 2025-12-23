@@ -1,14 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useSalesChart } from '@/hooks/useDashboardStats';
+import { useSalesChart, DateRange } from '@/hooks/useDashboardStats';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface SalesChartProps {
   clientId: string;
+  dateRange: DateRange;
 }
 
-export const SalesChart = ({ clientId }: SalesChartProps) => {
-  const { data: chartData, isLoading } = useSalesChart(clientId);
+export const SalesChart = ({ clientId, dateRange }: SalesChartProps) => {
+  const { data: chartData, isLoading } = useSalesChart(clientId, dateRange);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -22,7 +23,7 @@ export const SalesChart = ({ clientId }: SalesChartProps) => {
     return (
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle className="text-lg">Vendas dos Últimos 7 Dias</CardTitle>
+          <CardTitle className="text-lg">Vendas no Período</CardTitle>
         </CardHeader>
         <CardContent>
           <Skeleton className="h-[200px] w-full" />
@@ -34,7 +35,7 @@ export const SalesChart = ({ clientId }: SalesChartProps) => {
   return (
     <Card className="glass-card">
       <CardHeader>
-        <CardTitle className="text-lg">Vendas dos Últimos 7 Dias</CardTitle>
+        <CardTitle className="text-lg">Vendas no Período</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[200px]">
