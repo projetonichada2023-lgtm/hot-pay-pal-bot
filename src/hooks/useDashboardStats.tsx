@@ -14,6 +14,9 @@ interface DashboardStats {
   ordersTotal: number;
   ordersPrevious: number;
   ordersChange: number;
+  paidOrdersCount: number;
+  paidOrdersPrevious: number;
+  paidOrdersChange: number;
   customersTotal: number;
   customersNew: number;
   conversionRate: number;
@@ -106,11 +109,15 @@ export const useDashboardStats = (clientId: string, dateRange: DateRange) => {
         ? ((ordersTotal - ordersPrevious) / ordersPrevious) * 100
         : ordersTotal > 0 ? 100 : 0;
 
-      // Conversion rate for selected period
+      // Paid orders count
       const selectedPaid = selectedOrders.filter(o => paidStatuses.includes(o.status || '')).length;
-      const conversionRate = ordersTotal > 0 ? (selectedPaid / ordersTotal) * 100 : 0;
-
       const previousPaid = previousOrders.filter(o => paidStatuses.includes(o.status || '')).length;
+      const paidOrdersChange = previousPaid > 0
+        ? ((selectedPaid - previousPaid) / previousPaid) * 100
+        : selectedPaid > 0 ? 100 : 0;
+
+      // Conversion rate for selected period
+      const conversionRate = ordersTotal > 0 ? (selectedPaid / ordersTotal) * 100 : 0;
       const conversionPrevious = ordersPrevious > 0 ? (previousPaid / ordersPrevious) * 100 : 0;
       const conversionChange = conversionPrevious > 0
         ? conversionRate - conversionPrevious
@@ -155,6 +162,9 @@ export const useDashboardStats = (clientId: string, dateRange: DateRange) => {
         ordersTotal,
         ordersPrevious,
         ordersChange,
+        paidOrdersCount: selectedPaid,
+        paidOrdersPrevious: previousPaid,
+        paidOrdersChange,
         customersTotal: customersTotal || 0,
         customersNew: customersNew || 0,
         conversionRate,

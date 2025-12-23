@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Client } from '@/hooks/useClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, ShoppingCart, Users, DollarSign, Bot, CalendarIcon, Receipt, AlertCircle, UserCheck } from 'lucide-react';
+import { TrendingUp, ShoppingCart, Users, DollarSign, Bot, CalendarIcon, Receipt, AlertCircle, UserCheck, CheckCircle } from 'lucide-react';
 import { useDashboardStats, DateRange } from '@/hooks/useDashboardStats';
 import { SalesChart } from '@/components/dashboard/SalesChart';
 import { RecentOrdersCard } from '@/components/dashboard/RecentOrdersCard';
@@ -82,6 +82,14 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       changeLabel: 'vs período anterior',
       icon: ShoppingCart,
       color: 'text-primary'
+    },
+    { 
+      label: 'Pedidos Pagos', 
+      value: isLoading ? null : `${stats?.paidOrdersCount || 0} (${formatPrice(stats?.salesTotal || 0)})`,
+      change: stats?.paidOrdersChange || 0,
+      changeLabel: 'vs período anterior',
+      icon: CheckCircle,
+      color: 'text-success'
     },
     { 
       label: 'Clientes', 
