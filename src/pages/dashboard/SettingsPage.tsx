@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Loader2, CreditCard, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
-import { CartRecoverySettings } from '@/components/settings/CartRecoverySettings';
 
 interface SettingsPageProps {
   client: Client;
@@ -241,9 +240,6 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Cart Recovery */}
-      <CartRecoverySettings client={client} />
 
       {/* Business Info */}
       <Card className="glass-card">
