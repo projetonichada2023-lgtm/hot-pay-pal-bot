@@ -603,10 +603,14 @@ async function handleCancelOrder(botToken: string, chatId: number, clientId: str
 }
 
 async function handleUpsell(botToken: string, chatId: number, clientId: string, purchasedProductId: string, purchasedProduct: any, parentOrderId: string) {
+  console.log('handleUpsell called:', { purchasedProductId, parentOrderId, upsell_product_id: purchasedProduct?.upsell_product_id });
+  
   // Check if upsell is enabled for this client
   const settings = await getClientSettings(clientId);
+  console.log('Upsell settings:', { upsell_enabled: settings?.upsell_enabled });
   
   if (!settings?.upsell_enabled) {
+    console.log('Upsell disabled, returning');
     return;
   }
   
