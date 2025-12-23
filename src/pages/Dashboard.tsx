@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useClient } from '@/hooks/useClient';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { DashboardContent } from '@/components/dashboard/DashboardContent';
+import { NotificationCenter } from '@/components/dashboard/NotificationCenter';
 import { Loader2 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -33,6 +34,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background flex">
       <Sidebar client={client} />
       <DashboardContent client={client} />
+      <NotificationCenter clientId={client.id} onNavigate={navigate} />
     </div>
   );
 };
