@@ -194,3 +194,31 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* Reduce motion for users who prefer it and mobile devices */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Optimize animations for mobile */
+@media (max-width: 768px) {
+  .will-change-transform {
+    will-change: auto;
+  }
+  
+  /* Disable heavy blur effects on mobile */
+  .blur-3xl, .blur-2xl {
+    filter: blur(20px);
+  }
+}
+
+/* GPU acceleration for animations */
+.will-change-transform {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
