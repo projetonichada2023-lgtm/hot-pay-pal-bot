@@ -17,7 +17,7 @@ const LGPD = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Compromisso com a LGPD</h2>
             <p className="text-muted-foreground leading-relaxed">
-              A UniPay está em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018). 
+              A TeleGateway está em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018). 
               Esta página detalha como protegemos seus dados pessoais conforme a legislação brasileira.
             </p>
           </section>
@@ -25,7 +25,7 @@ const LGPD = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">2. Controlador de Dados</h2>
             <p className="text-muted-foreground leading-relaxed">
-              A UniPay atua como controladora de dados pessoais, sendo responsável pelas decisões referentes 
+              A TeleGateway atua como controladora de dados pessoais, sendo responsável pelas decisões referentes 
               ao tratamento de dados pessoais dos usuários de sua plataforma.
             </p>
           </section>
@@ -65,7 +65,7 @@ const LGPD = () => {
               e esclarecer dúvidas sobre o tratamento de dados pessoais.
             </p>
             <p className="text-muted-foreground leading-relaxed mt-2">
-              <strong>Contato:</strong> dpo@unipay.com.br
+              <strong>Contato:</strong> dpo@telegateway.com.br
             </p>
           </section>
 
@@ -103,7 +103,7 @@ const LGPD = () => {
             <h2 className="text-2xl font-semibold mb-4">9. Como Exercer Seus Direitos</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">Para exercer seus direitos, você pode:</p>
             <ul className="list-disc list-inside text-muted-foreground space-y-2">
-              <li>Enviar email para: lgpd@unipay.com.br</li>
+              <li>Enviar email para: lgpd@telegateway.com.br</li>
               <li>Acessar as configurações de privacidade em sua conta</li>
               <li>Entrar em contato com nosso DPO</li>
             </ul>

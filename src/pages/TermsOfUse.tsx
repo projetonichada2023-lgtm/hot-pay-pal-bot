@@ -17,7 +17,7 @@ const TermsOfUse = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Aceitação dos Termos</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Ao acessar e usar a plataforma UniPay, você concorda em cumprir e estar vinculado a estes Termos de Uso. 
+              Ao acessar e usar a plataforma TeleGateway, você concorda em cumprir e estar vinculado a estes Termos de Uso. 
               Se você não concordar com qualquer parte destes termos, não poderá acessar o serviço.
             </p>
           </section>
@@ -25,7 +25,7 @@ const TermsOfUse = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">2. Descrição do Serviço</h2>
             <p className="text-muted-foreground leading-relaxed">
-              A UniPay é uma plataforma de automação de vendas via Telegram que permite aos usuários criar e gerenciar 
+              A TeleGateway é uma plataforma de automação de vendas via Telegram que permite aos usuários criar e gerenciar 
               lojas virtuais, processar pagamentos e automatizar interações com clientes.
             </p>
           </section>
@@ -53,7 +53,7 @@ const TermsOfUse = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">5. Pagamentos e Taxas</h2>
             <p className="text-muted-foreground leading-relaxed">
-              As taxas de serviço são claramente informadas antes de qualquer transação. A UniPay pode alterar 
+              As taxas de serviço são claramente informadas antes de qualquer transação. A TeleGateway pode alterar 
               suas taxas mediante aviso prévio de 30 dias.
             </p>
           </section>
@@ -61,7 +61,7 @@ const TermsOfUse = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">6. Propriedade Intelectual</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Todo o conteúdo da plataforma, incluindo logos, textos e software, é propriedade da UniPay ou 
+              Todo o conteúdo da plataforma, incluindo logos, textos e software, é propriedade da TeleGateway ou 
               de seus licenciadores e está protegido por leis de propriedade intelectual.
             </p>
           </section>
@@ -69,7 +69,7 @@ const TermsOfUse = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">7. Limitação de Responsabilidade</h2>
             <p className="text-muted-foreground leading-relaxed">
-              A UniPay não se responsabiliza por danos indiretos, incidentais ou consequentes decorrentes 
+              A TeleGateway não se responsabiliza por danos indiretos, incidentais ou consequentes decorrentes 
               do uso ou impossibilidade de uso da plataforma.
             </p>
           </section>
@@ -85,7 +85,7 @@ const TermsOfUse = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">9. Contato</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Para dúvidas sobre estes Termos de Uso, entre em contato através do email: suporte@unipay.com.br
+              Para dúvidas sobre estes Termos de Uso, entre em contato através do email: suporte@telegateway.com.br
             </p>
           </section>
         </div>

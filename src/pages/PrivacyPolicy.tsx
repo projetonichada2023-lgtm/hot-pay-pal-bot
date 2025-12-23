@@ -17,7 +17,7 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Introdução</h2>
             <p className="text-muted-foreground leading-relaxed">
-              A UniPay está comprometida em proteger sua privacidade. Esta política descreve como coletamos, 
+              A TeleGateway está comprometida em proteger sua privacidade. Esta política descreve como coletamos, 
               usamos e protegemos suas informações pessoais.
             </p>
           </section>
@@ -85,7 +85,7 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">8. Contato</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Para exercer seus direitos ou esclarecer dúvidas, entre em contato: privacidade@unipay.com.br
+              Para exercer seus direitos ou esclarecer dúvidas, entre em contato: privacidade@telegateway.com.br
             </p>
           </section>
         </div>
