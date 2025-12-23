@@ -109,7 +109,13 @@ export function SortableUpsellItem({
                   {upsellProduct.is_hot ? '🔥 ' : ''}{upsellProduct.name} - {formatPrice(Number(upsellProduct.price))}
                 </SelectItem>
               )}
-              {getOtherProducts(productId, allUpsells.filter(u => u.id !== upsell.id).map(u => u.upsell_product_id)).map(p => (
+              {getOtherProducts(
+                productId,
+                [
+                  ...allUpsells.filter(u => u.id !== upsell.id).map(u => u.upsell_product_id),
+                  upsell.upsell_product_id,
+                ].filter((id): id is string => Boolean(id))
+              ).map(p => (
                 <SelectItem key={p.id} value={p.id}>
                   {p.is_hot ? '🔥 ' : ''}{p.name} - {formatPrice(Number(p.price))}
                 </SelectItem>
