@@ -811,6 +811,12 @@ serve(async (req) => {
         await handleCopyPixCode(botToken, chatId, clientId, orderId);
       }
 
+      // Confirm payment / verify payment
+      if (data.startsWith('paid_')) {
+        const orderId = data.replace('paid_', '');
+        await handlePaymentConfirmed(botToken, chatId, clientId, orderId, telegramUser.id);
+      }
+
       // Cancel order
       if (data.startsWith('cancel_')) {
         const orderId = data.replace('cancel_', '');
