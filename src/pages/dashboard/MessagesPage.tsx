@@ -6,7 +6,8 @@ import {
   useCreateBotMessage, 
   useDeleteBotMessage,
   useReorderBotMessages,
-  BotMessage 
+  BotMessage,
+  MessageButton,
 } from '@/hooks/useBotMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,6 +46,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ButtonEditor } from '@/components/messages/ButtonEditor';
 
 interface MessagesPageProps {
   client: Client;
@@ -131,6 +133,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
   const [editContent, setEditContent] = useState('');
   const [editMediaUrl, setEditMediaUrl] = useState<string | null>(null);
   const [editMediaType, setEditMediaType] = useState<string | null>(null);
+  const [editButtons, setEditButtons] = useState<MessageButton[]>([]);
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set(['welcome']));
   const [uploading, setUploading] = useState(false);
 
@@ -139,6 +142,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
     setEditContent(message.message_content);
     setEditMediaUrl(message.media_url);
     setEditMediaType(message.media_type);
+    setEditButtons(message.buttons || []);
   };
 
   const handleSave = async (id: string) => {
@@ -148,10 +152,12 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
         message_content: editContent,
         media_url: editMediaUrl,
         media_type: editMediaType,
+        buttons: editButtons,
       });
       setEditingId(null);
       setEditMediaUrl(null);
       setEditMediaType(null);
+      setEditButtons([]);
       toast({ title: 'Mensagem atualizada!' });
     } catch (error) {
       toast({ title: 'Erro ao atualizar', variant: 'destructive' });
@@ -502,9 +508,11 @@ interface MessageEditorProps {
   content: string;
   mediaUrl: string | null;
   mediaType: string | null;
+  buttons: MessageButton[];
   onContentChange: (content: string) => void;
   onMediaUpload: (file: File) => void;
   onRemoveMedia: () => void;
+  onButtonsChange: (buttons: MessageButton[]) => void;
   onSave: () => void;
   onCancel: () => void;
   isPending: boolean;
@@ -515,9 +523,11 @@ const MessageEditor = ({
   content,
   mediaUrl,
   mediaType,
+  buttons,
   onContentChange,
   onMediaUpload,
   onRemoveMedia,
+  onButtonsChange,
   onSave,
   onCancel,
   isPending,
@@ -569,13 +579,15 @@ const MessageEditor = ({
         </Button>
       </div>
 
-      {/* Text content */}
       <Textarea
         value={content}
         onChange={(e) => onContentChange(e.target.value)}
         className="min-h-[100px] resize-none"
         placeholder="Digite a mensagem..."
       />
+
+      {/* Button editor */}
+      <ButtonEditor buttons={buttons} onChange={onButtonsChange} />
 
       {/* Action buttons */}
       <div className="flex gap-2">

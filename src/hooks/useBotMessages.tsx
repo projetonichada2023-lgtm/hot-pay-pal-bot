@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
+
+export interface MessageButton {
+  text: string;
+  type: 'callback' | 'url';
+  value: string;
+}
 
 export interface BotMessage {
   id: string;
@@ -10,8 +17,16 @@ export interface BotMessage {
   display_order: number;
   media_url: string | null;
   media_type: string | null;
+  buttons: MessageButton[] | null;
   created_at: string;
   updated_at: string;
+}
+
+// Helper to safely parse buttons from Json to MessageButton[]
+function parseButtons(buttons: Json | null): MessageButton[] | null {
+  if (!buttons) return null;
+  if (!Array.isArray(buttons)) return null;
+  return buttons as unknown as MessageButton[];
 }
 
 export const useBotMessages = (clientId: string | undefined) => {
@@ -26,7 +41,12 @@ export const useBotMessages = (clientId: string | undefined) => {
         .order('display_order');
 
       if (error) throw error;
-      return data as BotMessage[];
+      
+      // Transform the data to properly type buttons
+      return (data || []).map(msg => ({
+        ...msg,
+        buttons: parseButtons(msg.buttons),
+      })) as BotMessage[];
     },
     enabled: !!clientId,
   });
@@ -41,19 +61,22 @@ export const useUpdateBotMessage = () => {
       message_content, 
       is_active, 
       media_url, 
-      media_type 
+      media_type,
+      buttons,
     }: { 
       id: string; 
       message_content?: string; 
       is_active?: boolean;
       media_url?: string | null;
       media_type?: string | null;
+      buttons?: MessageButton[] | null;
     }) => {
       const updates: Record<string, unknown> = {};
       if (message_content !== undefined) updates.message_content = message_content;
       if (is_active !== undefined) updates.is_active = is_active;
       if (media_url !== undefined) updates.media_url = media_url;
       if (media_type !== undefined) updates.media_type = media_type;
+      if (buttons !== undefined) updates.buttons = buttons;
 
       const { error } = await supabase
         .from('bot_messages')
@@ -79,6 +102,7 @@ export const useCreateBotMessage = () => {
       display_order,
       media_url,
       media_type,
+      buttons,
     }: { 
       client_id: string; 
       message_type: string; 
@@ -86,6 +110,7 @@ export const useCreateBotMessage = () => {
       display_order: number;
       media_url?: string | null;
       media_type?: string | null;
+      buttons?: MessageButton[] | null;
     }) => {
       const { data, error } = await supabase
         .from('bot_messages')
@@ -97,6 +122,7 @@ export const useCreateBotMessage = () => {
           is_active: true,
           media_url: media_url || null,
           media_type: media_type || null,
+          buttons: (buttons || []) as unknown as Json,
         })
         .select()
         .single();
