@@ -44,7 +44,12 @@ export const Sidebar = ({ client }: SidebarProps) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark');
+      const stored = localStorage.getItem('theme');
+      if (stored) {
+        return stored === 'dark';
+      }
+      // Default to dark mode
+      return true;
     }
     return true;
   });
@@ -53,6 +58,7 @@ export const Sidebar = ({ client }: SidebarProps) => {
   const location = useLocation();
 
   useEffect(() => {
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
     if (isDark) {
       document.documentElement.classList.add('dark');
     } else {
