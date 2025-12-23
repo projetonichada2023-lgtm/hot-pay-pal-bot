@@ -21,6 +21,9 @@ export interface Client {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  business_phone: string | null;
+  business_email: string | null;
+  business_description: string | null;
 }
 
 export interface ClientSettings {
@@ -31,6 +34,12 @@ export interface ClientSettings {
   cart_reminder_hours: number;
   upsell_enabled: boolean;
   support_enabled: boolean;
+  pix_key: string | null;
+  pix_key_type: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random' | null;
+  pix_receiver_name: string | null;
+  opening_time: string | null;
+  closing_time: string | null;
+  working_days: string[] | null;
 }
 
 export const useClient = () => {
