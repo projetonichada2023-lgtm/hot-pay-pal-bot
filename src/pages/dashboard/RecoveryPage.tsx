@@ -142,10 +142,10 @@ const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId
   return (
     <Card className="border-2 border-primary/20">
       <CardContent className="pt-4 space-y-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-6">
           {/* Form Section */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="delay" className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-primary" />
@@ -177,7 +177,7 @@ const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId
                 </p>
               </div>
               
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg sm:col-span-2 lg:col-span-1">
                 <div>
                   <Label>Ativo</Label>
                   <p className="text-xs text-muted-foreground">
@@ -282,7 +282,7 @@ const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId
                 Envie uma oferta de produto junto com a mensagem de recuperação para aumentar as conversões.
               </p>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label>Produto para oferecer</Label>
                   <Select 
@@ -316,12 +316,12 @@ const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId
               </div>
             </div>
 
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={onCancel}>
+            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+              <Button variant="outline" onClick={onCancel} className="w-full sm:w-auto">
                 <X className="w-4 h-4 mr-2" />
                 Cancelar
               </Button>
-              <Button onClick={handleSave} disabled={isUploading}>
+              <Button onClick={handleSave} disabled={isUploading} className="w-full sm:w-auto">
                 <Save className="w-4 h-4 mr-2" />
                 Salvar
               </Button>
@@ -616,10 +616,10 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
                 const minutesAgo = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60));
                 
                 return (
-                  <div key={order.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium">
+                  <div key={order.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-muted/30 rounded-lg gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="font-medium truncate">
                           {customer?.first_name || "Cliente"} {customer?.last_name || ""}
                         </span>
                         {customer?.telegram_username && (
@@ -628,12 +628,12 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <span>{product?.name || "Produto"}</span>
-                        <span className="font-medium text-foreground">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-muted-foreground">
+                        <span className="truncate max-w-[150px] sm:max-w-none">{product?.name || "Produto"}</span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
                           R$ {Number(order.amount).toFixed(2).replace(".", ",")}
                         </span>
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 whitespace-nowrap">
                           <Clock className="w-3 h-3" />
                           {minutesAgo < 60 
                             ? `${minutesAgo}min atrás` 
@@ -648,6 +648,7 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
                     </div>
                     <Button
                       size="sm"
+                      className="w-full sm:w-auto shrink-0"
                       onClick={() => handleManualRecovery(
                         order.id,
                         order.customer_id,

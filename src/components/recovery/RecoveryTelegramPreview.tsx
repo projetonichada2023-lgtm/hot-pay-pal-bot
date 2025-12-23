@@ -24,7 +24,7 @@ export const RecoveryTelegramPreview = ({
     .replace("{valor}", "R$ 97,00");
 
   return (
-    <div className={`w-full max-w-xs mx-auto ${className}`}>
+    <div className={`w-full max-w-[280px] sm:max-w-xs mx-auto ${className}`}>
       {/* iPhone-style frame */}
       <div className="relative rounded-[2rem] bg-gradient-to-b from-zinc-800 to-zinc-900 p-2 shadow-xl">
         {/* Notch */}
