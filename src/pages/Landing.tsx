@@ -22,8 +22,10 @@ import {
   Youtube,
   BookOpen,
   Mail,
-  ExternalLink
+  ExternalLink,
+  Menu
 } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link } from "react-router-dom";
 import { motion, useInView, Variants } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
@@ -241,6 +243,7 @@ export default function Landing() {
   const heroRef = useRef(null);
   const heroInView = useInView(heroRef, { once: true });
   const [demoOpen, setDemoOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Force dark mode on landing page
   useEffect(() => {
@@ -266,7 +269,9 @@ export default function Landing() {
             </div>
             <span className="font-bold text-lg">TeleGateway</span>
           </motion.div>
-          <div className="flex items-center gap-3">
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-3">
             <Link to="/auth">
               <Button variant="ghost" size="sm">Entrar</Button>
             </Link>
@@ -278,6 +283,85 @@ export default function Landing() {
                 </Button>
               </motion.div>
             </Link>
+          </div>
+
+          {/* Mobile Menu */}
+          <div className="md:hidden">
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-10 w-10">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80 bg-background border-border">
+                <div className="flex flex-col gap-6 mt-8">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                      <Send className="w-4 h-4 text-primary-foreground" />
+                    </div>
+                    <span className="font-bold text-lg">TeleGateway</span>
+                  </div>
+
+                  <nav className="flex flex-col gap-4">
+                    <a 
+                      href="#features" 
+                      className="text-lg font-medium hover:text-primary transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Recursos
+                    </a>
+                    <a 
+                      href="#how-it-works" 
+                      className="text-lg font-medium hover:text-primary transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Como Funciona
+                    </a>
+                    <a 
+                      href="#testimonials" 
+                      className="text-lg font-medium hover:text-primary transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Depoimentos
+                    </a>
+                    <a 
+                      href="#faq" 
+                      className="text-lg font-medium hover:text-primary transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      FAQ
+                    </a>
+                  </nav>
+
+                  <div className="border-t border-border pt-6 mt-2 flex flex-col gap-3">
+                    <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="outline" className="w-full justify-center">
+                        Entrar
+                      </Button>
+                    </Link>
+                    <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                      <Button className="w-full justify-center gap-2">
+                        Começar Grátis
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </div>
+
+                  {/* Mobile Demo Button */}
+                  <Button 
+                    variant="secondary" 
+                    className="w-full gap-2 mt-2"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setDemoOpen(true);
+                    }}
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Ver Demonstração
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </motion.header>
@@ -341,14 +425,14 @@ export default function Landing() {
           </motion.p>
           
           <motion.div 
-            className="flex flex-col sm:flex-row gap-4 justify-center"
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4 sm:px-0"
             initial={{ opacity: 0, y: 30 }}
             animate={heroInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.6 }}
           >
-            <Link to="/auth">
+            <Link to="/auth" className="w-full sm:w-auto">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button size="lg" className="gap-2 text-base px-8">
+                <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base">
                   Criar Minha Loja
                   <motion.div
                     animate={{ x: [0, 5, 0] }}
@@ -359,11 +443,11 @@ export default function Landing() {
                 </Button>
               </motion.div>
             </Link>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="gap-2 text-base px-8"
+                className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base"
                 onClick={() => setDemoOpen(true)}
               >
                 <MessageCircle className="w-5 h-5" />
@@ -1219,6 +1303,24 @@ export default function Landing() {
           </div>
         </div>
       </motion.footer>
+
+      {/* Mobile Floating CTA */}
+      <motion.div 
+        className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-lg border-t border-border/50 md:hidden z-40"
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 1, duration: 0.5 }}
+      >
+        <Link to="/auth" className="block">
+          <Button className="w-full h-14 text-lg gap-2 shadow-lg shadow-primary/25">
+            Começar Grátis Agora
+            <ArrowRight className="w-5 h-5" />
+          </Button>
+        </Link>
+      </motion.div>
+
+      {/* Add bottom padding on mobile for floating CTA */}
+      <div className="h-20 md:hidden" />
 
       {/* Demo Modal */}
       <DemoModal open={demoOpen} onOpenChange={setDemoOpen} />
