@@ -57,30 +57,62 @@ async function editMessageText(botToken: string, chatId: number, messageId: numb
   return res.json();
 }
 
-// Create a unique invite link for a Telegram group/channel
-async function createGroupInviteLink(botToken: string, chatId: string, userId: number): Promise<string | null> {
+// Add user directly to a Telegram group/channel
+async function addUserToGroup(botToken: string, groupId: string, userId: number): Promise<boolean> {
   try {
-    const res = await fetch(`https://api.telegram.org/bot${botToken}/createChatInviteLink`, {
+    console.log('Adding user to group:', groupId, 'user:', userId);
+    
+    // First, unban the user to ensure they can be added (in case they were removed before)
+    await fetch(`https://api.telegram.org/bot${botToken}/unbanChatMember`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        chat_id: chatId,
-        member_limit: 1, // Only 1 use allowed
-        expire_date: Math.floor(Date.now() / 1000) + 86400, // Expires in 24 hours
-        creates_join_request: false,
+        chat_id: groupId,
+        user_id: userId,
+        only_if_banned: true,
       }),
     });
     
-    const data = await res.json();
-    console.log('Create invite link response:', JSON.stringify(data));
+    // Now add the user to the group
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/approveChatJoinRequest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: groupId,
+        user_id: userId,
+      }),
+    });
     
-    if (data.ok && data.result?.invite_link) {
-      return data.result.invite_link;
+    const approveData = await res.json();
+    console.log('Approve join request response:', JSON.stringify(approveData));
+    
+    // If approve didn't work, try creating an invite link as fallback
+    // This is because approveChatJoinRequest only works if user requested to join
+    if (!approveData.ok) {
+      // Use createChatInviteLink with member_limit 1 as fallback
+      const inviteRes = await fetch(`https://api.telegram.org/bot${botToken}/createChatInviteLink`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: groupId,
+          member_limit: 1,
+          expire_date: Math.floor(Date.now() / 1000) + 300, // 5 minutes only
+          creates_join_request: false,
+        }),
+      });
+      
+      const inviteData = await inviteRes.json();
+      console.log('Created limited invite link:', JSON.stringify(inviteData));
+      
+      if (inviteData.ok && inviteData.result?.invite_link) {
+        return inviteData.result.invite_link;
+      }
     }
-    return null;
+    
+    return approveData.ok;
   } catch (error) {
-    console.error('Error creating invite link:', error);
-    return null;
+    console.error('Error adding user to group:', error);
+    return false;
   }
 }
 
@@ -455,13 +487,16 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
   
   // Check for VIP group access
   if (product?.telegram_group_id) {
-    console.log('Creating invite link for group:', product.telegram_group_id, 'user:', telegramUserId);
-    const inviteLink = await createGroupInviteLink(botToken, product.telegram_group_id, telegramUserId);
+    console.log('Adding user to VIP group:', product.telegram_group_id, 'user:', telegramUserId);
+    const result = await addUserToGroup(botToken, product.telegram_group_id, telegramUserId);
     
-    if (inviteLink) {
-      deliveryMessages.push(`👥 <b>Acesso ao Grupo VIP:</b>\n${inviteLink}\n\n⚠️ <i>Este link é único e expira em 24 horas!</i>`);
+    if (typeof result === 'string') {
+      // Got an invite link as fallback (expires in 5 min, 1 use only)
+      deliveryMessages.push(`👥 <b>Acesso ao Grupo VIP:</b>\n${result}\n\n⚠️ <i>Link único! Expira em 5 minutos. Use agora!</i>`);
+    } else if (result === true) {
+      deliveryMessages.push(`👥 <b>Grupo VIP:</b> Você foi adicionado ao grupo automaticamente! Verifique sua lista de chats.`);
     } else {
-      deliveryMessages.push(`👥 <b>Grupo VIP:</b> Houve um problema ao gerar seu convite. Entre em contato com o suporte.`);
+      deliveryMessages.push(`👥 <b>Grupo VIP:</b> Houve um problema ao te adicionar. Entre em contato com o suporte.`);
     }
   }
   
