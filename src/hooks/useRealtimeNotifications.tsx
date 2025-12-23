@@ -149,44 +149,12 @@ export const useRealtimeNotifications = (clientId: string) => {
             }, 'payment');
           }
           
-          // Order delivered
-          if (newOrder.status === 'delivered' && oldOrder.status !== 'delivered') {
-            addNotification({
-              type: 'order_delivered',
-              title: '📦 Pedido Entregue!',
-              message: `Pedido de ${formatPrice(newOrder.amount)} foi entregue`,
-            }, 'order');
-          }
-        }
-      )
-      .subscribe();
-
-    // Subscribe to new messages
-    const messagesChannel = supabase
-      .channel('messages-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'telegram_messages',
-          filter: `client_id=eq.${clientId}`,
-        },
-        (payload) => {
-          const message = payload.new as { direction: string };
-          if (message.direction === 'incoming') {
-            setCounts(prev => ({ ...prev, chats: prev.chats + 1 }));
-            if (soundEnabled) {
-              playNotificationSound('message');
-            }
-          }
         }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(ordersChannel);
-      supabase.removeChannel(messagesChannel);
     };
   }, [clientId, addNotification, soundEnabled]);
 
