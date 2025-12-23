@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { TestimonialsSection } from "@/components/ui/testimonials-with-marquee";
 import { 
   Bot, 
@@ -115,6 +116,37 @@ const testimonials = [
       avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
     },
     text: "Finalmente uma plataforma que entende o produtor digital. Entrega automática, PIX instantâneo, tudo perfeito!"
+  }
+];
+
+const faqs = [
+  {
+    question: "Como funciona o pagamento PIX?",
+    answer: "Quando um cliente faz uma compra, geramos automaticamente um código PIX. Após o pagamento ser confirmado, o produto é entregue instantaneamente no chat do Telegram. Todo o processo é 100% automático."
+  },
+  {
+    question: "Preciso ter conhecimento técnico?",
+    answer: "Não! O TeleGateway foi criado para ser simples. Você só precisa criar um bot no Telegram (com um clique), cadastrar seus produtos e pronto. Não precisa programar nada."
+  },
+  {
+    question: "Quais tipos de produtos posso vender?",
+    answer: "Você pode vender qualquer produto digital: e-books, cursos, mentorias, acessos a grupos VIP, templates, presets, softwares, e muito mais. Se é digital, você pode vender!"
+  },
+  {
+    question: "Como funciona a recuperação de carrinho?",
+    answer: "Quando um cliente inicia uma compra mas não finaliza, nosso sistema envia mensagens automáticas lembrando do pagamento pendente. Você pode personalizar as mensagens e os intervalos de envio."
+  },
+  {
+    question: "Qual a taxa por venda?",
+    answer: "Cobramos apenas uma pequena taxa por transação aprovada. Não há mensalidades ou custos fixos. Você só paga quando vende!"
+  },
+  {
+    question: "Posso integrar com outras ferramentas?",
+    answer: "Sim! Oferecemos webhooks e API para integração com outras plataformas. Você pode conectar com seu CRM, automações de e-mail, planilhas e muito mais."
+  },
+  {
+    question: "O suporte está incluso?",
+    answer: "Sim! Todos os planos incluem suporte via chat. Estamos disponíveis para ajudar você a configurar sua loja e resolver qualquer dúvida."
   }
 ];
 
@@ -467,6 +499,39 @@ export default function Landing() {
         description="Milhares de empreendedores já transformaram suas vendas com o TeleGateway."
         testimonials={testimonials}
       />
+
+      {/* FAQ Section */}
+      <section className="py-20 px-4">
+        <div className="container mx-auto">
+          <ScrollReveal className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Perguntas Frequentes
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Tire suas dúvidas sobre o TeleGateway.
+            </p>
+          </ScrollReveal>
+          
+          <ScrollReveal className="max-w-3xl mx-auto">
+            <Accordion type="single" collapsible className="w-full">
+              {faqs.map((faq, index) => (
+                <AccordionItem 
+                  key={index} 
+                  value={`item-${index}`}
+                  className="border-border/50 data-[state=open]:border-primary/30"
+                >
+                  <AccordionTrigger className="text-left hover:no-underline hover:text-primary transition-colors py-5 text-base font-medium">
+                    {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground leading-relaxed pb-5">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </ScrollReveal>
+        </div>
+      </section>
 
       {/* CTA Section */}
       <section className="py-20 px-4">
