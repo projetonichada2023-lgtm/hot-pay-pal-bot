@@ -61,18 +61,40 @@ export const BotSimulator = ({ clientId }: BotSimulatorProps) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const addBotMessage = (content: string, extras?: Partial<SimulatorMessage>) => {
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      setMessages(prev => [...prev, {
-        id: crypto.randomUUID(),
-        type: 'bot',
-        content,
-        timestamp: new Date(),
-        ...extras
-      }]);
-    }, 800 + Math.random() * 500);
+  const addBotMessage = (content: string, extras?: Partial<SimulatorMessage>): Promise<void> => {
+    return new Promise((resolve) => {
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages(prev => [...prev, {
+          id: crypto.randomUUID(),
+          type: 'bot',
+          content,
+          timestamp: new Date(),
+          ...extras
+        }]);
+        resolve();
+      }, 800 + Math.random() * 500);
+    });
+  };
+
+  const sendMultipleMessages = async (
+    msgs: BotMessage[], 
+    product?: Product | null,
+    defaultMessage?: string,
+    defaultExtras?: Partial<SimulatorMessage>
+  ) => {
+    if (msgs.length > 0) {
+      for (const msg of msgs) {
+        await addBotMessage(processPlaceholders(msg.message_content, product), {
+          mediaUrl: msg.media_url,
+          mediaType: msg.media_type,
+          buttons: msg.buttons as any || undefined
+        });
+      }
+    } else if (defaultMessage) {
+      await addBotMessage(defaultMessage, defaultExtras);
+    }
   };
 
   const addUserMessage = (content: string) => {
@@ -93,8 +115,10 @@ export const BotSimulator = ({ clientId }: BotSimulatorProps) => {
     }]);
   };
 
-  const getMessageByType = (type: string): BotMessage | undefined => {
-    return botMessages.find(m => m.message_type === type && m.is_active);
+  const getMessagesByType = (type: string): BotMessage[] => {
+    return botMessages
+      .filter(m => m.message_type === type && m.is_active)
+      .sort((a, b) => a.display_order - b.display_order);
   };
 
   const processPlaceholders = (content: string, product?: Product | null): string => {
@@ -108,37 +132,39 @@ export const BotSimulator = ({ clientId }: BotSimulatorProps) => {
     return processed;
   };
 
-  const startSimulation = () => {
+  const startSimulation = async () => {
     setMessages([]);
     setStep('welcome');
     setSelectedProduct(null);
     
     addSystemMessage('🎬 Simulação iniciada - Cliente enviou /start');
     
-    const welcomeMsg = getMessageByType('welcome');
-    if (welcomeMsg) {
-      setTimeout(() => {
-        addBotMessage(processPlaceholders(welcomeMsg.message_content), {
-          mediaUrl: welcomeMsg.media_url,
-          mediaType: welcomeMsg.media_type,
-          buttons: welcomeMsg.buttons || undefined
-        });
-        setStep('catalog');
-      }, 500);
-    } else {
-      addBotMessage('Olá! Bem-vindo à nossa loja! 👋');
+    const welcomeMsgs = getMessagesByType('welcome');
+    
+    setTimeout(async () => {
+      if (welcomeMsgs.length > 0) {
+        for (const msg of welcomeMsgs) {
+          await addBotMessage(processPlaceholders(msg.message_content), {
+            mediaUrl: msg.media_url,
+            mediaType: msg.media_type,
+            buttons: msg.buttons as any || undefined
+          });
+        }
+      } else {
+        await addBotMessage('Olá! Bem-vindo à nossa loja! 👋');
+      }
       setStep('catalog');
-    }
+    }, 500);
   };
 
-  const showCatalog = () => {
+  const showCatalog = async () => {
     addUserMessage('Ver catálogo');
     
-    const catalogMsg = getMessageByType('catalog');
-    if (catalogMsg) {
-      addBotMessage(processPlaceholders(catalogMsg.message_content), {
-        mediaUrl: catalogMsg.media_url,
-        mediaType: catalogMsg.media_type,
+    const catalogMsgs = getMessagesByType('catalog');
+    for (const msg of catalogMsgs) {
+      await addBotMessage(processPlaceholders(msg.message_content), {
+        mediaUrl: msg.media_url,
+        mediaType: msg.media_type,
       });
     }
 
@@ -152,22 +178,24 @@ export const BotSimulator = ({ clientId }: BotSimulatorProps) => {
       } else {
         addBotMessage('Ainda não há produtos cadastrados.');
       }
-    }, 1500);
+    }, catalogMsgs.length > 0 ? 500 : 0);
   };
 
-  const selectProduct = (product: Product) => {
+  const selectProduct = async (product: Product) => {
     setSelectedProduct(product);
     addUserMessage(`Ver ${product.name}`);
     
-    const productDetailMsg = getMessageByType('product_detail');
-    if (productDetailMsg) {
-      addBotMessage(processPlaceholders(productDetailMsg.message_content, product), {
-        mediaUrl: product.image_url || productDetailMsg.media_url,
-        mediaType: 'image',
-        buttons: [{ text: '🛒 Comprar Agora', type: 'callback', value: 'buy' }]
-      });
+    const productDetailMsgs = getMessagesByType('product_detail');
+    if (productDetailMsgs.length > 0) {
+      for (const msg of productDetailMsgs) {
+        await addBotMessage(processPlaceholders(msg.message_content, product), {
+          mediaUrl: product.image_url || msg.media_url,
+          mediaType: 'image',
+          buttons: [{ text: '🛒 Comprar Agora', type: 'callback', value: 'buy' }]
+        });
+      }
     } else {
-      addBotMessage(
+      await addBotMessage(
         `*${product.name}*\n\n${product.description || 'Produto incrível!'}\n\n💰 *Preço:* R$ ${product.price.toFixed(2).replace('.', ',')}`,
         {
           mediaUrl: product.image_url,
@@ -179,17 +207,19 @@ export const BotSimulator = ({ clientId }: BotSimulatorProps) => {
     setStep('product_selected');
   };
 
-  const initiatePurchase = () => {
+  const initiatePurchase = async () => {
     addUserMessage('Comprar');
     addSystemMessage('⏳ Gerando código PIX...');
     
-    const pixMsg = getMessageByType('pix_generated');
-    if (pixMsg && selectedProduct) {
-      addBotMessage(processPlaceholders(pixMsg.message_content, selectedProduct), {
-        buttons: [{ text: '📋 Copiar código PIX', type: 'callback', value: 'copy_pix' }]
-      });
+    const pixMsgs = getMessagesByType('pix_generated');
+    if (pixMsgs.length > 0 && selectedProduct) {
+      for (const msg of pixMsgs) {
+        await addBotMessage(processPlaceholders(msg.message_content, selectedProduct), {
+          buttons: [{ text: '📋 Copiar código PIX', type: 'callback', value: 'copy_pix' }]
+        });
+      }
     } else if (selectedProduct) {
-      addBotMessage(
+      await addBotMessage(
         `*Pagamento via PIX* 💰\n\nValor: R$ ${selectedProduct.price.toFixed(2).replace('.', ',')}\n\nCopie o código abaixo para pagar:\n\n\`00020126580014br.gov.bcb.pix...\``,
         { buttons: [{ text: '📋 Copiar código PIX', type: 'callback', value: 'copy_pix' }] }
       );
@@ -197,14 +227,16 @@ export const BotSimulator = ({ clientId }: BotSimulatorProps) => {
     setStep('awaiting_payment');
   };
 
-  const simulatePayment = () => {
+  const simulatePayment = async () => {
     addSystemMessage('✅ Pagamento confirmado!');
     
-    const paymentConfirmedMsg = getMessageByType('payment_confirmed');
-    if (paymentConfirmedMsg && selectedProduct) {
-      addBotMessage(processPlaceholders(paymentConfirmedMsg.message_content, selectedProduct));
+    const paymentConfirmedMsgs = getMessagesByType('payment_confirmed');
+    if (paymentConfirmedMsgs.length > 0 && selectedProduct) {
+      for (const msg of paymentConfirmedMsgs) {
+        await addBotMessage(processPlaceholders(msg.message_content, selectedProduct));
+      }
     } else {
-      addBotMessage('🎉 *Pagamento confirmado!*\n\nSeu pedido foi aprovado. Estamos preparando a entrega...');
+      await addBotMessage('🎉 *Pagamento confirmado!*\n\nSeu pedido foi aprovado. Estamos preparando a entrega...');
     }
     setStep('payment_confirmed');
     
@@ -214,30 +246,34 @@ export const BotSimulator = ({ clientId }: BotSimulatorProps) => {
     }, 2000);
   };
 
-  const deliverProduct = () => {
+  const deliverProduct = async () => {
     addSystemMessage('📦 Entrega automática realizada');
     
-    const deliveryMsg = getMessageByType('delivery');
-    if (deliveryMsg && selectedProduct) {
-      addBotMessage(processPlaceholders(deliveryMsg.message_content, selectedProduct), {
-        buttons: selectedProduct.file_url 
-          ? [{ text: '📥 Baixar Produto', type: 'url', value: selectedProduct.file_url }]
-          : undefined
-      });
+    const deliveryMsgs = getMessagesByType('delivery');
+    if (deliveryMsgs.length > 0 && selectedProduct) {
+      for (const msg of deliveryMsgs) {
+        await addBotMessage(processPlaceholders(msg.message_content, selectedProduct), {
+          buttons: selectedProduct.file_url 
+            ? [{ text: '📥 Baixar Produto', type: 'url', value: selectedProduct.file_url }]
+            : undefined
+        });
+      }
     } else {
-      addBotMessage(
+      await addBotMessage(
         '📦 *Entrega realizada!*\n\nSeu produto está disponível para download:',
         { buttons: [{ text: '📥 Baixar Produto', type: 'url', value: '#' }] }
       );
     }
     
     // Show thank you message
-    setTimeout(() => {
-      const thankYouMsg = getMessageByType('thank_you');
-      if (thankYouMsg) {
-        addBotMessage(processPlaceholders(thankYouMsg.message_content, selectedProduct));
+    setTimeout(async () => {
+      const thankYouMsgs = getMessagesByType('thank_you');
+      if (thankYouMsgs.length > 0) {
+        for (const msg of thankYouMsgs) {
+          await addBotMessage(processPlaceholders(msg.message_content, selectedProduct));
+        }
       } else {
-        addBotMessage('❤️ *Obrigado pela compra!*\n\nEsperamos que aproveite seu produto. Volte sempre!');
+        await addBotMessage('❤️ *Obrigado pela compra!*\n\nEsperamos que aproveite seu produto. Volte sempre!');
       }
       setStep('delivered');
     }, 1500);
