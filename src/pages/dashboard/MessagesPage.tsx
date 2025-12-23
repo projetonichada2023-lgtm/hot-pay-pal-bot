@@ -6,7 +6,8 @@ import {
   useCreateBotMessage, 
   useDeleteBotMessage,
   useReorderBotMessages,
-  BotMessage 
+  BotMessage,
+  MessageButton,
 } from '@/hooks/useBotMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { ButtonEditor } from '@/components/messages/ButtonEditor';
 import { 
   Loader2, 
   MessageSquare, 
@@ -27,7 +29,8 @@ import {
   Image,
   Video,
   X,
-  Upload
+  Upload,
+  MousePointer,
 } from 'lucide-react';
 import {
   Collapsible,
@@ -131,6 +134,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
   const [editContent, setEditContent] = useState('');
   const [editMediaUrl, setEditMediaUrl] = useState<string | null>(null);
   const [editMediaType, setEditMediaType] = useState<string | null>(null);
+  const [editButtons, setEditButtons] = useState<MessageButton[]>([]);
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set(['welcome']));
   const [uploading, setUploading] = useState(false);
 
@@ -139,6 +143,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
     setEditContent(message.message_content);
     setEditMediaUrl(message.media_url);
     setEditMediaType(message.media_type);
+    setEditButtons(message.buttons || []);
   };
 
   const handleSave = async (id: string) => {
@@ -148,10 +153,12 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
         message_content: editContent,
         media_url: editMediaUrl,
         media_type: editMediaType,
+        buttons: editButtons,
       });
       setEditingId(null);
       setEditMediaUrl(null);
       setEditMediaType(null);
+      setEditButtons([]);
       toast({ title: 'Mensagem atualizada!' });
     } catch (error) {
       toast({ title: 'Erro ao atualizar', variant: 'destructive' });
@@ -373,6 +380,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
                               editContent={editContent}
                               editMediaUrl={editMediaUrl}
                               editMediaType={editMediaType}
+                              editButtons={editButtons}
                               onEditContentChange={setEditContent}
                               onEdit={() => handleEdit(message)}
                               onSave={() => handleSave(message.id)}
@@ -380,6 +388,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
                                 setEditingId(null);
                                 setEditMediaUrl(null);
                                 setEditMediaType(null);
+                                setEditButtons([]);
                               }}
                               onToggle={(checked) => handleToggle(message.id, checked)}
                               onDelete={() => handleDelete(message.id)}
@@ -387,6 +396,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
                               onMoveDown={() => handleMoveDown(messageType, typeMessages.sort((a, b) => a.display_order - b.display_order), index)}
                               onMediaUpload={handleMediaUpload}
                               onRemoveMedia={handleRemoveMedia}
+                              onButtonsChange={setEditButtons}
                               isPending={updateMessage.isPending}
                               uploading={uploading}
                               allowDelete={typeMessages.length > 1}
@@ -438,14 +448,17 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
                     content={editContent}
                     mediaUrl={editMediaUrl}
                     mediaType={editMediaType}
+                    buttons={editButtons}
                     onContentChange={setEditContent}
                     onMediaUpload={handleMediaUpload}
                     onRemoveMedia={handleRemoveMedia}
+                    onButtonsChange={setEditButtons}
                     onSave={() => handleSave(message.id)}
                     onCancel={() => {
                       setEditingId(null);
                       setEditMediaUrl(null);
                       setEditMediaType(null);
+                      setEditButtons([]);
                     }}
                     isPending={updateMessage.isPending}
                     uploading={uploading}
@@ -502,9 +515,11 @@ interface MessageEditorProps {
   content: string;
   mediaUrl: string | null;
   mediaType: string | null;
+  buttons: MessageButton[];
   onContentChange: (content: string) => void;
   onMediaUpload: (file: File) => void;
   onRemoveMedia: () => void;
+  onButtonsChange: (buttons: MessageButton[]) => void;
   onSave: () => void;
   onCancel: () => void;
   isPending: boolean;
@@ -515,9 +530,11 @@ const MessageEditor = ({
   content,
   mediaUrl,
   mediaType,
+  buttons,
   onContentChange,
   onMediaUpload,
   onRemoveMedia,
+  onButtonsChange,
   onSave,
   onCancel,
   isPending,
@@ -526,7 +543,7 @@ const MessageEditor = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Media preview with remove button */}
       {mediaUrl && (
         <div className="relative inline-block">
@@ -577,6 +594,9 @@ const MessageEditor = ({
         placeholder="Digite a mensagem..."
       />
 
+      {/* Buttons editor */}
+      <ButtonEditor buttons={buttons} onChange={onButtonsChange} />
+
       {/* Action buttons */}
       <div className="flex gap-2">
         <Button 
@@ -612,6 +632,7 @@ interface MessageItemProps {
   editContent: string;
   editMediaUrl: string | null;
   editMediaType: string | null;
+  editButtons: MessageButton[];
   onEditContentChange: (content: string) => void;
   onEdit: () => void;
   onSave: () => void;
@@ -622,6 +643,7 @@ interface MessageItemProps {
   onMoveDown: () => void;
   onMediaUpload: (file: File) => void;
   onRemoveMedia: () => void;
+  onButtonsChange: (buttons: MessageButton[]) => void;
   isPending: boolean;
   uploading: boolean;
   allowDelete: boolean;
@@ -636,6 +658,7 @@ const MessageItem = ({
   editContent,
   editMediaUrl,
   editMediaType,
+  editButtons,
   onEditContentChange,
   onEdit,
   onSave,
@@ -646,6 +669,7 @@ const MessageItem = ({
   onMoveDown,
   onMediaUpload,
   onRemoveMedia,
+  onButtonsChange,
   isPending,
   uploading,
   allowDelete,
@@ -725,7 +749,7 @@ const MessageItem = ({
       </div>
 
       {isEditing ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* Media preview */}
           {editMediaUrl && (
             <div className="relative inline-block">
@@ -774,6 +798,10 @@ const MessageItem = ({
             className="min-h-[80px] resize-none"
             placeholder="Digite a mensagem..."
           />
+
+          {/* Buttons editor */}
+          <ButtonEditor buttons={editButtons} onChange={onButtonsChange} />
+
           <div className="flex gap-2">
             <Button size="sm" onClick={onSave} disabled={isPending || uploading}>
               {isPending ? (
@@ -796,6 +824,20 @@ const MessageItem = ({
           <div className="p-3 bg-secondary/30 rounded-lg text-sm whitespace-pre-wrap">
             {message.message_content}
           </div>
+          {/* Display configured buttons */}
+          {message.buttons && message.buttons.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {message.buttons.map((btn, i) => (
+                <span 
+                  key={i} 
+                  className="text-xs bg-primary/10 text-primary px-2 py-1 rounded flex items-center gap-1"
+                >
+                  <MousePointer className="w-3 h-3" />
+                  {btn.text}
+                </span>
+              ))}
+            </div>
+          )}
           <Button size="sm" variant="outline" onClick={onEdit}>
             <Sparkles className="w-4 h-4 mr-2" />
             Editar

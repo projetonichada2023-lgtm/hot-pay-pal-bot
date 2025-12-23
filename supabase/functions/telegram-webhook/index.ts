@@ -183,22 +183,45 @@ async function getClientMessages(clientId: string, messageType: string): Promise
   return data?.map(m => m.message_content) || [];
 }
 
+interface MessageButton {
+  text: string;
+  action: 'callback' | 'url';
+  value: string;
+}
+
 interface BotMessageWithMedia {
   message_content: string;
   media_url: string | null;
   media_type: string | null;
+  buttons: MessageButton[];
 }
 
 async function getClientMessagesWithMedia(clientId: string, messageType: string): Promise<BotMessageWithMedia[]> {
   const { data } = await supabase
     .from('bot_messages')
-    .select('message_content, media_url, media_type')
+    .select('message_content, media_url, media_type, buttons')
     .eq('client_id', clientId)
     .eq('message_type', messageType)
     .eq('is_active', true)
     .order('display_order', { ascending: true });
   
-  return data || [];
+  return (data || []).map(m => ({
+    ...m,
+    buttons: Array.isArray(m.buttons) ? m.buttons as MessageButton[] : [],
+  }));
+}
+
+function buildInlineKeyboard(buttons: MessageButton[]): object | undefined {
+  if (!buttons || buttons.length === 0) return undefined;
+  
+  const keyboard = buttons.map(btn => {
+    if (btn.action === 'url') {
+      return [{ text: btn.text, url: btn.value }];
+    }
+    return [{ text: btn.text, callback_data: btn.value }];
+  });
+  
+  return { inline_keyboard: keyboard };
 }
 
 async function getOrCreateCustomer(clientId: string, telegramUser: any) {
@@ -483,9 +506,14 @@ serve(async (req) => {
           for (let i = 0; i < welcomeMessages.length; i++) {
             const msg = welcomeMessages[i];
             const isLast = i === welcomeMessages.length - 1;
-            const replyMarkup = isLast 
-              ? { inline_keyboard: [[{ text: '🛍️ Ver Produtos', callback_data: 'products' }]] }
-              : undefined;
+            
+            // Use custom buttons if configured, otherwise use default "Ver Produtos" on last message
+            let replyMarkup;
+            if (msg.buttons && msg.buttons.length > 0) {
+              replyMarkup = buildInlineKeyboard(msg.buttons);
+            } else if (isLast) {
+              replyMarkup = { inline_keyboard: [[{ text: '🛍️ Ver Produtos', callback_data: 'products' }]] };
+            }
             
             let sent;
             if (msg.media_url && msg.media_type === 'video') {
