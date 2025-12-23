@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { TestimonialsSection } from "@/components/ui/testimonials-with-marquee";
 import { 
   Bot, 
   ShoppingCart, 
@@ -9,9 +10,7 @@ import {
   Shield, 
   ArrowRight,
   CheckCircle2,
-  Send,
-  Quote,
-  Star
+  Send
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, useInView, Variants } from "framer-motion";
@@ -70,32 +69,52 @@ const steps = [
 
 const testimonials = [
   {
-    name: "Lucas Mendes",
-    role: "Criador de Conteúdo",
-    avatar: "LM",
-    content: "O TeleGateway revolucionou minhas vendas. Antes eu perdia horas respondendo mensagens, agora tudo é automático. Meu faturamento triplicou em 2 meses!",
-    rating: 5
+    author: {
+      name: "Lucas Mendes",
+      handle: "@lucasmendes",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
+    },
+    text: "O TeleGateway revolucionou minhas vendas. Antes eu perdia horas respondendo mensagens, agora tudo é automático. Meu faturamento triplicou em 2 meses!"
   },
   {
-    name: "Ana Carolina",
-    role: "Infoprodutora",
-    avatar: "AC",
-    content: "A recuperação de carrinho é incrível! Recupero em média 30% das vendas abandonadas. O investimento se paga no primeiro dia.",
-    rating: 5
+    author: {
+      name: "Ana Carolina",
+      handle: "@anacarolina",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face"
+    },
+    text: "A recuperação de carrinho é incrível! Recupero em média 30% das vendas abandonadas. O investimento se paga no primeiro dia."
   },
   {
-    name: "Pedro Silva",
-    role: "Dono de E-commerce",
-    avatar: "PS",
-    content: "Simplicidade é a palavra. Configurei minha loja em menos de 10 minutos e já comecei a vender. O suporte é excepcional!",
-    rating: 5
+    author: {
+      name: "Pedro Silva",
+      handle: "@pedrosilva",
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
+    },
+    text: "Simplicidade é a palavra. Configurei minha loja em menos de 10 minutos e já comecei a vender. O suporte é excepcional!"
   },
   {
-    name: "Mariana Costa",
-    role: "Coach Digital",
-    avatar: "MC",
-    content: "O funil de upsell aumentou meu ticket médio em 45%. Meus clientes compram mais sem eu precisar fazer nada.",
-    rating: 5
+    author: {
+      name: "Mariana Costa",
+      handle: "@maricosta",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face"
+    },
+    text: "O funil de upsell aumentou meu ticket médio em 45%. Meus clientes compram mais sem eu precisar fazer nada."
+  },
+  {
+    author: {
+      name: "Rafael Santos",
+      handle: "@rafaelsantos",
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face"
+    },
+    text: "Migrei do WhatsApp para o Telegram com o TeleGateway e minhas vendas aumentaram 80%. A automação é outro nível!"
+  },
+  {
+    author: {
+      name: "Julia Fernandes",
+      handle: "@juliafernandes",
+      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
+    },
+    text: "Finalmente uma plataforma que entende o produtor digital. Entrega automática, PIX instantâneo, tudo perfeito!"
   }
 ];
 
@@ -438,90 +457,11 @@ export default function Landing() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 px-4 bg-muted/30">
-        <div className="container mx-auto">
-          <ScrollReveal className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              O que nossos clientes dizem
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Milhares de empreendedores já transformaram suas vendas com o TeleGateway.
-            </p>
-          </ScrollReveal>
-          
-          <motion.div 
-            className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto"
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-          >
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={testimonial.name}
-                variants={index % 2 === 0 ? fadeInLeft : fadeInRight}
-              >
-                <motion.div
-                  whileHover={{ y: -5, scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  <Card className="p-6 bg-card/50 backdrop-blur border-border/50 hover:border-primary/50 transition-colors duration-300 h-full relative overflow-hidden group">
-                    {/* Quote icon */}
-                    <motion.div 
-                      className="absolute top-4 right-4 text-primary/10 group-hover:text-primary/20 transition-colors"
-                      initial={{ rotate: 0, scale: 0.8 }}
-                      whileInView={{ rotate: 12, scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <Quote className="w-12 h-12" />
-                    </motion.div>
-                    
-                    {/* Stars */}
-                    <div className="flex gap-1 mb-4">
-                      {Array.from({ length: testimonial.rating }).map((_, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, scale: 0 }}
-                          whileInView={{ opacity: 1, scale: 1 }}
-                          viewport={{ once: true }}
-                          transition={{ 
-                            type: "spring",
-                            stiffness: 200,
-                            delay: 0.3 + i * 0.1 
-                          }}
-                        >
-                          <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                        </motion.div>
-                      ))}
-                    </div>
-                    
-                    {/* Content */}
-                    <p className="text-foreground/90 mb-6 relative z-10 leading-relaxed">
-                      "{testimonial.content}"
-                    </p>
-                    
-                    {/* Author */}
-                    <div className="flex items-center gap-3">
-                      <motion.div 
-                        className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-semibold"
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                        transition={{ type: "spring", stiffness: 300 }}
-                      >
-                        {testimonial.avatar}
-                      </motion.div>
-                      <div>
-                        <h4 className="font-semibold text-foreground">{testimonial.name}</h4>
-                        <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+      <TestimonialsSection
+        title="O que nossos clientes dizem"
+        description="Milhares de empreendedores já transformaram suas vendas com o TeleGateway."
+        testimonials={testimonials}
+      />
 
       {/* CTA Section */}
       <section className="py-20 px-4">
