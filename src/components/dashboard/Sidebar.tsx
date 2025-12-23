@@ -19,7 +19,8 @@ import {
   GitBranch,
   BarChart3,
   Sun,
-  Moon
+  Moon,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -34,6 +35,7 @@ const menuItems = [
   { icon: Package, label: 'Produtos', path: '/products' },
   { icon: GitBranch, label: 'Funil', path: '/funnel' },
   { icon: ShoppingCart, label: 'Pedidos', path: '/orders' },
+  { icon: RefreshCw, label: 'Recuperação', path: '/recovery' },
   { icon: Users, label: 'Clientes', path: '/customers' },
   { icon: BarChart3, label: 'Relatórios', path: '/reports' },
   { icon: Bot, label: 'Bot Config', path: '/bot-config' },

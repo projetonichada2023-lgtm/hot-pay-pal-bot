@@ -10,6 +10,7 @@ import { OrdersPage } from '@/pages/dashboard/OrdersPage';
 import { CustomersPage } from '@/pages/dashboard/CustomersPage';
 import { FunnelPage } from '@/pages/dashboard/FunnelPage';
 import { ReportsPage } from '@/pages/dashboard/ReportsPage';
+import { RecoveryPage } from '@/pages/dashboard/RecoveryPage';
 
 interface DashboardContentProps {
   client: Client;
@@ -26,6 +27,7 @@ export const DashboardContent = ({ client }: DashboardContentProps) => {
           <Route path="/products" element={<ProductsPage client={client} />} />
           <Route path="/funnel" element={<FunnelPage client={client} />} />
           <Route path="/orders" element={<OrdersPage client={client} />} />
+          <Route path="/recovery" element={<RecoveryPage client={client} />} />
           <Route path="/customers" element={<CustomersPage client={client} />} />
           <Route path="/reports" element={<ReportsPage client={client} />} />
           <Route path="/bot-config" element={<BotConfigPage client={client} />} />
