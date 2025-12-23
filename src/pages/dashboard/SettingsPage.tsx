@@ -37,7 +37,7 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
         fastsoft_api_key: apiKey.trim(),
         fastsoft_enabled: true
       } as any);
-      toast({ title: 'Chave API salva com sucesso!' });
+      toast({ title: 'Chave secreta salva com sucesso!' });
       setApiKey('');
     } catch (error) {
       toast({ title: 'Erro ao salvar', variant: 'destructive' });
@@ -172,11 +172,11 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
                 
                 <div className="space-y-3">
                   <div className="space-y-2">
-                    <Label>Chave API UniPay</Label>
+                    <Label>Chave Secreta UniPay</Label>
                     <div className="relative">
                       <Input
                         type={showApiKey ? 'text' : 'password'}
-                        placeholder="Cole sua chave API aqui"
+                        placeholder="Cole sua chave secreta aqui"
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
                       />
