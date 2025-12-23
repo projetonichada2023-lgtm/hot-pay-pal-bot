@@ -70,51 +70,33 @@ export type Database = {
           cart_reminder_enabled: boolean | null
           cart_reminder_hours: number | null
           client_id: string
-          closing_time: string | null
           created_at: string | null
           id: string
-          opening_time: string | null
-          pix_key: string | null
-          pix_key_type: string | null
-          pix_receiver_name: string | null
           support_enabled: boolean | null
           updated_at: string | null
           upsell_enabled: boolean | null
-          working_days: string[] | null
         }
         Insert: {
           auto_delivery?: boolean | null
           cart_reminder_enabled?: boolean | null
           cart_reminder_hours?: number | null
           client_id: string
-          closing_time?: string | null
           created_at?: string | null
           id?: string
-          opening_time?: string | null
-          pix_key?: string | null
-          pix_key_type?: string | null
-          pix_receiver_name?: string | null
           support_enabled?: boolean | null
           updated_at?: string | null
           upsell_enabled?: boolean | null
-          working_days?: string[] | null
         }
         Update: {
           auto_delivery?: boolean | null
           cart_reminder_enabled?: boolean | null
           cart_reminder_hours?: number | null
           client_id?: string
-          closing_time?: string | null
           created_at?: string | null
           id?: string
-          opening_time?: string | null
-          pix_key?: string | null
-          pix_key_type?: string | null
-          pix_receiver_name?: string | null
           support_enabled?: boolean | null
           updated_at?: string | null
           upsell_enabled?: boolean | null
-          working_days?: string[] | null
         }
         Relationships: [
           {
@@ -128,10 +110,7 @@ export type Database = {
       }
       clients: {
         Row: {
-          business_description: string | null
-          business_email: string | null
           business_name: string
-          business_phone: string | null
           created_at: string | null
           id: string
           is_active: boolean | null
@@ -142,10 +121,7 @@ export type Database = {
           webhook_configured: boolean | null
         }
         Insert: {
-          business_description?: string | null
-          business_email?: string | null
           business_name: string
-          business_phone?: string | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
@@ -156,10 +132,7 @@ export type Database = {
           webhook_configured?: boolean | null
         }
         Update: {
-          business_description?: string | null
-          business_email?: string | null
           business_name?: string
-          business_phone?: string | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
