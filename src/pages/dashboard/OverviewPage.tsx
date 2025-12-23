@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Client } from '@/hooks/useClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, ShoppingCart, Users, DollarSign, Bot, CalendarIcon, Receipt, AlertCircle, UserCheck, CheckCircle } from 'lucide-react';
+import { TrendingUp, ShoppingCart, DollarSign, Bot, CalendarIcon, Receipt } from 'lucide-react';
 import { useDashboardStats, DateRange } from '@/hooks/useDashboardStats';
 import { SalesChart } from '@/components/dashboard/SalesChart';
 import { RecentOrdersCard } from '@/components/dashboard/RecentOrdersCard';
@@ -67,84 +67,41 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
   };
 
   const statsCards = [
-    // Pedidos totais
     { 
       label: 'Total Pedidos', 
       value: isLoading ? null : String(stats?.ordersTotal || 0),
       change: stats?.ordersChange || 0,
-      changeLabel: 'vs período anterior',
       icon: ShoppingCart,
-      color: 'text-primary'
+      gradient: 'from-blue-500/20 to-cyan-500/20',
+      iconBg: 'bg-blue-500/20',
+      iconColor: 'text-blue-500'
     },
     { 
-      label: 'Valor Total Pedidos', 
-      value: isLoading ? null : formatPrice(stats?.ordersValueTotal || 0),
-      change: stats?.ordersValueChange || 0,
-      changeLabel: 'vs período anterior',
-      icon: DollarSign,
-      color: 'text-primary'
-    },
-    // Pedidos pagos
-    { 
-      label: 'Pedidos Pagos', 
-      value: isLoading ? null : String(stats?.paidOrdersCount || 0),
-      change: stats?.paidOrdersChange || 0,
-      changeLabel: 'vs período anterior',
-      icon: CheckCircle,
-      color: 'text-success'
-    },
-    { 
-      label: 'Valor Pago', 
+      label: 'Receita Total', 
       value: isLoading ? null : formatPrice(stats?.salesTotal || 0),
       change: stats?.salesChange || 0,
-      changeLabel: 'vs período anterior',
       icon: DollarSign,
-      color: 'text-success'
+      gradient: 'from-emerald-500/20 to-green-500/20',
+      iconBg: 'bg-emerald-500/20',
+      iconColor: 'text-emerald-500'
     },
-    // Taxas
     { 
       label: 'Taxa de Conversão', 
-      value: isLoading ? null : `${(stats?.conversionRate || 0).toFixed(0)}%`,
+      value: isLoading ? null : `${(stats?.conversionRate || 0).toFixed(1)}%`,
       change: stats?.conversionChange || 0,
-      changeLabel: 'vs período anterior',
       icon: TrendingUp,
-      color: 'text-warning'
-    },
-    { 
-      label: 'Taxa de Abandono', 
-      value: isLoading ? null : `${(stats?.abandonmentRate || 0).toFixed(0)}%`,
-      change: stats?.abandonmentRateChange || 0,
-      changeLabel: 'vs período anterior',
-      invertColors: true,
-      icon: AlertCircle,
-      color: 'text-destructive'
+      gradient: 'from-amber-500/20 to-orange-500/20',
+      iconBg: 'bg-amber-500/20',
+      iconColor: 'text-amber-500'
     },
     { 
       label: 'Ticket Médio', 
       value: isLoading ? null : formatPrice(stats?.averageTicket || 0),
       change: stats?.averageTicketChange || 0,
-      changeLabel: 'vs período anterior',
       icon: Receipt,
-      color: 'text-primary'
-    },
-    // Clientes
-    { 
-      label: 'Clientes', 
-      value: isLoading ? null : String(stats?.customersTotal || 0),
-      change: stats?.customersNew || 0,
-      changeLabel: 'novos no período',
-      isPercent: false,
-      icon: Users,
-      color: 'text-telegram'
-    },
-    { 
-      label: 'Clientes Recorrentes', 
-      value: isLoading ? null : String(stats?.recurringCustomers || 0),
-      change: stats?.recurringCustomersChange || 0,
-      changeLabel: 'novos no período',
-      isPercent: false,
-      icon: UserCheck,
-      color: 'text-success'
+      gradient: 'from-violet-500/20 to-purple-500/20',
+      iconBg: 'bg-violet-500/20',
+      iconColor: 'text-violet-500'
     },
   ];
 
@@ -207,31 +164,42 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stats-cards">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stats-cards">
         {statsCards.map((stat) => {
-          const isPositive = stat.invertColors ? stat.change <= 0 : stat.change >= 0;
+          const isPositive = stat.change >= 0;
           return (
-            <Card key={stat.label} className="glass-card hover-scale">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.label}
-                </CardTitle>
-                <stat.icon className={`w-4 h-4 ${stat.color}`} />
-              </CardHeader>
-              <CardContent>
+            <Card 
+              key={stat.label} 
+              className={cn(
+                "relative overflow-hidden border-0 bg-gradient-to-br",
+                stat.gradient,
+                "hover:scale-[1.02] transition-transform duration-200"
+              )}
+            >
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div className={cn("p-2.5 rounded-xl", stat.iconBg)}>
+                    <stat.icon className={cn("w-5 h-5", stat.iconColor)} />
+                  </div>
+                  <span className={cn(
+                    "text-xs font-medium px-2 py-0.5 rounded-full",
+                    isPositive 
+                      ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" 
+                      : "bg-red-500/20 text-red-600 dark:text-red-400"
+                  )}>
+                    {formatChange(stat.change)}
+                  </span>
+                </div>
                 {stat.value === null ? (
-                  <Skeleton className="h-8 w-24" />
+                  <Skeleton className="h-9 w-24 mb-1" />
                 ) : (
-                  <>
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                    <p className={cn(
-                      "text-xs",
-                      isPositive ? "text-success" : "text-destructive"
-                    )}>
-                      {formatChange(stat.change, stat.isPercent !== false)} {stat.changeLabel}
-                    </p>
-                  </>
+                  <div className="text-2xl sm:text-3xl font-bold tracking-tight mb-1">
+                    {stat.value}
+                  </div>
                 )}
+                <p className="text-xs text-muted-foreground font-medium">
+                  {stat.label}
+                </p>
               </CardContent>
             </Card>
           );
