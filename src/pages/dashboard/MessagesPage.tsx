@@ -170,6 +170,30 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
     }
   };
 
+  const handleAddMessageWithContent = async (
+    messageType: string, 
+    existingMessages: BotMessage[], 
+    content: string, 
+    buttons?: Array<{ text: string; type: 'callback' | 'url'; value: string }>
+  ) => {
+    try {
+      const maxOrder = Math.max(0, ...existingMessages.map(m => m.display_order));
+      await createMessage.mutateAsync({
+        client_id: client.id,
+        message_type: messageType,
+        message_content: content,
+        display_order: maxOrder + 1,
+        buttons: buttons as any,
+      });
+      toast({ title: 'Mensagem criada a partir do template!' });
+      
+      // Expand the section
+      setExpandedTypes(prev => new Set([...prev, messageType]));
+    } catch (error) {
+      toast({ title: 'Erro ao adicionar', variant: 'destructive' });
+    }
+  };
+
   const handleDeleteMessage = async (id: string) => {
     try {
       await deleteMessage.mutateAsync(id);
@@ -383,6 +407,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
                     isExpanded={expandedTypes.has(messageType)}
                     onToggleExpanded={() => toggleExpanded(messageType)}
                     onAddMessage={() => handleAddMessage(messageType, typeMessages)}
+                    onAddMessageWithContent={(content, buttons) => handleAddMessageWithContent(messageType, typeMessages, content, buttons)}
                     onUpdateMessage={handleUpdateMessage}
                     onDeleteMessage={handleDeleteMessage}
                     onMoveUp={(index) => handleMoveUp(messageType, typeMessages, index)}
