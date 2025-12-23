@@ -12,6 +12,8 @@ import {
   Send
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { motion, useInView, Variants } from "framer-motion";
+import { useRef } from "react";
 
 const features = [
   {
@@ -64,138 +66,340 @@ const steps = [
   }
 ];
 
+// Animation variants
+const fadeInUp: Variants = {
+  hidden: { opacity: 0, y: 60 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" }
+  }
+};
+
+const fadeInLeft: Variants = {
+  hidden: { opacity: 0, x: -60 },
+  visible: { 
+    opacity: 1, 
+    x: 0,
+    transition: { duration: 0.6, ease: "easeOut" }
+  }
+};
+
+const fadeInRight: Variants = {
+  hidden: { opacity: 0, x: 60 },
+  visible: { 
+    opacity: 1, 
+    x: 0,
+    transition: { duration: 0.6, ease: "easeOut" }
+  }
+};
+
+const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: { 
+    opacity: 1, 
+    scale: 1,
+    transition: { duration: 0.5, ease: "easeOut" }
+  }
+};
+
+const staggerContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1
+    }
+  }
+};
+
+// Scroll reveal component
+function ScrollReveal({ 
+  children, 
+  variants = fadeInUp,
+  className = "",
+}: { 
+  children: React.ReactNode; 
+  variants?: Variants;
+  className?: string;
+}) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial="hidden"
+      animate={isInView ? "visible" : "hidden"}
+      variants={variants}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 export default function Landing() {
+  const heroRef = useRef(null);
+  const heroInView = useInView(heroRef, { once: true });
+
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
+      <motion.header 
+        className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50"
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <motion.div 
+            className="flex items-center gap-2"
+            whileHover={{ scale: 1.02 }}
+          >
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
               <Send className="w-4 h-4 text-primary-foreground" />
             </div>
             <span className="font-bold text-lg">TeleGateway</span>
-          </div>
+          </motion.div>
           <div className="flex items-center gap-3">
             <Link to="/auth">
               <Button variant="ghost" size="sm">Entrar</Button>
             </Link>
             <Link to="/auth">
-              <Button size="sm" className="gap-2">
-                Começar Grátis
-                <ArrowRight className="w-4 h-4" />
-              </Button>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button size="sm" className="gap-2">
+                  Começar Grátis
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </motion.div>
             </Link>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 relative">
+      <section ref={heroRef} className="pt-32 pb-20 px-4 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="absolute top-20 left-1/4 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute top-40 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        
+        {/* Animated background blobs */}
+        <motion.div 
+          className="absolute top-20 left-1/4 w-72 h-72 bg-primary/10 rounded-full blur-3xl"
+          animate={{ y: [-10, 10, -10] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div 
+          className="absolute top-40 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl"
+          animate={{ y: [10, -10, 10] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        />
         
         <div className="container mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary mb-6 animate-fade-in">
-            <Zap className="w-4 h-4" />
+          <motion.div 
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={heroInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary mb-6"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            >
+              <Zap className="w-4 h-4" />
+            </motion.div>
             Automatize suas vendas no Telegram
-          </div>
+          </motion.div>
           
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold max-w-4xl mx-auto leading-tight mb-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+          <motion.h1 
+            className="text-4xl md:text-6xl lg:text-7xl font-bold max-w-4xl mx-auto leading-tight mb-6"
+            initial={{ opacity: 0, y: 40 }}
+            animate={heroInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
+          >
             Venda Produtos Digitais
-            <span className="text-primary block mt-2">Direto no Telegram</span>
-          </h1>
+            <motion.span 
+              className="text-primary block mt-2"
+              initial={{ opacity: 0, x: -40 }}
+              animate={heroInView ? { opacity: 1, x: 0 } : {}}
+              transition={{ duration: 0.7, delay: 0.4, ease: "easeOut" }}
+            >
+              Direto no Telegram
+            </motion.span>
+          </motion.h1>
           
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <motion.p 
+            className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8"
+            initial={{ opacity: 0, y: 30 }}
+            animate={heroInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.5 }}
+          >
             Crie seu bot de vendas automatizado com pagamento PIX, entrega instantânea e recuperação de carrinho. Sem código, sem complicação.
-          </p>
+          </motion.p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: "0.3s" }}>
+          <motion.div 
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+            initial={{ opacity: 0, y: 30 }}
+            animate={heroInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.6 }}
+          >
             <Link to="/auth">
-              <Button size="lg" className="gap-2 text-base px-8">
-                Criar Minha Loja
-                <ArrowRight className="w-5 h-5" />
-              </Button>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button size="lg" className="gap-2 text-base px-8">
+                  Criar Minha Loja
+                  <motion.div
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    <ArrowRight className="w-5 h-5" />
+                  </motion.div>
+                </Button>
+              </motion.div>
             </Link>
-            <Button size="lg" variant="outline" className="gap-2 text-base px-8">
-              <MessageCircle className="w-5 h-5" />
-              Ver Demonstração
-            </Button>
-          </div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button size="lg" variant="outline" className="gap-2 text-base px-8">
+                <MessageCircle className="w-5 h-5" />
+                Ver Demonstração
+              </Button>
+            </motion.div>
+          </motion.div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary">500+</div>
-              <div className="text-sm text-muted-foreground mt-1">Lojas Ativas</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary">R$2M+</div>
-              <div className="text-sm text-muted-foreground mt-1">Vendas Processadas</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary">98%</div>
-              <div className="text-sm text-muted-foreground mt-1">Satisfação</div>
-            </div>
-          </div>
+          <motion.div 
+            className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16"
+            variants={staggerContainer}
+            initial="hidden"
+            animate={heroInView ? "visible" : "hidden"}
+          >
+            {[
+              { value: "500+", label: "Lojas Ativas" },
+              { value: "R$2M+", label: "Vendas Processadas" },
+              { value: "98%", label: "Satisfação" }
+            ].map((stat, index) => (
+              <motion.div 
+                key={stat.label}
+                className="text-center"
+                variants={scaleIn}
+              >
+                <motion.div 
+                  className="text-3xl md:text-4xl font-bold text-primary"
+                  initial={{ scale: 0 }}
+                  animate={heroInView ? { scale: 1 } : {}}
+                  transition={{ 
+                    type: "spring", 
+                    stiffness: 200, 
+                    damping: 10,
+                    delay: 0.8 + index * 0.1 
+                  }}
+                >
+                  {stat.value}
+                </motion.div>
+                <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
       {/* Features Section */}
       <section className="py-20 px-4 bg-muted/30">
         <div className="container mx-auto">
-          <div className="text-center mb-12">
+          <ScrollReveal className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Tudo que você precisa para vender
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               Ferramentas poderosas para criar, gerenciar e escalar seu negócio digital no Telegram.
             </p>
-          </div>
+          </ScrollReveal>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
-              <Card 
-                key={feature.title} 
-                className="p-6 bg-card/50 backdrop-blur border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 group animate-fade-in"
-                style={{ animationDelay: `${index * 0.1}s` }}
+          <motion.div 
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+          >
+            {features.map((feature) => (
+              <motion.div
+                key={feature.title}
+                variants={fadeInUp}
               >
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                  <feature.icon className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground text-sm">{feature.description}</p>
-              </Card>
+                <motion.div
+                  whileHover={{ y: -8, scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <Card className="p-6 bg-card/50 backdrop-blur border-border/50 hover:border-primary/50 transition-colors duration-300 hover:shadow-lg hover:shadow-primary/5 group h-full">
+                    <motion.div 
+                      className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors"
+                      whileHover={{ rotate: [0, -10, 10, 0] }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <feature.icon className="w-6 h-6 text-primary" />
+                    </motion.div>
+                    <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                    <p className="text-muted-foreground text-sm">{feature.description}</p>
+                  </Card>
+                </motion.div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* How it Works */}
       <section className="py-20 px-4">
         <div className="container mx-auto">
-          <div className="text-center mb-12">
+          <ScrollReveal className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Como Funciona
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               Em apenas 3 passos simples, sua loja estará pronta para receber vendas.
             </p>
-          </div>
+          </ScrollReveal>
           
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             {steps.map((step, index) => (
-              <div 
-                key={step.number} 
-                className="text-center animate-fade-in"
-                style={{ animationDelay: `${index * 0.15}s` }}
+              <ScrollReveal 
+                key={step.number}
+                variants={index === 0 ? fadeInLeft : index === 2 ? fadeInRight : fadeInUp}
               >
-                <div className="text-6xl font-bold text-primary/20 mb-4">{step.number}</div>
-                <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                <p className="text-muted-foreground">{step.description}</p>
-              </div>
+                <motion.div 
+                  className="text-center"
+                  whileHover={{ y: -5 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <motion.div 
+                    className="text-6xl font-bold text-primary/20 mb-4"
+                    initial={{ scale: 0, rotate: -180 }}
+                    whileInView={{ scale: 1, rotate: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ 
+                      type: "spring", 
+                      stiffness: 150, 
+                      damping: 15,
+                      delay: index * 0.2 
+                    }}
+                  >
+                    {step.number}
+                  </motion.div>
+                  <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
+                  <p className="text-muted-foreground">{step.description}</p>
+                </motion.div>
+              </ScrollReveal>
             ))}
+          </div>
+
+          {/* Connection line for desktop */}
+          <div className="hidden md:block max-w-4xl mx-auto mt-8">
+            <motion.div 
+              className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent"
+              initial={{ scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1, delay: 0.5 }}
+            />
           </div>
         </div>
       </section>
@@ -203,60 +407,138 @@ export default function Landing() {
       {/* CTA Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto">
-          <Card className="p-8 md:p-12 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 text-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl" />
-            
-            <div className="relative z-10">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Pronto para começar?
-              </h2>
-              <p className="text-muted-foreground text-lg max-w-xl mx-auto mb-8">
-                Crie sua loja gratuita agora e comece a vender em minutos. Sem taxas mensais, pague apenas por venda.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-                <Link to="/auth">
-                  <Button size="lg" className="gap-2 text-base px-8">
-                    Criar Conta Grátis
-                    <ArrowRight className="w-5 h-5" />
-                  </Button>
-                </Link>
-              </div>
-              
-              <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                  Sem cartão de crédito
+          <ScrollReveal variants={scaleIn}>
+            <motion.div
+              whileHover={{ scale: 1.01 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <Card className="p-8 md:p-12 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 text-center relative overflow-hidden">
+                {/* Animated background elements */}
+                <motion.div 
+                  className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl"
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                    opacity: [0.5, 0.8, 0.5]
+                  }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                />
+                <motion.div 
+                  className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl"
+                  animate={{ 
+                    scale: [1.2, 1, 1.2],
+                    opacity: [0.8, 0.5, 0.8]
+                  }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                />
+                
+                <div className="relative z-10">
+                  <motion.h2 
+                    className="text-3xl md:text-4xl font-bold mb-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    Pronto para começar?
+                  </motion.h2>
+                  <motion.p 
+                    className="text-muted-foreground text-lg max-w-xl mx-auto mb-8"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.1 }}
+                  >
+                    Crie sua loja gratuita agora e comece a vender em minutos. Sem taxas mensais, pague apenas por venda.
+                  </motion.p>
+                  
+                  <motion.div 
+                    className="flex flex-col sm:flex-row gap-4 justify-center mb-8"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                  >
+                    <Link to="/auth">
+                      <motion.div 
+                        whileHover={{ scale: 1.05 }} 
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Button size="lg" className="gap-2 text-base px-8">
+                          Criar Conta Grátis
+                          <motion.div
+                            animate={{ x: [0, 5, 0] }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                          >
+                            <ArrowRight className="w-5 h-5" />
+                          </motion.div>
+                        </Button>
+                      </motion.div>
+                    </Link>
+                  </motion.div>
+                  
+                  <motion.div 
+                    className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground"
+                    variants={staggerContainer}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                  >
+                    {[
+                      { icon: CheckCircle2, text: "Sem cartão de crédito" },
+                      { icon: CheckCircle2, text: "Setup em 5 minutos" },
+                      { icon: CheckCircle2, text: "Suporte incluso" }
+                    ].map((item, index) => (
+                      <motion.div 
+                        key={item.text}
+                        className="flex items-center gap-2"
+                        variants={fadeInUp}
+                      >
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          whileInView={{ scale: 1 }}
+                          viewport={{ once: true }}
+                          transition={{ 
+                            type: "spring", 
+                            stiffness: 200, 
+                            delay: 0.3 + index * 0.1 
+                          }}
+                        >
+                          <item.icon className="w-4 h-4 text-primary" />
+                        </motion.div>
+                        {item.text}
+                      </motion.div>
+                    ))}
+                  </motion.div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                  Setup em 5 minutos
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                  Suporte incluso
-                </div>
-              </div>
-            </div>
-          </Card>
+              </Card>
+            </motion.div>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-4 border-t border-border/50">
+      <motion.footer 
+        className="py-8 px-4 border-t border-border/50"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+      >
         <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+          <motion.div 
+            className="flex items-center gap-2"
+            whileHover={{ scale: 1.05 }}
+          >
             <div className="w-6 h-6 rounded bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
               <Send className="w-3 h-3 text-primary-foreground" />
             </div>
             <span className="font-semibold text-sm">TeleGateway</span>
-          </div>
+          </motion.div>
           <p className="text-sm text-muted-foreground">
             © 2024 TeleGateway. Todos os direitos reservados.
           </p>
         </div>
-      </footer>
+      </motion.footer>
     </div>
   );
 }
