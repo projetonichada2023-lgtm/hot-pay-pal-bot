@@ -30,6 +30,7 @@ import { Link } from "react-router-dom";
 import { motion, useInView, Variants } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import { DemoModal } from "@/components/landing/DemoModal";
+import { AnimatedCounter } from "@/components/landing/AnimatedCounter";
 import unipayLogo from "@/assets/unipay-logo.png";
 
 const features = [
@@ -460,39 +461,33 @@ export default function Landing() {
             </motion.div>
           </motion.div>
 
-          {/* Stats */}
+          {/* Stats with animated counters */}
           <motion.div 
-            className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16"
+            className="grid grid-cols-3 gap-4 md:gap-8 max-w-2xl mx-auto mt-16"
             variants={staggerContainer}
             initial="hidden"
             animate={heroInView ? "visible" : "hidden"}
           >
-            {[
-              { value: "500+", label: "Lojas Ativas" },
-              { value: "R$2M+", label: "Vendas Processadas" },
-              { value: "98%", label: "Satisfação" }
-            ].map((stat, index) => (
-              <motion.div 
-                key={stat.label}
-                className="text-center"
-                variants={scaleIn}
-              >
-                <motion.div 
-                  className="text-3xl md:text-4xl font-bold text-primary"
-                  initial={{ scale: 0 }}
-                  animate={heroInView ? { scale: 1 } : {}}
-                  transition={{ 
-                    type: "spring", 
-                    stiffness: 200, 
-                    damping: 10,
-                    delay: 0.8 + index * 0.1 
-                  }}
-                >
-                  {stat.value}
-                </motion.div>
-                <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
-              </motion.div>
-            ))}
+            <motion.div className="text-center" variants={scaleIn}>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
+                <AnimatedCounter value={500} suffix="+" delay={0.8} duration={1.5} />
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground mt-1">Lojas Ativas</div>
+            </motion.div>
+            
+            <motion.div className="text-center" variants={scaleIn}>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
+                <AnimatedCounter value={2} prefix="R$" suffix="M+" delay={0.9} duration={1.5} />
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground mt-1">Vendas Processadas</div>
+            </motion.div>
+            
+            <motion.div className="text-center" variants={scaleIn}>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
+                <AnimatedCounter value={98} suffix="%" delay={1} duration={1.5} />
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground mt-1">Satisfação</div>
+            </motion.div>
           </motion.div>
 
           {/* Partnership Badge */}
