@@ -86,6 +86,7 @@ export const useOnboarding = (clientId: string | undefined, onboardingCompleted:
     if (clientId && onboardingCompleted === false) {
       // Small delay to ensure DOM elements are mounted
       const timer = setTimeout(() => {
+        setCurrentStep(0);
         setIsActive(true);
       }, 500);
       return () => clearTimeout(timer);
