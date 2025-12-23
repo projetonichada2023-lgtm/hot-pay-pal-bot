@@ -379,6 +379,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
                               editContent={editContent}
                               editMediaUrl={editMediaUrl}
                               editMediaType={editMediaType}
+                              editButtons={editButtons}
                               onEditContentChange={setEditContent}
                               onEdit={() => handleEdit(message)}
                               onSave={() => handleSave(message.id)}
@@ -386,6 +387,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
                                 setEditingId(null);
                                 setEditMediaUrl(null);
                                 setEditMediaType(null);
+                                setEditButtons([]);
                               }}
                               onToggle={(checked) => handleToggle(message.id, checked)}
                               onDelete={() => handleDelete(message.id)}
@@ -393,6 +395,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
                               onMoveDown={() => handleMoveDown(messageType, typeMessages.sort((a, b) => a.display_order - b.display_order), index)}
                               onMediaUpload={handleMediaUpload}
                               onRemoveMedia={handleRemoveMedia}
+                              onButtonsChange={setEditButtons}
                               isPending={updateMessage.isPending}
                               uploading={uploading}
                               allowDelete={typeMessages.length > 1}
@@ -444,14 +447,17 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
                     content={editContent}
                     mediaUrl={editMediaUrl}
                     mediaType={editMediaType}
+                    buttons={editButtons}
                     onContentChange={setEditContent}
                     onMediaUpload={handleMediaUpload}
                     onRemoveMedia={handleRemoveMedia}
+                    onButtonsChange={setEditButtons}
                     onSave={() => handleSave(message.id)}
                     onCancel={() => {
                       setEditingId(null);
                       setEditMediaUrl(null);
                       setEditMediaType(null);
+                      setEditButtons([]);
                     }}
                     isPending={updateMessage.isPending}
                     uploading={uploading}
@@ -624,6 +630,7 @@ interface MessageItemProps {
   editContent: string;
   editMediaUrl: string | null;
   editMediaType: string | null;
+  editButtons: MessageButton[];
   onEditContentChange: (content: string) => void;
   onEdit: () => void;
   onSave: () => void;
@@ -634,6 +641,7 @@ interface MessageItemProps {
   onMoveDown: () => void;
   onMediaUpload: (file: File) => void;
   onRemoveMedia: () => void;
+  onButtonsChange: (buttons: MessageButton[]) => void;
   isPending: boolean;
   uploading: boolean;
   allowDelete: boolean;
@@ -648,6 +656,7 @@ const MessageItem = ({
   editContent,
   editMediaUrl,
   editMediaType,
+  editButtons,
   onEditContentChange,
   onEdit,
   onSave,
@@ -658,6 +667,7 @@ const MessageItem = ({
   onMoveDown,
   onMediaUpload,
   onRemoveMedia,
+  onButtonsChange,
   isPending,
   uploading,
   allowDelete,
@@ -786,6 +796,10 @@ const MessageItem = ({
             className="min-h-[80px] resize-none"
             placeholder="Digite a mensagem..."
           />
+          
+          {/* Button editor */}
+          <ButtonEditor buttons={editButtons} onChange={onButtonsChange} />
+          
           <div className="flex gap-2">
             <Button size="sm" onClick={onSave} disabled={isPending || uploading}>
               {isPending ? (
