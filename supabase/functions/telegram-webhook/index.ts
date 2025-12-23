@@ -315,8 +315,21 @@ async function generatePixFastsoft(secretKey: string, amount: number, orderId: s
       paymentMethod: 'PIX',
       customer: {
         name: customerName || 'Cliente',
-        email: 'cliente@email.com',
-        document: { number: '00000000000', type: 'CPF' },
+        email: `cliente_${Date.now()}@temp.com`,
+        document: { 
+          number: '12345678909', // CPF válido para teste
+          type: 'CPF' 
+        },
+        phone: '11999999999',
+        address: {
+          street: 'Rua Teste',
+          streetNumber: '123',
+          neighborhood: 'Centro',
+          city: 'São Paulo',
+          state: 'SP',
+          country: 'BR',
+          zipCode: '01001000'
+        }
       },
       items: [{
         title: 'Produto Digital',
@@ -325,8 +338,8 @@ async function generatePixFastsoft(secretKey: string, amount: number, orderId: s
         tangible: false,
       }],
       pix: { expiresInDays: 1 },
-      metadata: JSON.stringify({ order_id: orderId, client_id: clientId }),
       postbackUrl: `${SUPABASE_URL}/functions/v1/fastsoft-webhook`,
+      metadata: JSON.stringify({ order_id: orderId, client_id: clientId }),
     };
 
     console.log('Creating FastSoft transaction:', JSON.stringify(requestBody, null, 2));
