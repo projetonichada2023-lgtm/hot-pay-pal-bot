@@ -538,7 +538,7 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
     );
     
     // Check for upsell
-    await handleUpsell(botToken, chatId, clientId, product.id);
+    await handleUpsell(botToken, chatId, clientId, product.id, product);
   } else {
     await sendTelegramMessage(
       botToken, 
@@ -570,7 +570,7 @@ async function handleCancelOrder(botToken: string, chatId: number, clientId: str
   });
 }
 
-async function handleUpsell(botToken: string, chatId: number, clientId: string, purchasedProductId: string) {
+async function handleUpsell(botToken: string, chatId: number, clientId: string, purchasedProductId: string, purchasedProduct: any) {
   // Check if upsell is enabled for this client
   const settings = await getClientSettings(clientId);
   
@@ -578,8 +578,20 @@ async function handleUpsell(botToken: string, chatId: number, clientId: string, 
     return;
   }
   
-  // Get other products to suggest
-  const upsellProducts = await getUpsellProducts(clientId, purchasedProductId, 3);
+  let upsellProducts: any[] = [];
+  
+  // Check if this product has a specific upsell product configured
+  if (purchasedProduct?.upsell_product_id) {
+    const specificUpsell = await getProduct(purchasedProduct.upsell_product_id);
+    if (specificUpsell && specificUpsell.is_active) {
+      upsellProducts = [specificUpsell];
+    }
+  }
+  
+  // If no specific upsell, get automatic suggestions
+  if (upsellProducts.length === 0) {
+    upsellProducts = await getUpsellProducts(clientId, purchasedProductId, 3);
+  }
   
   if (upsellProducts.length === 0) {
     return;
@@ -596,7 +608,7 @@ async function handleUpsell(botToken: string, chatId: number, clientId: string, 
   
   keyboard.push([{ text: '❌ Não, obrigado', callback_data: 'menu' }]);
   
-  // Send upsell message after a small delay effect
+  // Send upsell message
   await sendTelegramMessage(
     botToken,
     chatId,

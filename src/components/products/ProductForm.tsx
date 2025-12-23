@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Product } from '@/hooks/useProducts';
 
 interface ProductFormProps {
@@ -12,6 +13,7 @@ interface ProductFormProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: ProductFormData) => void;
   product?: Product | null;
+  products?: Product[];
   isLoading?: boolean;
 }
 
@@ -22,11 +24,12 @@ export interface ProductFormData {
   image_url: string;
   file_url: string;
   telegram_group_id: string;
+  upsell_product_id: string;
   is_active: boolean;
   is_hot: boolean;
 }
 
-export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }: ProductFormProps) => {
+export const ProductForm = ({ open, onOpenChange, onSubmit, product, products = [], isLoading }: ProductFormProps) => {
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -34,9 +37,13 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
     image_url: '',
     file_url: '',
     telegram_group_id: '',
+    upsell_product_id: '',
     is_active: true,
     is_hot: false,
   });
+
+  // Filter out the current product from upsell options
+  const upsellOptions = products.filter(p => p.id !== product?.id && p.is_active);
 
   useEffect(() => {
     if (product) {
@@ -47,6 +54,7 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
         image_url: product.image_url || '',
         file_url: product.file_url || '',
         telegram_group_id: (product as any).telegram_group_id || '',
+        upsell_product_id: (product as any).upsell_product_id || '',
         is_active: product.is_active ?? true,
         is_hot: product.is_hot ?? false,
       });
@@ -58,6 +66,7 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
         image_url: '',
         file_url: '',
         telegram_group_id: '',
+        upsell_product_id: '',
         is_active: true,
         is_hot: false,
       });
@@ -67,6 +76,10 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price);
   };
 
   return (
@@ -161,6 +174,29 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
                 <li>Adicione seu bot como admin do grupo</li>
               </ol>
             </details>
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="upsell_product_id" className="text-sm">Produto de Upsell</Label>
+            <Select
+              value={formData.upsell_product_id || 'none'}
+              onValueChange={(value) => setFormData({ ...formData, upsell_product_id: value === 'none' ? '' : value })}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Selecione um produto para ofertar" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhum (usar sugestões automáticas)</SelectItem>
+                {upsellOptions.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.is_hot ? '🔥 ' : ''}{p.name} - {formatPrice(Number(p.price))}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Produto sugerido após a compra deste. Se vazio, usa sugestões automáticas.
+            </p>
           </div>
 
           <div className="flex items-center justify-between pt-2">

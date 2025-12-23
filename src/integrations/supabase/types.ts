@@ -223,6 +223,7 @@ export type Database = {
           sales_count: number | null
           telegram_group_id: string | null
           updated_at: string | null
+          upsell_product_id: string | null
           views_count: number | null
         }
         Insert: {
@@ -239,6 +240,7 @@ export type Database = {
           sales_count?: number | null
           telegram_group_id?: string | null
           updated_at?: string | null
+          upsell_product_id?: string | null
           views_count?: number | null
         }
         Update: {
@@ -255,6 +257,7 @@ export type Database = {
           sales_count?: number | null
           telegram_group_id?: string | null
           updated_at?: string | null
+          upsell_product_id?: string | null
           views_count?: number | null
         }
         Relationships: [
@@ -263,6 +266,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_upsell_product_id_fkey"
+            columns: ["upsell_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
