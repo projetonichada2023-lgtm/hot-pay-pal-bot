@@ -144,9 +144,10 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
             <div className="text-xs text-muted-foreground space-y-1">
               <p><strong>Como obter o ID do grupo:</strong></p>
               <ol className="list-decimal list-inside space-y-0.5 ml-1">
-                <li>Adicione o bot <code className="bg-muted px-1 rounded">@userinfobot</code> ao seu grupo</li>
+                <li>Adicione o bot <code className="bg-muted px-1 rounded">@ScanIDBot</code> ao seu grupo</li>
+                <li>Digite <code className="bg-muted px-1 rounded">/id</code> no grupo</li>
                 <li>O bot enviará o ID do grupo (começa com <code className="bg-muted px-1 rounded">-100</code>)</li>
-                <li>Remova o @userinfobot e adicione seu bot como admin com permissão de convidar</li>
+                <li>Remova o @ScanIDBot e adicione seu bot como admin com permissão de convidar membros</li>
               </ol>
             </div>
           </div>
