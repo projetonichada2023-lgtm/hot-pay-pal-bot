@@ -310,35 +310,36 @@ export const BotSimulator = ({ clientId }: BotSimulatorProps) => {
 
   return (
     <Card className="glass-card h-full flex flex-col">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+      <CardHeader className="pb-3 px-3 sm:px-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Smartphone className="w-5 h-5 text-primary" />
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               Simulador do Bot
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               Teste o fluxo de vendas antes de publicar
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <Button 
               variant="outline" 
               size="sm"
               onClick={resetSimulation}
               disabled={step === 'idle'}
+              className="flex-1 sm:flex-none"
             >
-              <RotateCcw className="w-4 h-4 mr-1" />
-              Reiniciar
+              <RotateCcw className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Reiniciar</span>
             </Button>
             <Button 
               size="sm"
               onClick={startSimulation}
-              className="gradient-hot glow-hot"
+              className="gradient-hot glow-hot flex-1 sm:flex-none"
               disabled={step !== 'idle'}
             >
-              <Play className="w-4 h-4 mr-1" />
-              Iniciar
+              <Play className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Iniciar</span>
             </Button>
           </div>
         </div>
@@ -346,15 +347,15 @@ export const BotSimulator = ({ clientId }: BotSimulatorProps) => {
 
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
         {/* iPhone-style simulator */}
-        <div className="flex-1 flex justify-center p-4 pt-0">
+        <div className="flex-1 flex justify-center p-2 sm:p-4 pt-0">
           <div className="w-full max-w-sm">
             {/* iPhone frame */}
-            <div className="relative rounded-[2.5rem] bg-gradient-to-b from-zinc-800 to-zinc-900 p-3 shadow-2xl">
-              {/* Notch */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-7 bg-zinc-900 rounded-b-2xl z-10" />
+            <div className="relative rounded-[1.5rem] sm:rounded-[2.5rem] bg-gradient-to-b from-zinc-800 to-zinc-900 p-2 sm:p-3 shadow-2xl">
+              {/* Notch - hidden on very small screens */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 sm:w-24 h-5 sm:h-7 bg-zinc-900 rounded-b-xl sm:rounded-b-2xl z-10 hidden xs:block" />
               
               {/* Screen */}
-              <div className="relative rounded-[2rem] overflow-hidden bg-[#17212b] h-[500px] flex flex-col">
+              <div className="relative rounded-[1.25rem] sm:rounded-[2rem] overflow-hidden bg-[#17212b] h-[400px] sm:h-[500px] flex flex-col">
                 {/* Status bar */}
                 <div className="h-10 bg-[#17212b] flex items-center justify-between px-6 pt-2 shrink-0">
                   <span className="text-white/80 text-xs font-medium">9:41</span>
@@ -509,14 +510,14 @@ export const BotSimulator = ({ clientId }: BotSimulatorProps) => {
 
         {/* Quick actions */}
         {step !== 'idle' && (
-          <div className="border-t border-border p-4 shrink-0">
-            <p className="text-xs text-muted-foreground mb-2">Ações Rápidas:</p>
-            <div className="flex flex-wrap gap-2">
+          <div className="border-t border-border p-2 sm:p-4 shrink-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mb-2">Ações Rápidas:</p>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {step === 'catalog' && (
                 <>
-                  <Button size="sm" variant="outline" onClick={showCatalog}>
-                    <ShoppingBag className="w-3 h-3 mr-1" />
-                    Ver Catálogo
+                  <Button size="sm" variant="outline" onClick={showCatalog} className="text-xs h-7 sm:h-8 px-2 sm:px-3">
+                    <ShoppingBag className="w-3 h-3 sm:mr-1" />
+                    <span className="hidden sm:inline">Ver Catálogo</span>
                   </Button>
                   {products.slice(0, 2).map((p) => (
                     <Button 
@@ -524,23 +525,26 @@ export const BotSimulator = ({ clientId }: BotSimulatorProps) => {
                       size="sm" 
                       variant="outline"
                       onClick={() => selectProduct(p)}
+                      className="text-xs h-7 sm:h-8 px-2 sm:px-3"
                     >
-                      <Package className="w-3 h-3 mr-1" />
-                      {p.name.substring(0, 15)}
+                      <Package className="w-3 h-3 sm:mr-1" />
+                      <span className="hidden sm:inline">{p.name.substring(0, 15)}</span>
+                      <span className="sm:hidden">{p.name.substring(0, 8)}</span>
                     </Button>
                   ))}
                 </>
               )}
               {step === 'product_selected' && (
-                <Button size="sm" variant="outline" onClick={initiatePurchase}>
-                  <CreditCard className="w-3 h-3 mr-1" />
-                  Comprar
+                <Button size="sm" variant="outline" onClick={initiatePurchase} className="text-xs h-7 sm:h-8 px-2 sm:px-3">
+                  <CreditCard className="w-3 h-3 sm:mr-1" />
+                  <span className="hidden sm:inline">Comprar</span>
                 </Button>
               )}
               {step === 'awaiting_payment' && (
-                <Button size="sm" variant="outline" onClick={simulatePayment}>
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Simular Pagamento
+                <Button size="sm" variant="outline" onClick={simulatePayment} className="text-xs h-7 sm:h-8 px-2 sm:px-3">
+                  <CheckCircle className="w-3 h-3 sm:mr-1" />
+                  <span className="hidden sm:inline">Simular Pagamento</span>
+                  <span className="sm:hidden">Pagar</span>
                 </Button>
               )}
             </div>
