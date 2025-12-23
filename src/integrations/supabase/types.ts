@@ -75,6 +75,8 @@ export type Database = {
           media_type: string | null
           media_url: string | null
           message_content: string
+          offer_message: string | null
+          offer_product_id: string | null
           time_unit: string | null
           updated_at: string | null
         }
@@ -88,6 +90,8 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           message_content: string
+          offer_message?: string | null
+          offer_product_id?: string | null
           time_unit?: string | null
           updated_at?: string | null
         }
@@ -101,6 +105,8 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           message_content?: string
+          offer_message?: string | null
+          offer_product_id?: string | null
           time_unit?: string | null
           updated_at?: string | null
         }
@@ -110,6 +116,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_recovery_messages_offer_product_id_fkey"
+            columns: ["offer_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]

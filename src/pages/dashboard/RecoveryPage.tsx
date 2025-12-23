@@ -8,12 +8,13 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useCartRecovery, CartRecoveryMessage } from "@/hooks/useCartRecovery";
 import { useClientSettings, useUpdateClientSettings, Client } from "@/hooks/useClient";
+import { useProducts } from "@/hooks/useProducts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Plus, Trash2, Clock, MessageSquare, Edit2, Save, X, Info, 
   RefreshCw, ShoppingCart, TrendingUp, AlertCircle, Loader2,
-  Send, Image, Music, Upload
+  Send, Image, Music, Upload, Package
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -31,9 +32,10 @@ interface RecoveryMessageFormProps {
   onCancel: () => void;
   displayOrder: number;
   clientId: string;
+  products: { id: string; name: string; price: number }[];
 }
 
-const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId }: RecoveryMessageFormProps) => {
+const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId, products }: RecoveryMessageFormProps) => {
   const { toast } = useToast();
   const [delayValue, setDelayValue] = useState(message?.delay_minutes?.toString() || "30");
   const [timeUnit, setTimeUnit] = useState<'minutes' | 'hours' | 'days'>(message?.time_unit || 'minutes');
@@ -45,6 +47,8 @@ const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId
   const [mediaUrl, setMediaUrl] = useState(message?.media_url || "");
   const [mediaType, setMediaType] = useState<string | null>(message?.media_type || null);
   const [isUploading, setIsUploading] = useState(false);
+  const [offerProductId, setOfferProductId] = useState<string | null>(message?.offer_product_id || null);
+  const [offerMessage, setOfferMessage] = useState(message?.offer_message || "🔥 Aproveite também esta oferta especial:");
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'audio') => {
     const file = event.target.files?.[0];
@@ -112,6 +116,8 @@ const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId
       media_type: mediaType,
       is_active: isActive,
       display_order: message?.display_order || displayOrder,
+      offer_product_id: offerProductId,
+      offer_message: offerProductId ? offerMessage : null,
     });
   };
 
@@ -254,6 +260,50 @@ const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId
           </div>
         </div>
 
+        {/* Product Offer Section */}
+        <div className="space-y-4 p-4 border border-dashed border-primary/30 rounded-lg bg-primary/5">
+          <div className="flex items-center gap-2">
+            <Package className="w-5 h-5 text-primary" />
+            <Label className="text-base font-medium">Oferecer Produto (opcional)</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Envie uma oferta de produto junto com a mensagem de recuperação para aumentar as conversões.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Produto para oferecer</Label>
+              <Select 
+                value={offerProductId || "none"} 
+                onValueChange={(v) => setOfferProductId(v === "none" ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um produto" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum (não oferecer produto)</SelectItem>
+                  {products.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name} - R$ {product.price.toFixed(2).replace(".", ",")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {offerProductId && (
+              <div className="space-y-2">
+                <Label>Mensagem da oferta</Label>
+                <Input
+                  value={offerMessage}
+                  onChange={(e) => setOfferMessage(e.target.value)}
+                  placeholder="🔥 Aproveite também esta oferta especial:"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={onCancel}>
             <X className="w-4 h-4 mr-2" />
@@ -274,6 +324,7 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
   const { data: settings, isLoading: settingsLoading } = useClientSettings(client.id);
   const updateSettings = useUpdateClientSettings();
   const { messages, isLoading, createMessage, updateMessage, deleteMessage } = useCartRecovery(client?.id);
+  const { data: products = [] } = useProducts(client?.id);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -603,6 +654,7 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
                           onCancel={() => setEditingId(null)}
                           displayOrder={msg.display_order}
                           clientId={client?.id || ""}
+                          products={products}
                         />
                       ) : (
                         <Card className={cn(
@@ -624,6 +676,12 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
                                     <span className="text-xs px-2 py-1 bg-muted rounded flex items-center gap-1">
                                       {msg.media_type === 'image' ? <Image className="w-3 h-3" /> : <Music className="w-3 h-3" />}
                                       {msg.media_type === 'image' ? 'Imagem' : 'Áudio'}
+                                    </span>
+                                  )}
+                                  {msg.offer_product_id && (
+                                    <span className="text-xs px-2 py-1 bg-green-500/10 text-green-600 rounded flex items-center gap-1">
+                                      <Package className="w-3 h-3" />
+                                      Oferta: {products.find(p => p.id === msg.offer_product_id)?.name || 'Produto'}
                                     </span>
                                   )}
                                   {!msg.is_active && (
@@ -674,6 +732,7 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
                       onCancel={() => setIsCreating(false)}
                       displayOrder={messages.length + 1}
                       clientId={client?.id || ""}
+                      products={products}
                     />
                   )}
 
