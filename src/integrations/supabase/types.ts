@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       bot_messages: {
         Row: {
+          buttons: Json | null
           client_id: string
           created_at: string | null
           display_order: number
@@ -28,6 +29,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          buttons?: Json | null
           client_id: string
           created_at?: string | null
           display_order?: number
@@ -40,6 +42,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          buttons?: Json | null
           client_id?: string
           created_at?: string | null
           display_order?: number
