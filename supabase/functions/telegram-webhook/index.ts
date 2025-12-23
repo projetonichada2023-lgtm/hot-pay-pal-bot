@@ -974,11 +974,8 @@ async function handleBuyProduct(botToken: string, chatId: number, clientId: stri
 
   const pixMessage = `💠 <b>Pix copia e cola:</b>\n<code>${pixCode}</code>`;
 
-  const copyPixButton = { text: '📋 Copiar Código PIX', callback_data: `copypix_${order.id}` };
-
   const pixSent = await sendTelegramMessage(botToken, chatId, pixMessage, {
     inline_keyboard: [
-      [copyPixButton],
       [{ text: '✅ Verificar Pagamento', callback_data: `paid_${order.id}` }],
       [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${order.id}` }],
     ],
