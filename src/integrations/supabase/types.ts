@@ -140,7 +140,10 @@ export type Database = {
           customer_id: string | null
           delivered_at: string | null
           id: string
+          is_downsell: boolean | null
+          is_upsell: boolean | null
           paid_at: string | null
+          parent_order_id: string | null
           payment_id: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           pix_code: string | null
@@ -157,7 +160,10 @@ export type Database = {
           customer_id?: string | null
           delivered_at?: string | null
           id?: string
+          is_downsell?: boolean | null
+          is_upsell?: boolean | null
           paid_at?: string | null
+          parent_order_id?: string | null
           payment_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           pix_code?: string | null
@@ -174,7 +180,10 @@ export type Database = {
           customer_id?: string | null
           delivered_at?: string | null
           id?: string
+          is_downsell?: boolean | null
+          is_upsell?: boolean | null
           paid_at?: string | null
+          parent_order_id?: string | null
           payment_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           pix_code?: string | null
@@ -197,6 +206,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "telegram_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_parent_order_id_fkey"
+            columns: ["parent_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
           {
