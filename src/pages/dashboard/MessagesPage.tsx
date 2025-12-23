@@ -16,7 +16,9 @@ import {
   MessageSquare, 
   Sparkles,
   Search,
+  Smartphone,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { MessageTypeSection } from '@/components/messages/MessageTypeSection';
@@ -36,37 +38,61 @@ interface MessageConfig {
 const messageLabels: Record<string, MessageConfig> = {
   welcome: { 
     label: 'Boas-vindas', 
-    description: 'Mensagens enviadas quando o usuário inicia o bot',
+    description: 'Primeira impressão do cliente ao iniciar o bot',
     icon: '👋',
     allowMultiple: true,
   },
-  payment_instructions: { 
-    label: 'Instruções de Pagamento', 
-    description: 'Instruções para pagamento PIX',
+  catalog: { 
+    label: 'Catálogo', 
+    description: 'Apresentação dos produtos disponíveis',
+    icon: '📦',
+    allowMultiple: false,
+  },
+  product_detail: { 
+    label: 'Detalhe do Produto', 
+    description: 'Informações detalhadas de cada produto',
+    icon: '🏷️',
+    allowMultiple: false,
+  },
+  pix_generated: { 
+    label: 'PIX Gerado', 
+    description: 'Código PIX para pagamento',
     icon: '💳',
     allowMultiple: false,
   },
-  payment_success: { 
+  payment_confirmed: { 
     label: 'Pagamento Confirmado', 
-    description: 'Mensagem após confirmação do pagamento',
+    description: 'Confirmação após aprovação do pagamento',
     icon: '✅',
+    allowMultiple: false,
+  },
+  delivery: { 
+    label: 'Entrega', 
+    description: 'Link de acesso ao produto digital',
+    icon: '📦',
+    allowMultiple: false,
+  },
+  thank_you: { 
+    label: 'Agradecimento', 
+    description: 'Mensagem de pós-venda e fidelização',
+    icon: '❤️',
     allowMultiple: false,
   },
   order_created: { 
     label: 'Pedido Criado', 
-    description: 'Mensagem ao criar um novo pedido',
+    description: 'Confirmação de criação do pedido',
     icon: '🛒',
     allowMultiple: false,
   },
   order_cancelled: { 
     label: 'Pedido Cancelado', 
-    description: 'Mensagem quando pedido é cancelado',
+    description: 'Aviso de cancelamento do pedido',
     icon: '❌',
     allowMultiple: false,
   },
   cart_reminder: { 
     label: 'Lembrete de Carrinho', 
-    description: 'Lembrete para pedidos pendentes',
+    description: 'Recuperação de pedidos abandonados',
     icon: '⏰',
     allowMultiple: false,
   },
@@ -76,16 +102,16 @@ const messageLabels: Record<string, MessageConfig> = {
     icon: '🔥',
     allowMultiple: false,
   },
-  support: { 
-    label: 'Suporte', 
-    description: 'Mensagem de suporte ao cliente',
-    icon: '💬',
+  downsell: { 
+    label: 'Downsell', 
+    description: 'Oferta alternativa se recusar upsell',
+    icon: '💡',
     allowMultiple: false,
   },
-  product_delivered: { 
-    label: 'Produto Entregue', 
-    description: 'Confirmação de entrega do produto',
-    icon: '📦',
+  support: { 
+    label: 'Suporte', 
+    description: 'Mensagem de atendimento ao cliente',
+    icon: '💬',
     allowMultiple: false,
   },
   no_products: { 
@@ -98,10 +124,10 @@ const messageLabels: Record<string, MessageConfig> = {
 
 const categories = {
   all: { label: 'Todas', icon: '📋', types: Object.keys(messageLabels) },
-  welcome: { label: 'Boas-vindas', icon: '👋', types: ['welcome'] },
-  transactions: { label: 'Transações', icon: '💳', types: ['payment_instructions', 'payment_success', 'order_created', 'order_cancelled'] },
-  marketing: { label: 'Marketing', icon: '📈', types: ['cart_reminder', 'upsell'] },
-  other: { label: 'Outros', icon: '📋', types: ['support', 'product_delivered', 'no_products'] },
+  sales: { label: 'Fluxo de Venda', icon: '🛒', types: ['welcome', 'catalog', 'product_detail', 'pix_generated', 'payment_confirmed', 'delivery', 'thank_you'] },
+  orders: { label: 'Pedidos', icon: '📦', types: ['order_created', 'order_cancelled'] },
+  marketing: { label: 'Marketing', icon: '📈', types: ['cart_reminder', 'upsell', 'downsell'] },
+  other: { label: 'Outros', icon: '💬', types: ['support', 'no_products'] },
 };
 
 export const MessagesPage = ({ client }: MessagesPageProps) => {
@@ -111,9 +137,10 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
   const deleteMessage = useDeleteBotMessage();
   const reorderMessages = useReorderBotMessages();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set(['welcome']));
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('sales');
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleUpdateMessage = async (id: string, updates: Partial<BotMessage>) => {
@@ -272,6 +299,16 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
               </div>
             </div>
           </div>
+          
+          {/* Simulator button */}
+          <Button
+            variant="outline"
+            onClick={() => navigate('/dashboard/simulator')}
+            className="shrink-0"
+          >
+            <Smartphone className="w-4 h-4 mr-2" />
+            Testar no Simulador
+          </Button>
         </div>
 
         {/* Search */}

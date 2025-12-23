@@ -1,5 +1,5 @@
 import { MessageButton } from '@/hooks/useBotMessages';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Bot } from 'lucide-react';
 
 interface TelegramPreviewProps {
   content: string;
@@ -9,6 +9,17 @@ interface TelegramPreviewProps {
   className?: string;
 }
 
+// Helper to process placeholders with example values
+const processPlaceholders = (text: string): string => {
+  return text
+    .replace(/\{nome\}/g, 'João Silva')
+    .replace(/\{primeiro_nome\}/g, 'João')
+    .replace(/\{produto\}/g, 'Curso Premium')
+    .replace(/\{valor\}/g, 'R$ 97,00')
+    .replace(/\{pix_code\}/g, '00020126580014...')
+    .replace(/\{pedido_id\}/g, '#12345');
+};
+
 export const TelegramPreview = ({ 
   content, 
   mediaUrl, 
@@ -16,6 +27,8 @@ export const TelegramPreview = ({
   buttons = [],
   className = ''
 }: TelegramPreviewProps) => {
+  const processedContent = processPlaceholders(content);
+
   return (
     <div className={`w-full max-w-sm mx-auto ${className}`}>
       {/* iPhone-style frame */}
@@ -36,7 +49,7 @@ export const TelegramPreview = ({
           {/* Chat header */}
           <div className="bg-[#232e3c] px-4 py-3 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <span className="text-white text-sm font-bold">🤖</span>
+              <Bot className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
               <p className="text-white text-sm font-semibold">Bot de Vendas</p>
@@ -70,7 +83,7 @@ export const TelegramPreview = ({
               {/* Text bubble */}
               <div className={`bg-[#182533] text-white/90 text-sm p-3 ${mediaUrl ? 'rounded-b-2xl rounded-tr-2xl' : 'rounded-2xl rounded-tl-md'}`}>
                 <p className="whitespace-pre-wrap leading-relaxed">
-                  {content || 'Sua mensagem aparecerá aqui...'}
+                  {processedContent || 'Sua mensagem aparecerá aqui...'}
                 </p>
                 <span className="text-[10px] text-[#6b7c8a] float-right mt-1 ml-2">
                   12:00
@@ -109,6 +122,11 @@ export const TelegramPreview = ({
           </div>
         </div>
       </div>
+      
+      {/* Helper text */}
+      <p className="text-center text-xs text-muted-foreground mt-3">
+        As variáveis serão substituídas automaticamente
+      </p>
     </div>
   );
 };
