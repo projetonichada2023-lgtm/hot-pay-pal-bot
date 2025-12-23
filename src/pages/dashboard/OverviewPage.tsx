@@ -19,6 +19,7 @@ interface OverviewPageProps {
 }
 
 const presetRanges = [
+  { label: 'Hoje', days: 1 },
   { label: '7 dias', days: 7 },
   { label: '30 dias', days: 30 },
   { label: '90 dias', days: 90 },
@@ -26,18 +27,17 @@ const presetRanges = [
 
 export const OverviewPage = ({ client }: OverviewPageProps) => {
   const [dateRange, setDateRange] = useState<DateRange>({
-    from: subDays(new Date(), 6),
+    from: new Date(),
     to: new Date(),
   });
-  const [activePreset, setActivePreset] = useState<number | null>(7);
+  const [activePreset, setActivePreset] = useState<number | null>(1);
   
   const { data: stats, isLoading } = useDashboardStats(client.id, dateRange);
 
   const handlePresetClick = (days: number) => {
-    setDateRange({
-      from: subDays(new Date(), days - 1),
-      to: new Date(),
-    });
+    const to = new Date();
+    const from = days === 1 ? to : subDays(to, days - 1);
+    setDateRange({ from, to });
     setActivePreset(days);
   };
 
@@ -104,19 +104,30 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Bem-vindo, {client.business_name}</p>
+      {/* Header */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground text-sm">Bem-vindo, {client.business_name}</p>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 text-sm">
+            <div className={`w-2 h-2 rounded-full ${client.webhook_configured ? 'bg-success' : 'bg-warning'}`} />
+            <span className="text-muted-foreground">
+              Bot {client.webhook_configured ? 'Ativo' : 'Pendente'}
+            </span>
+          </div>
         </div>
+        
+        {/* Date filters */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Preset buttons */}
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
             {presetRanges.map((preset) => (
               <Button
                 key={preset.days}
                 variant={activePreset === preset.days ? 'default' : 'outline'}
                 size="sm"
+                className="text-xs sm:text-sm"
                 onClick={() => handlePresetClick(preset.days)}
               >
                 {preset.label}
@@ -124,33 +135,28 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
             ))}
           </div>
           
-          {/* Date range picker */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <CalendarIcon className="w-4 h-4" />
-                {format(dateRange.from, "dd/MM")} - {format(dateRange.to, "dd/MM/yy")}
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm">
+                <CalendarIcon className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">
+                  {format(dateRange.from, "dd/MM")} - {format(dateRange.to, "dd/MM/yy")}
+                </span>
+                <span className="xs:hidden">Período</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
+            <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="range"
                 selected={{ from: dateRange.from, to: dateRange.to }}
                 onSelect={(range) => handleDateRangeChange(range || {})}
                 disabled={(date) => date > new Date()}
-                numberOfMonths={2}
+                numberOfMonths={1}
                 initialFocus
                 className="p-3 pointer-events-auto"
               />
             </PopoverContent>
           </Popover>
-
-          <div className="flex items-center gap-2 text-sm ml-2">
-            <div className={`w-2 h-2 rounded-full ${client.webhook_configured ? 'bg-success' : 'bg-warning'}`} />
-            <span className="text-muted-foreground">
-              Bot {client.webhook_configured ? 'Ativo' : 'Pendente'}
-            </span>
-          </div>
         </div>
       </div>
 
