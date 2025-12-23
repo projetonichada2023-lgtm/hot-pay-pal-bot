@@ -303,10 +303,11 @@ interface CreateOrderOptions {
 
 const FASTSOFT_API_URL = 'https://api.fastsoftbrasil.com';
 
-// Generate PIX using FastSoft API
-async function generatePixFastsoft(publicKey: string, secretKey: string, amount: number, orderId: string, clientId: string, customerName: string): Promise<{ pixCode: string; qrCodeUrl: string; paymentId: string } | null> {
+// Generate PIX using FastSoft API (uses x:SECRET_KEY format per docs)
+async function generatePixFastsoft(secretKey: string, amount: number, orderId: string, clientId: string, customerName: string): Promise<{ pixCode: string; qrCodeUrl: string; paymentId: string } | null> {
   try {
-    const authHeader = 'Basic ' + btoa(`${publicKey}:${secretKey}`);
+    // FastSoft uses x:SECRET_KEY format for Basic Auth
+    const authHeader = 'Basic ' + btoa(`x:${secretKey}`);
     
     const requestBody = {
       amount: Math.round(amount * 100),
@@ -392,13 +393,12 @@ async function createOrder(clientId: string, customerId: string, productId: stri
 
   if (!order) return null;
 
-  // Generate PIX - use FastSoft if enabled
+  // Generate PIX - use FastSoft if enabled (only needs secret key)
   let pix: { pixCode: string; qrCodeUrl: string; paymentId: string };
   
-  if (settings?.fastsoft_enabled && settings?.fastsoft_public_key && settings?.fastsoft_api_key) {
+  if (settings?.fastsoft_enabled && settings?.fastsoft_api_key) {
     console.log('Using FastSoft for PIX generation');
     const fastsoftPix = await generatePixFastsoft(
-      settings.fastsoft_public_key,
       settings.fastsoft_api_key,
       amount,
       order.id,
