@@ -5,10 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Loader2, CreditCard, Eye, EyeOff, ExternalLink, CheckCircle2, RotateCcw, MessageSquare, ChevronRight } from 'lucide-react';
+import { Settings, Loader2, CreditCard, Eye, EyeOff, ExternalLink, CheckCircle2, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { useOnboarding } from '@/hooks/useOnboarding';
-import { useNavigate } from 'react-router-dom';
 
 interface SettingsPageProps {
   client: Client;
@@ -21,7 +20,6 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const { resetOnboarding, isResetting } = useOnboarding(client.id, client.onboarding_completed);
-  const navigate = useNavigate();
 
   const handleToggle = async (field: string, value: boolean) => {
     if (!settings) return;
@@ -97,28 +95,6 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
           Configure o comportamento do seu bot
         </p>
       </div>
-
-      {/* Bot Messages Customization */}
-      <Card className="glass-card hover:border-primary/30 transition-colors cursor-pointer group" onClick={() => navigate('/dashboard/messages')}>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 flex items-center justify-center">
-                <MessageSquare className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  Personalizar Mensagens
-                </CardTitle>
-                <CardDescription>
-                  Customize todas as mensagens enviadas pelo seu bot
-                </CardDescription>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-          </div>
-        </CardHeader>
-      </Card>
 
       {/* Payment Gateway - UniPay */}
       <Card className="glass-card border-primary/20">
