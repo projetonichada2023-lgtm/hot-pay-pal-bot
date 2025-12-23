@@ -229,6 +229,7 @@ export type Database = {
           client_id: string
           created_at: string | null
           description: string | null
+          downsell_message: string | null
           downsell_product_id: string | null
           file_url: string | null
           id: string
@@ -240,6 +241,7 @@ export type Database = {
           sales_count: number | null
           telegram_group_id: string | null
           updated_at: string | null
+          upsell_message: string | null
           upsell_product_id: string | null
           views_count: number | null
         }
@@ -247,6 +249,7 @@ export type Database = {
           client_id: string
           created_at?: string | null
           description?: string | null
+          downsell_message?: string | null
           downsell_product_id?: string | null
           file_url?: string | null
           id?: string
@@ -258,6 +261,7 @@ export type Database = {
           sales_count?: number | null
           telegram_group_id?: string | null
           updated_at?: string | null
+          upsell_message?: string | null
           upsell_product_id?: string | null
           views_count?: number | null
         }
@@ -265,6 +269,7 @@ export type Database = {
           client_id?: string
           created_at?: string | null
           description?: string | null
+          downsell_message?: string | null
           downsell_product_id?: string | null
           file_url?: string | null
           id?: string
@@ -276,6 +281,7 @@ export type Database = {
           sales_count?: number | null
           telegram_group_id?: string | null
           updated_at?: string | null
+          upsell_message?: string | null
           upsell_product_id?: string | null
           views_count?: number | null
         }
