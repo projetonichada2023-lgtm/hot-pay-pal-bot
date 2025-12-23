@@ -60,7 +60,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (user && !isResetMode) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [user, navigate, isResetMode]);
 
@@ -206,7 +206,7 @@ const Auth = () => {
         title: 'Senha atualizada!',
         description: 'Sua senha foi alterada com sucesso.',
       });
-      navigate('/');
+      navigate('/dashboard');
     }
   };
 

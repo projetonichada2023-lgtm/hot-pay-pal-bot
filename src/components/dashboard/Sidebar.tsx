@@ -29,17 +29,17 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-  { icon: MessageCircle, label: 'Conversas', path: '/chats' },
-  { icon: MessageSquare, label: 'Mensagens Bot', path: '/messages' },
-  { icon: Package, label: 'Produtos', path: '/products' },
-  { icon: GitBranch, label: 'Funil', path: '/funnel' },
-  { icon: ShoppingCart, label: 'Pedidos', path: '/orders' },
-  { icon: RefreshCw, label: 'Recuperação', path: '/recovery' },
-  { icon: Users, label: 'Clientes', path: '/customers' },
-  { icon: BarChart3, label: 'Relatórios', path: '/reports' },
-  { icon: Bot, label: 'Bot Config', path: '/bot-config' },
-  { icon: Settings, label: 'Configurações', path: '/settings' },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+  { icon: MessageCircle, label: 'Conversas', path: '/dashboard/chats' },
+  { icon: MessageSquare, label: 'Mensagens Bot', path: '/dashboard/messages' },
+  { icon: Package, label: 'Produtos', path: '/dashboard/products' },
+  { icon: GitBranch, label: 'Funil', path: '/dashboard/funnel' },
+  { icon: ShoppingCart, label: 'Pedidos', path: '/dashboard/orders' },
+  { icon: RefreshCw, label: 'Recuperação', path: '/dashboard/recovery' },
+  { icon: Users, label: 'Clientes', path: '/dashboard/customers' },
+  { icon: BarChart3, label: 'Relatórios', path: '/dashboard/reports' },
+  { icon: Bot, label: 'Bot Config', path: '/dashboard/bot-config' },
+  { icon: Settings, label: 'Configurações', path: '/dashboard/settings' },
 ];
 
 export const Sidebar = ({ client }: SidebarProps) => {
