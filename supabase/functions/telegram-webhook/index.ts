@@ -955,26 +955,37 @@ async function handleBuyProduct(botToken: string, chatId: number, clientId: stri
   const orderCreatedMessage = await getClientMessage(clientId, 'order_created');
   const paymentInstructions = await getClientMessage(clientId, 'payment_instructions');
 
-  const message = `${orderCreatedMessage || '🛒 Pedido criado com sucesso!'}\n\n` +
+  const detailsMessage = `${orderCreatedMessage || '🛒 Pedido criado com sucesso!'}\n\n` +
     `<b>Produto:</b> ${product.name}\n` +
     `<b>Valor:</b> ${formatPrice(Number(product.price))}\n\n` +
-    `${paymentInstructions || '📱 Escaneie o QR Code ou copie o código PIX abaixo:'}\n\n` +
-    `<code>${order.pix_code}</code>\n\n` +
+    `${paymentInstructions || '📱 Para pagar, use a opção "PIX Copia e Cola" no seu aplicativo bancário.'}\n\n` +
     `⏰ <i>Você tem 15 minutos para efetuar o pagamento.</i>`;
 
-  // Create copy button URL - using Telegram's copy_text feature
+  const detailsSent = await sendTelegramMessage(botToken, chatId, detailsMessage);
+  if (detailsSent?.result?.message_id) {
+    await saveMessage(clientId, chatId, customerId, 'outgoing', detailsMessage, detailsSent.result.message_id);
+  }
+
+  const pixCode = (order as any).pix_code as string | null;
+  if (!pixCode) {
+    await sendTelegramMessage(botToken, chatId, '⚠️ Não consegui gerar o código PIX agora. Tente novamente em instantes.');
+    return;
+  }
+
+  const pixMessage = `💠 <b>Pix copia e cola:</b>\n<code>${pixCode}</code>`;
+
   const copyPixButton = { text: '📋 Copiar Código PIX', callback_data: `copypix_${order.id}` };
-  
-  const sent = await sendTelegramMessage(botToken, chatId, message, {
+
+  const pixSent = await sendTelegramMessage(botToken, chatId, pixMessage, {
     inline_keyboard: [
       [copyPixButton],
       [{ text: '✅ Já Paguei', callback_data: `paid_${order.id}` }],
-      [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${order.id}` }]
-    ]
+      [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${order.id}` }],
+    ],
   });
 
-  if (sent?.result?.message_id) {
-    await saveMessage(clientId, chatId, customerId, 'outgoing', message, sent.result.message_id);
+  if (pixSent?.result?.message_id) {
+    await saveMessage(clientId, chatId, customerId, 'outgoing', pixMessage, pixSent.result.message_id);
   }
 }
 
@@ -1110,21 +1121,19 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
 
 async function handleCopyPixCode(botToken: string, chatId: number, clientId: string, orderId: string) {
   const order = await getOrder(orderId);
-  
+
   if (!order) {
-    await answerCallbackQuery(botToken, '', '❌ Pedido não encontrado.');
+    await sendTelegramMessage(botToken, chatId, '❌ Pedido não encontrado.');
     return;
   }
 
-  const pixCode = (order as any).pix_code;
-  
+  const pixCode = (order as any).pix_code as string | null;
   if (!pixCode) {
     await sendTelegramMessage(botToken, chatId, '⚠️ Código PIX não disponível para este pedido.');
     return;
   }
 
-  // Send the PIX code as a separate message for easy copying
-  const copyMessage = `📋 <b>Código PIX para copiar:</b>\n\n<code>${pixCode}</code>\n\n👆 Toque no código acima para copiar!`;
+  const copyMessage = `💠 <b>Pix copia e cola:</b>\n<code>${pixCode}</code>`;
   await sendTelegramMessage(botToken, chatId, copyMessage);
 }
 
