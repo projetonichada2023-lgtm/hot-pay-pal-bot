@@ -288,18 +288,61 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
     ...Object.keys(groupedMessages),
   ]));
 
+  // Group by category for tabs
+  const categories = {
+    welcome: ['welcome'],
+    transactions: ['payment_instructions', 'payment_success', 'order_created', 'order_cancelled'],
+    marketing: ['cart_reminder', 'upsell'],
+    other: ['support', 'product_delivered', 'no_products'],
+  };
+
+  const categoryLabels = {
+    welcome: { label: 'Boas-vindas', icon: '👋' },
+    transactions: { label: 'Transações', icon: '💳' },
+    marketing: { label: 'Marketing', icon: '📈' },
+    other: { label: 'Outros', icon: '📋' },
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-bold flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+              <MessageSquare className="w-5 h-5 text-primary" />
+            </div>
             Mensagens do Bot
           </h1>
-          <p className="text-muted-foreground">
-            Personalize todas as mensagens enviadas pelo seu bot
+          <p className="text-muted-foreground mt-1">
+            Personalize todas as mensagens e botões enviados pelo seu bot
           </p>
         </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {Object.entries(categoryLabels).map(([key, { label, icon }]) => {
+          const types = categories[key as keyof typeof categories];
+          const count = types.reduce((acc, type) => acc + (groupedMessages[type]?.length || 0), 0);
+          return (
+            <div 
+              key={key}
+              className="p-3 rounded-xl bg-card border border-border/60 hover:border-primary/40 transition-colors cursor-pointer"
+              onClick={() => {
+                const firstType = types[0];
+                if (!expandedTypes.has(firstType)) {
+                  toggleExpanded(firstType);
+                }
+                document.getElementById(`section-${firstType}`)?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <span className="text-2xl">{icon}</span>
+              <p className="text-sm font-medium mt-1">{label}</p>
+              <p className="text-xs text-muted-foreground">{count} mensagens</p>
+            </div>
+          );
+        })}
       </div>
 
       <div className="grid gap-4">
@@ -317,18 +360,20 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
           if (config.allowMultiple) {
             return (
               <Collapsible key={messageType} open={isExpanded} onOpenChange={() => toggleExpanded(messageType)}>
-                <Card className="glass-card">
+                <Card className="overflow-hidden border-border/60" id={`section-${messageType}`}>
                   <CollapsibleTrigger asChild>
-                    <CardHeader className="pb-3 cursor-pointer hover:bg-secondary/30 transition-colors rounded-t-lg">
+                    <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <span className="text-2xl">{config.icon}</span>
+                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center text-xl">
+                            {config.icon}
+                          </div>
                           <div>
                             <CardTitle className="text-base flex items-center gap-2">
                               {config.label}
                               {hasMultiple && (
-                                <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
-                                  {typeMessages.length} mensagens
+                                <span className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded-full font-medium">
+                                  {typeMessages.length}
                                 </span>
                               )}
                             </CardTitle>
@@ -346,15 +391,26 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
                               handleAddMessage(messageType, typeMessages);
                             }}
                             disabled={createMessage.isPending}
+                            className="hidden sm:flex"
                           >
                             <Plus className="w-4 h-4 mr-1" />
                             Adicionar
                           </Button>
-                          {isExpanded ? (
-                            <ChevronUp className="w-5 h-5 text-muted-foreground" />
-                          ) : (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddMessage(messageType, typeMessages);
+                            }}
+                            disabled={createMessage.isPending}
+                            className="sm:hidden h-8 w-8"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                          <div className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
                             <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                          )}
+                          </div>
                         </div>
                       </div>
                     </CardHeader>
@@ -417,11 +473,13 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
           const isEditing = editingId === message.id;
 
           return (
-            <Card key={message.id} className="glass-card">
+            <Card key={message.id} className="overflow-hidden border-border/60" id={`section-${messageType}`}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{config.icon}</span>
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center text-xl">
+                      {config.icon}
+                    </div>
                     <div>
                       <CardTitle className="text-base">{config.label}</CardTitle>
                       <CardDescription className="text-sm">
