@@ -21,6 +21,9 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableRecoveryMessage } from "@/components/recovery/SortableRecoveryMessage";
 
 interface RecoveryPageProps {
   client: Client;
@@ -328,6 +331,14 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   // Fetch pending orders for recovery
   const { data: pendingOrders = [], isLoading: ordersLoading, refetch: refetchOrders } = useQuery({
     queryKey: ["pending-orders-recovery", client.id],
@@ -390,6 +401,30 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
   const handleDeleteMessage = async (id: string) => {
     if (confirm("Tem certeza que deseja excluir esta mensagem?")) {
       await deleteMessage.mutateAsync(id);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = messages.findIndex((msg) => msg.id === active.id);
+      const newIndex = messages.findIndex((msg) => msg.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reorderedMessages = arrayMove(messages, oldIndex, newIndex);
+        
+        // Update display_order for all affected messages
+        for (let i = 0; i < reorderedMessages.length; i++) {
+          const msg = reorderedMessages[i];
+          if (msg.display_order !== i + 1) {
+            await updateMessage.mutateAsync({
+              id: msg.id,
+              display_order: i + 1,
+            });
+          }
+        }
+      }
     }
   };
 
@@ -645,86 +680,39 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {messages.map((msg, index) => (
-                    <div key={msg.id}>
-                      {editingId === msg.id ? (
-                        <RecoveryMessageForm
-                          message={msg}
-                          onSave={handleSaveMessage}
-                          onCancel={() => setEditingId(null)}
-                          displayOrder={msg.display_order}
-                          clientId={client?.id || ""}
-                          products={products}
-                        />
-                      ) : (
-                        <Card className={cn(
-                          "transition-all",
-                          !msg.is_active && "opacity-50"
-                        )}>
-                          <CardContent className="pt-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                  <span className="text-xs font-medium px-2 py-1 bg-primary/10 text-primary rounded">
-                                    Mensagem {index + 1}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    {msg.delay_minutes} {msg.time_unit === 'hours' ? 'hora(s)' : msg.time_unit === 'days' ? 'dia(s)' : 'min'}
-                                  </span>
-                                  {msg.media_type && (
-                                    <span className="text-xs px-2 py-1 bg-muted rounded flex items-center gap-1">
-                                      {msg.media_type === 'image' ? <Image className="w-3 h-3" /> : <Music className="w-3 h-3" />}
-                                      {msg.media_type === 'image' ? 'Imagem' : 'Áudio'}
-                                    </span>
-                                  )}
-                                  {msg.offer_product_id && (
-                                    <span className="text-xs px-2 py-1 bg-green-500/10 text-green-600 rounded flex items-center gap-1">
-                                      <Package className="w-3 h-3" />
-                                      Oferta: {products.find(p => p.id === msg.offer_product_id)?.name || 'Produto'}
-                                    </span>
-                                  )}
-                                  {!msg.is_active && (
-                                    <span className="text-xs text-muted-foreground">(Inativa)</span>
-                                  )}
-                                </div>
-                                <div className="flex gap-3">
-                                  {msg.media_url && msg.media_type === 'image' && (
-                                    <img src={msg.media_url} alt="Preview" className="w-16 h-16 object-cover rounded shrink-0" />
-                                  )}
-                                  {msg.media_url && msg.media_type === 'audio' && (
-                                    <div className="w-16 h-16 bg-primary/10 rounded flex items-center justify-center shrink-0">
-                                      <Music className="w-8 h-8 text-primary" />
-                                    </div>
-                                  )}
-                                  <p className="text-sm whitespace-pre-wrap line-clamp-3 flex-1">
-                                    {msg.message_content}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => setEditingId(msg.id)}
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteMessage(msg.id)}
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-                  ))}
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={messages.map(msg => msg.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {messages.map((msg, index) => (
+                        <div key={msg.id}>
+                          {editingId === msg.id ? (
+                            <RecoveryMessageForm
+                              message={msg}
+                              onSave={handleSaveMessage}
+                              onCancel={() => setEditingId(null)}
+                              displayOrder={msg.display_order}
+                              clientId={client?.id || ""}
+                              products={products}
+                            />
+                          ) : (
+                            <SortableRecoveryMessage
+                              message={msg}
+                              index={index}
+                              products={products}
+                              onEdit={setEditingId}
+                              onDelete={handleDeleteMessage}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </SortableContext>
+                  </DndContext>
 
                   {isCreating && (
                     <RecoveryMessageForm
