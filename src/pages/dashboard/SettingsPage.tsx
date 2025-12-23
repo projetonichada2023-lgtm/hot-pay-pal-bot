@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Loader2, CreditCard, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
+import { CartRecoverySettings } from '@/components/settings/CartRecoverySettings';
 
 interface SettingsPageProps {
   client: Client;
@@ -237,26 +238,12 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
               />
             </div>
 
-            {settings.cart_reminder_enabled && (
-              <div className="pl-4 border-l-2 border-primary/50">
-                <Label htmlFor="reminder-hours">Horas para lembrete</Label>
-                <div className="flex items-center gap-2 mt-2">
-                  <Input
-                    id="reminder-hours"
-                    type="number"
-                    min={1}
-                    max={72}
-                    value={settings.cart_reminder_hours}
-                    onChange={(e) => handleHoursChange(parseInt(e.target.value) || 24)}
-                    className="w-24"
-                  />
-                  <span className="text-sm text-muted-foreground">horas</span>
-                </div>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Cart Recovery */}
+      <CartRecoverySettings client={client} />
 
       {/* Business Info */}
       <Card className="glass-card">

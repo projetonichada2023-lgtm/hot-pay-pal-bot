@@ -64,6 +64,47 @@ export type Database = {
           },
         ]
       }
+      cart_recovery_messages: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          delay_minutes: number
+          display_order: number
+          id: string
+          is_active: boolean | null
+          message_content: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          delay_minutes?: number
+          display_order?: number
+          id?: string
+          is_active?: boolean | null
+          message_content: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          delay_minutes?: number
+          display_order?: number
+          id?: string
+          is_active?: boolean | null
+          message_content?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_recovery_messages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_settings: {
         Row: {
           auto_delivery: boolean | null
@@ -193,6 +234,7 @@ export type Database = {
           id: string
           is_downsell: boolean | null
           is_upsell: boolean | null
+          last_recovery_sent_at: string | null
           paid_at: string | null
           parent_order_id: string | null
           payment_id: string | null
@@ -200,6 +242,7 @@ export type Database = {
           pix_code: string | null
           pix_qrcode: string | null
           product_id: string | null
+          recovery_messages_sent: number | null
           status: Database["public"]["Enums"]["order_status"] | null
           telegram_message_id: number | null
           updated_at: string | null
@@ -213,6 +256,7 @@ export type Database = {
           id?: string
           is_downsell?: boolean | null
           is_upsell?: boolean | null
+          last_recovery_sent_at?: string | null
           paid_at?: string | null
           parent_order_id?: string | null
           payment_id?: string | null
@@ -220,6 +264,7 @@ export type Database = {
           pix_code?: string | null
           pix_qrcode?: string | null
           product_id?: string | null
+          recovery_messages_sent?: number | null
           status?: Database["public"]["Enums"]["order_status"] | null
           telegram_message_id?: number | null
           updated_at?: string | null
@@ -233,6 +278,7 @@ export type Database = {
           id?: string
           is_downsell?: boolean | null
           is_upsell?: boolean | null
+          last_recovery_sent_at?: string | null
           paid_at?: string | null
           parent_order_id?: string | null
           payment_id?: string | null
@@ -240,6 +286,7 @@ export type Database = {
           pix_code?: string | null
           pix_qrcode?: string | null
           product_id?: string | null
+          recovery_messages_sent?: number | null
           status?: Database["public"]["Enums"]["order_status"] | null
           telegram_message_id?: number | null
           updated_at?: string | null
