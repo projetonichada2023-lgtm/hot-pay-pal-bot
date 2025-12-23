@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Client } from '@/hooks/useClient';
@@ -17,7 +17,9 @@ import {
   Menu,
   X,
   GitBranch,
-  BarChart3
+  BarChart3,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -39,10 +41,24 @@ const menuItems = [
 ];
 
 export const Sidebar = ({ client }: SidebarProps) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return true;
+  });
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
 
   const handleLogout = async () => {
     await signOut();
@@ -51,27 +67,30 @@ export const Sidebar = ({ client }: SidebarProps) => {
 
   const handleNavigate = (path: string) => {
     navigate(path);
-    setIsCollapsed(false);
+    setIsMobileOpen(false);
+  };
+
+  const toggleTheme = () => {
+    setIsDark(!isDark);
   };
 
   return (
     <>
-      {/* Mobile toggle */}
+      {/* Mobile toggle button */}
       <Button
         variant="ghost"
         size="icon"
         className="fixed top-4 left-4 z-50 md:hidden"
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={() => setIsMobileOpen(!isMobileOpen)}
       >
-        {isCollapsed ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </Button>
 
       {/* Sidebar */}
       <aside
         className={cn(
           'fixed md:relative z-40 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300',
-          isCollapsed ? 'w-64 translate-x-0' : '-translate-x-full md:translate-x-0 md:w-64',
-          'md:w-64'
+          isMobileOpen ? 'w-64 translate-x-0' : '-translate-x-full md:translate-x-0 md:w-64'
         )}
       >
         <div className="flex flex-col h-full p-4">
@@ -111,6 +130,16 @@ export const Sidebar = ({ client }: SidebarProps) => {
             })}
           </nav>
 
+          {/* Theme Toggle */}
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 h-11 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 mb-2"
+            onClick={toggleTheme}
+          >
+            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            {isDark ? 'Modo Claro' : 'Modo Escuro'}
+          </Button>
+
           {/* Logout */}
           <Button
             variant="ghost"
@@ -124,10 +153,10 @@ export const Sidebar = ({ client }: SidebarProps) => {
       </aside>
 
       {/* Overlay for mobile */}
-      {isCollapsed && (
+      {isMobileOpen && (
         <div 
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 md:hidden"
-          onClick={() => setIsCollapsed(false)}
+          onClick={() => setIsMobileOpen(false)}
         />
       )}
     </>
