@@ -50,7 +50,6 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
           image_url: data.image_url || null,
           file_url: data.file_url || null,
           telegram_group_id: data.telegram_group_id || null,
-          upsell_product_id: data.upsell_product_id || null,
           is_active: data.is_active,
           is_hot: data.is_hot,
         } as any);
@@ -64,7 +63,6 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
           image_url: data.image_url || null,
           file_url: data.file_url || null,
           telegram_group_id: data.telegram_group_id || null,
-          upsell_product_id: data.upsell_product_id || null,
           is_active: data.is_active,
           is_hot: data.is_hot,
         } as any);
@@ -132,7 +130,6 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
         onOpenChange={setIsFormOpen}
         onSubmit={handleSubmit}
         product={selectedProduct}
-        products={products || []}
         isLoading={createProduct.isPending || updateProduct.isPending}
       />
 
