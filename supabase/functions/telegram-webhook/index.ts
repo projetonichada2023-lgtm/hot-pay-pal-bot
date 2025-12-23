@@ -267,7 +267,7 @@ async function getProducts(clientId: string) {
 async function getClientSettings(clientId: string) {
   const { data } = await supabase
     .from('client_settings')
-    .select('*')
+    .select('*, fastsoft_api_key, fastsoft_public_key, fastsoft_enabled')
     .eq('client_id', clientId)
     .maybeSingle();
   
@@ -301,10 +301,79 @@ interface CreateOrderOptions {
   parentOrderId?: string;
 }
 
-async function createOrder(clientId: string, customerId: string, productId: string, amount: number, options: CreateOrderOptions = {}) {
-  // Generate a fake PIX code for demo purposes
+const FASTSOFT_API_URL = 'https://api.fastsoftbrasil.com';
+
+// Generate PIX using FastSoft API
+async function generatePixFastsoft(publicKey: string, secretKey: string, amount: number, orderId: string, clientId: string, customerName: string): Promise<{ pixCode: string; qrCodeUrl: string; paymentId: string } | null> {
+  try {
+    const authHeader = 'Basic ' + btoa(`${publicKey}:${secretKey}`);
+    
+    const requestBody = {
+      amount: Math.round(amount * 100),
+      currency: 'BRL',
+      paymentMethod: 'PIX',
+      customer: {
+        name: customerName || 'Cliente',
+        email: 'cliente@email.com',
+        document: { number: '00000000000', type: 'CPF' },
+      },
+      items: [{
+        title: 'Produto Digital',
+        unitPrice: Math.round(amount * 100),
+        quantity: 1,
+        tangible: false,
+      }],
+      pix: { expiresInDays: 1 },
+      metadata: JSON.stringify({ order_id: orderId, client_id: clientId }),
+      postbackUrl: `${SUPABASE_URL}/functions/v1/fastsoft-webhook`,
+    };
+
+    console.log('Creating FastSoft transaction:', JSON.stringify(requestBody, null, 2));
+
+    const response = await fetch(`${FASTSOFT_API_URL}/api/user/transactions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    const responseText = await response.text();
+    console.log('FastSoft response status:', response.status);
+    console.log('FastSoft response:', responseText);
+
+    if (!response.ok) {
+      console.error('FastSoft API error:', response.status, responseText);
+      return null;
+    }
+
+    const data = JSON.parse(responseText);
+    const pixCode = data.pix?.qrcode || data.pixCode || '';
+    const qrCodeUrl = data.pix?.receiptUrl || `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCode)}`;
+    
+    return { pixCode, qrCodeUrl, paymentId: data.id };
+  } catch (error) {
+    console.error('Error generating PIX with FastSoft:', error);
+    return null;
+  }
+}
+
+// Generate mock PIX (fallback)
+function generateMockPix(amount: number, orderId: string): { pixCode: string; qrCodeUrl: string; paymentId: string } {
   const pixCode = `00020126580014BR.GOV.BCB.PIX0136${crypto.randomUUID()}5204000053039865406${amount.toFixed(2)}5802BR5913LOJA DIGITAL6009SAO PAULO62070503***6304`;
+  return {
+    pixCode,
+    qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCode)}`,
+    paymentId: `MOCK_${orderId}_${Date.now()}`,
+  };
+}
+
+async function createOrder(clientId: string, customerId: string, productId: string, amount: number, options: CreateOrderOptions = {}, customerName?: string) {
+  // Get client settings for FastSoft integration
+  const settings = await getClientSettings(clientId);
   
+  // Create order first
   const { data: order } = await supabase
     .from('orders')
     .insert({
@@ -314,7 +383,6 @@ async function createOrder(clientId: string, customerId: string, productId: stri
       amount,
       status: 'pending',
       payment_method: 'pix',
-      pix_code: pixCode,
       is_upsell: options.isUpsell || false,
       is_downsell: options.isDownsell || false,
       parent_order_id: options.parentOrderId || null,
@@ -322,7 +390,43 @@ async function createOrder(clientId: string, customerId: string, productId: stri
     .select()
     .single();
 
-  return order;
+  if (!order) return null;
+
+  // Generate PIX - use FastSoft if enabled
+  let pix: { pixCode: string; qrCodeUrl: string; paymentId: string };
+  
+  if (settings?.fastsoft_enabled && settings?.fastsoft_public_key && settings?.fastsoft_api_key) {
+    console.log('Using FastSoft for PIX generation');
+    const fastsoftPix = await generatePixFastsoft(
+      settings.fastsoft_public_key,
+      settings.fastsoft_api_key,
+      amount,
+      order.id,
+      clientId,
+      customerName || 'Cliente'
+    );
+    if (fastsoftPix) {
+      pix = fastsoftPix;
+    } else {
+      console.log('FastSoft failed, falling back to mock PIX');
+      pix = generateMockPix(amount, order.id);
+    }
+  } else {
+    console.log('FastSoft not configured, using mock PIX');
+    pix = generateMockPix(amount, order.id);
+  }
+  
+  // Update order with PIX data
+  await supabase
+    .from('orders')
+    .update({
+      pix_code: pix.pixCode,
+      pix_qrcode: pix.qrCodeUrl,
+      payment_id: pix.paymentId,
+    })
+    .eq('id', order.id);
+
+  return { ...order, pix_code: pix.pixCode, pix_qrcode: pix.qrCodeUrl, payment_id: pix.paymentId };
 }
 
 async function getOrder(orderId: string) {
@@ -753,8 +857,17 @@ async function handleBuyProduct(botToken: string, chatId: number, clientId: stri
     return;
   }
 
+  // Get customer name for FastSoft
+  const { data: customer } = await supabase
+    .from('telegram_customers')
+    .select('first_name, last_name')
+    .eq('id', customerId)
+    .maybeSingle();
+  
+  const customerName = customer ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() : 'Cliente';
+
   // Create order with upsell/downsell tracking
-  const order = await createOrder(clientId, customerId, productId, Number(product.price), options);
+  const order = await createOrder(clientId, customerId, productId, Number(product.price), options, customerName);
   
   if (!order) {
     await sendTelegramMessage(botToken, chatId, '❌ Erro ao criar pedido. Tente novamente.');
