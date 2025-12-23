@@ -50,73 +50,12 @@ export function useTelegramConversations(clientId: string) {
           table: 'telegram_messages',
           filter: `client_id=eq.${clientId}`,
         },
-        async (payload) => {
+        (payload) => {
           console.log('New message received:', payload);
-          
-          // Fetch the customer data for the new message
-          const newMessage = payload.new as any;
-          let customer = null;
-          
-          if (newMessage.customer_id) {
-            const { data: customerData } = await supabase
-              .from('telegram_customers')
-              .select('id, first_name, last_name, telegram_username')
-              .eq('id', newMessage.customer_id)
-              .maybeSingle();
-            customer = customerData;
-          }
-
-          // Update the query cache with the new message
-          queryClient.setQueryData(
-            ['telegram-conversations', clientId],
-            (oldData: ChatConversation[] | undefined) => {
-              if (!oldData) return oldData;
-
-              const messageWithCustomer: TelegramMessage = {
-                ...newMessage,
-                customer,
-              };
-
-              const key = newMessage.customer_id || `chat_${newMessage.telegram_chat_id}`;
-              const existingConvIndex = oldData.findIndex(c => c.customer_id === key);
-
-              if (existingConvIndex >= 0) {
-                // Update existing conversation
-                const updatedConversations = [...oldData];
-                const conv = { ...updatedConversations[existingConvIndex] };
-                conv.messages = [...conv.messages, messageWithCustomer];
-                conv.last_message = newMessage.message_content;
-                conv.last_message_at = newMessage.created_at;
-                updatedConversations[existingConvIndex] = conv;
-
-                // Re-sort by most recent message
-                updatedConversations.sort(
-                  (a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
-                );
-
-                return updatedConversations;
-              } else {
-                // Create new conversation
-                const customerName = customer
-                  ? [customer.first_name, customer.last_name].filter(Boolean).join(' ') || 'Usuário'
-                  : 'Usuário Desconhecido';
-
-                const newConv: ChatConversation = {
-                  customer_id: key,
-                  telegram_chat_id: newMessage.telegram_chat_id,
-                  customer_name: customerName,
-                  customer_username: customer?.telegram_username || null,
-                  last_message: newMessage.message_content,
-                  last_message_at: newMessage.created_at,
-                  unread_count: 0,
-                  messages: [messageWithCustomer],
-                };
-
-                return [newConv, ...oldData];
-              }
-            }
-          );
+          // Keep it robust: just refetch and regroup (avoids missing messages / ordering bugs)
+          queryClient.invalidateQueries({ queryKey: ['telegram-conversations', clientId] });
         }
+      )
       )
       .subscribe((status) => {
         console.log('Realtime subscription status:', status);
@@ -140,7 +79,7 @@ export function useTelegramConversations(clientId: string) {
         `)
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
-        .limit(500);
+        .limit(1000);
 
       if (error) throw error;
 
@@ -200,7 +139,7 @@ export function useTelegramChatMessages(clientId: string, chatId: number | null)
         .eq('client_id', clientId)
         .eq('telegram_chat_id', chatId)
         .order('created_at', { ascending: true })
-        .limit(100);
+        .limit(500);
 
       if (error) throw error;
       return data as TelegramMessage[];

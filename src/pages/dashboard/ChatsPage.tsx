@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Client } from '@/hooks/useClient';
-import { useTelegramConversations, ChatConversation, TelegramMessage } from '@/hooks/useTelegramMessages';
+import { useTelegramConversations, TelegramMessage } from '@/hooks/useTelegramMessages';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -54,7 +54,8 @@ function getInitials(name: string): string {
 
 export const ChatsPage = ({ client }: ChatsPageProps) => {
   const { data: conversations, isLoading } = useTelegramConversations(client.id);
-  const [selectedChat, setSelectedChat] = useState<ChatConversation | null>(null);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const selectedChat = conversations?.find((c) => c.customer_id === selectedChatId) || null;
   const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -132,7 +133,7 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
                   {filteredConversations?.map((conv) => (
                     <button
                       key={conv.customer_id}
-                      onClick={() => setSelectedChat(conv)}
+                      onClick={() => setSelectedChatId(conv.customer_id)}
                       className={cn(
                         "w-full flex items-center gap-3 p-4 transition-colors text-left",
                         "hover:bg-secondary/60",
@@ -192,7 +193,7 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
                       variant="ghost"
                       size="icon"
                       className="lg:hidden shrink-0"
-                      onClick={() => setSelectedChat(null)}
+                      onClick={() => setSelectedChatId(null)}
                     >
                       <ArrowLeft className="h-5 w-5" />
                     </Button>
