@@ -182,16 +182,13 @@ async function getClientSettings(clientId: string) {
   return data;
 }
 
-async function getUpsellProducts(clientId: string, excludeProductId: string, limit: number = 3) {
+async function getProductUpsells(productId: string) {
   const { data } = await supabase
-    .from('products')
+    .from('product_upsells')
     .select('*')
-    .eq('client_id', clientId)
+    .eq('product_id', productId)
     .eq('is_active', true)
-    .neq('id', excludeProductId)
-    .order('is_hot', { ascending: false })
-    .order('sales_count', { ascending: false })
-    .limit(limit);
+    .order('display_order', { ascending: true });
   
   return data || [];
 }
@@ -393,9 +390,15 @@ serve(async (req) => {
       }
 
       // Buy upsell/downsell using compact callback_data (Telegram limit is 64 bytes)
+      // Format: buyu_PRODUCTB64_PARENTB64_UPSELLINDEX
       if (data.startsWith('buyu_') || data.startsWith('buyd_')) {
         try {
-          const [prefix, productB64, parentB64] = data.split('_');
+          const parts = data.split('_');
+          const prefix = parts[0];
+          const productB64 = parts[1];
+          const parentB64 = parts[2];
+          const upsellIndex = parts[3] ? parseInt(parts[3]) : 0;
+          
           const productId = b64ToUuid(productB64);
           const parentOrderId = b64ToUuid(parentB64);
 
@@ -403,6 +406,7 @@ serve(async (req) => {
             isUpsell: prefix === 'buyu',
             isDownsell: prefix === 'buyd',
             parentOrderId,
+            upsellIndex,
           });
         } catch (e) {
           console.error('Invalid buyu/buyd callback:', data, e);
@@ -444,11 +448,13 @@ serve(async (req) => {
         await handleCancelOrder(botToken, chatId, clientId, orderId, messageId);
       }
 
-      // Decline upsell - show downsell (compact format: declu_PARENTORDERID_B64)
+      // Decline upsell - show next upsell or downsell (compact format: declu_PARENTB64_INDEX)
       if (data.startsWith('declu_')) {
         try {
-          const parentOrderId = b64ToUuid(data.replace('declu_', ''));
-          await handleDeclineUpsellFromOrder(botToken, chatId, clientId, parentOrderId);
+          const parts = data.replace('declu_', '').split('_');
+          const parentOrderId = b64ToUuid(parts[0]);
+          const currentIndex = parts[1] ? parseInt(parts[1]) : 0;
+          await handleDeclineUpsellFromOrder(botToken, chatId, clientId, parentOrderId, currentIndex);
         } catch (e) {
           console.error('Invalid declu callback:', data, e);
         }
@@ -540,7 +546,11 @@ async function handleShowProduct(botToken: string, chatId: number, clientId: str
   }
 }
 
-async function handleBuyProduct(botToken: string, chatId: number, clientId: string, customerId: string, productId: string, options: CreateOrderOptions = {}) {
+interface BuyOptions extends CreateOrderOptions {
+  upsellIndex?: number;
+}
+
+async function handleBuyProduct(botToken: string, chatId: number, clientId: string, customerId: string, productId: string, options: BuyOptions = {}) {
   const product = await getProduct(productId);
   
   if (!product) {
@@ -639,8 +649,8 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
     );
   }
   
-  // Always check for upsell after payment - pass the orderId for tracking
-  await handleUpsell(botToken, chatId, clientId, product.id, product, orderId);
+  // Check for upsells - start with index 0
+  await handleUpsell(botToken, chatId, clientId, product.id, product, orderId, 0);
 }
 
 async function handleCancelOrder(botToken: string, chatId: number, clientId: string, orderId: string, messageId: number) {
@@ -664,8 +674,54 @@ async function handleCancelOrder(botToken: string, chatId: number, clientId: str
   });
 }
 
-async function handleUpsell(botToken: string, chatId: number, clientId: string, purchasedProductId: string, purchasedProduct: any, parentOrderId: string) {
-  // Upsell is configured ONLY via funnel (product.upsell_product_id)
+async function handleUpsell(botToken: string, chatId: number, clientId: string, purchasedProductId: string, purchasedProduct: any, parentOrderId: string, upsellIndex: number) {
+  // First check the new product_upsells table
+  const productUpsells = await getProductUpsells(purchasedProductId);
+  
+  if (productUpsells.length > 0) {
+    // Use new multi-upsell system
+    if (upsellIndex >= productUpsells.length) {
+      // No more upsells, check for downsell
+      await handleShowDownsell(botToken, chatId, clientId, purchasedProductId, parentOrderId);
+      return;
+    }
+    
+    const currentUpsell = productUpsells[upsellIndex];
+    const upsellProduct = await getProduct(currentUpsell.upsell_product_id);
+    
+    if (!upsellProduct || !upsellProduct.is_active) {
+      // Skip to next upsell
+      await handleUpsell(botToken, chatId, clientId, purchasedProductId, purchasedProduct, parentOrderId, upsellIndex + 1);
+      return;
+    }
+    
+    // Use custom upsell message from the upsell config, or fallback to client message, or default
+    let upsellMessage = currentUpsell.upsell_message;
+    if (!upsellMessage) {
+      upsellMessage = await getClientMessage(clientId, 'upsell');
+    }
+    if (!upsellMessage) {
+      upsellMessage = '🔥 <b>Oferta Especial!</b>\n\nQue tal aproveitar e levar mais um produto?';
+    }
+    
+    const keyboard = [
+      [{
+        text: `✅ ${upsellProduct.is_hot ? '🔥 ' : ''}${upsellProduct.name} - ${formatPrice(Number(upsellProduct.price))}`,
+        callback_data: `buyu_${uuidToB64(upsellProduct.id)}_${uuidToB64(parentOrderId)}_${upsellIndex}`,
+      }],
+      [{ text: '❌ Não, obrigado', callback_data: `declu_${uuidToB64(parentOrderId)}_${upsellIndex}` }],
+    ];
+
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      upsellMessage,
+      { inline_keyboard: keyboard }
+    );
+    return;
+  }
+  
+  // Fallback to legacy single upsell system (product.upsell_product_id)
   const upsellProductId = purchasedProduct?.upsell_product_id;
   if (!upsellProductId) return;
 
@@ -697,7 +753,57 @@ async function handleUpsell(botToken: string, chatId: number, clientId: string, 
   );
 }
 
-async function handleDeclineUpsellFromOrder(botToken: string, chatId: number, clientId: string, parentOrderId: string) {
+async function handleShowDownsell(botToken: string, chatId: number, clientId: string, purchasedProductId: string, parentOrderId: string) {
+  const purchasedProduct = await getProduct(purchasedProductId);
+  
+  if (!purchasedProduct?.downsell_product_id) {
+    // No downsell configured, just show thank you message
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      '👍 Tudo bem! Obrigado pela sua compra.',
+      { inline_keyboard: [[{ text: '🛍️ Ver Mais Produtos', callback_data: 'products' }]] }
+    );
+    return;
+  }
+  
+  const downsellProduct = await getProduct(purchasedProduct.downsell_product_id);
+  
+  if (!downsellProduct || !downsellProduct.is_active) {
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      '👍 Tudo bem! Obrigado pela sua compra.',
+      { inline_keyboard: [[{ text: '🛍️ Ver Mais Produtos', callback_data: 'products' }]] }
+    );
+    return;
+  }
+  
+  // Use custom downsell message from the product, or default
+  const description = downsellProduct.description || 'Sem descrição';
+  let downsellMessage = (purchasedProduct as any)?.downsell_message;
+  if (!downsellMessage) {
+    downsellMessage = `💰 <b>Última Oferta!</b>\n\nQue tal este produto com um preço especial?\n\n${downsellProduct.is_hot ? '🔥 ' : ''}<b>${downsellProduct.name}</b>\n\n${description}\n\n💰 <b>Apenas ${formatPrice(Number(downsellProduct.price))}</b>`;
+  } else {
+    // Append product info to custom message
+    downsellMessage = `${downsellMessage}\n\n${downsellProduct.is_hot ? '🔥 ' : ''}<b>${downsellProduct.name}</b>\n\n${description}\n\n💰 <b>Apenas ${formatPrice(Number(downsellProduct.price))}</b>`;
+  }
+  
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: '✅ Quero esse!', callback_data: `buyd_${uuidToB64(downsellProduct.id)}_${uuidToB64(parentOrderId)}` }],
+      [{ text: '❌ Não, obrigado', callback_data: 'menu' }]
+    ]
+  };
+  
+  if (downsellProduct.image_url) {
+    await sendTelegramPhoto(botToken, chatId, downsellProduct.image_url, downsellMessage, keyboard);
+  } else {
+    await sendTelegramMessage(botToken, chatId, downsellMessage, keyboard);
+  }
+}
+
+async function handleDeclineUpsellFromOrder(botToken: string, chatId: number, clientId: string, parentOrderId: string, currentIndex: number = 0) {
   const parentOrder = await getOrder(parentOrderId);
 
   if (!parentOrder?.product_id) {
@@ -707,8 +813,28 @@ async function handleDeclineUpsellFromOrder(botToken: string, chatId: number, cl
     return;
   }
 
+  // Check for more upsells in the new system
+  const productUpsells = await getProductUpsells(parentOrder.product_id);
+  
+  if (productUpsells.length > 0) {
+    const nextIndex = currentIndex + 1;
+    
+    if (nextIndex < productUpsells.length) {
+      // Show next upsell
+      const purchasedProduct = await getProduct(parentOrder.product_id);
+      await handleUpsell(botToken, chatId, clientId, parentOrder.product_id, purchasedProduct, parentOrderId, nextIndex);
+      return;
+    }
+    
+    // No more upsells, show downsell
+    await handleShowDownsell(botToken, chatId, clientId, parentOrder.product_id, parentOrderId);
+    return;
+  }
+
+  // Fallback to legacy system
   await handleDeclineUpsell(botToken, chatId, clientId, parentOrder.product_id, parentOrderId);
 }
+
 async function handleDeclineUpsell(botToken: string, chatId: number, clientId: string, purchasedProductId: string, parentOrderId?: string) {
   // Get the purchased product to check for downsell
   const purchasedProduct = await getProduct(purchasedProductId);

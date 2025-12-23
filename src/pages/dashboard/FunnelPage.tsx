@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Client } from '@/hooks/useClient';
 import { useProducts, useUpdateProduct, Product } from '@/hooks/useProducts';
 import { useFunnelStats } from '@/hooks/useFunnelStats';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { GitBranch, ArrowDown, ArrowRight, Loader2, Package, TrendingUp, TrendingDown, Plus, Trash2, BarChart3, DollarSign, Percent, MessageSquare } from 'lucide-react';
+import { GitBranch, ArrowDown, ArrowRight, Loader2, Package, TrendingUp, TrendingDown, Plus, Trash2, BarChart3, DollarSign, Percent, MessageSquare, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface FunnelPageProps {
@@ -23,16 +24,64 @@ type FunnelProduct = Product & {
   downsell_message?: string | null;
 };
 
+interface ProductUpsell {
+  id: string;
+  product_id: string;
+  upsell_product_id: string;
+  upsell_message: string | null;
+  display_order: number;
+  is_active: boolean;
+}
+
 export const FunnelPage = ({ client }: FunnelPageProps) => {
   const { data: products, isLoading } = useProducts(client.id);
   const { data: stats } = useFunnelStats(client.id);
   const updateProduct = useUpdateProduct();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [selectedMainProduct, setSelectedMainProduct] = useState('');
-  const [selectedUpsell, setSelectedUpsell] = useState('');
+  const [selectedUpsells, setSelectedUpsells] = useState<Array<{ productId: string; message: string }>>([]);
   const [selectedDownsell, setSelectedDownsell] = useState('');
-  const [upsellMessage, setUpsellMessage] = useState('');
   const [downsellMessage, setDownsellMessage] = useState('');
+  
+  // Store product upsells from the new table
+  const [productUpsells, setProductUpsells] = useState<Record<string, ProductUpsell[]>>({});
+  const [loadingUpsells, setLoadingUpsells] = useState(true);
+
+  // Fetch product upsells
+  useEffect(() => {
+    const fetchUpsells = async () => {
+      if (!products?.length) return;
+      
+      setLoadingUpsells(true);
+      const productIds = products.map(p => p.id);
+      
+      const { data, error } = await supabase
+        .from('product_upsells')
+        .select('*')
+        .in('product_id', productIds)
+        .order('display_order', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching upsells:', error);
+        setLoadingUpsells(false);
+        return;
+      }
+      
+      // Group by product_id
+      const grouped: Record<string, ProductUpsell[]> = {};
+      (data || []).forEach((upsell: ProductUpsell) => {
+        if (!grouped[upsell.product_id]) {
+          grouped[upsell.product_id] = [];
+        }
+        grouped[upsell.product_id].push(upsell);
+      });
+      
+      setProductUpsells(grouped);
+      setLoadingUpsells(false);
+    };
+    
+    fetchUpsells();
+  }, [products]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price);
@@ -43,78 +92,198 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
     return products?.find(p => p.id === id) as FunnelProduct | undefined;
   };
 
-  // Products with funnel configured (have upsell)
-  const funnelProducts = (products?.filter(p => (p as any).upsell_product_id) || []) as FunnelProduct[];
+  // Products with funnel configured (have upsells in new table OR legacy upsell_product_id)
+  const funnelProducts = (products?.filter(p => {
+    const hasNewUpsells = productUpsells[p.id]?.length > 0;
+    const hasLegacyUpsell = (p as any).upsell_product_id;
+    return hasNewUpsells || hasLegacyUpsell;
+  }) || []) as FunnelProduct[];
   
   // Products without funnel (available to add)
-  const availableProducts = (products?.filter(p => p.is_active && !(p as any).upsell_product_id) || []) as FunnelProduct[];
+  const availableProducts = (products?.filter(p => {
+    const hasNewUpsells = productUpsells[p.id]?.length > 0;
+    const hasLegacyUpsell = (p as any).upsell_product_id;
+    return p.is_active && !hasNewUpsells && !hasLegacyUpsell;
+  }) || []) as FunnelProduct[];
 
-  const getOtherProducts = (excludeId?: string) => {
-    return products?.filter(p => p.id !== excludeId && p.is_active) || [];
+  const getOtherProducts = (excludeId?: string, excludeIds: string[] = []) => {
+    return products?.filter(p => p.id !== excludeId && !excludeIds.includes(p.id) && p.is_active) || [];
+  };
+
+  const handleAddUpsellToList = () => {
+    setSelectedUpsells([...selectedUpsells, { productId: '', message: '' }]);
+  };
+
+  const handleRemoveUpsellFromList = (index: number) => {
+    setSelectedUpsells(selectedUpsells.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateUpsellInList = (index: number, field: 'productId' | 'message', value: string) => {
+    const updated = [...selectedUpsells];
+    updated[index] = { ...updated[index], [field]: value };
+    setSelectedUpsells(updated);
   };
 
   const handleAddFunnel = async () => {
-    if (!selectedMainProduct || !selectedUpsell) {
-      toast.error('Selecione o produto principal e o upsell');
+    if (!selectedMainProduct || selectedUpsells.length === 0 || !selectedUpsells[0].productId) {
+      toast.error('Selecione o produto principal e pelo menos um upsell');
       return;
     }
 
     try {
-      await updateProduct.mutateAsync({
-        id: selectedMainProduct,
-        clientId: client.id,
-        upsell_product_id: selectedUpsell,
-        downsell_product_id: selectedDownsell || null,
-        upsell_message: upsellMessage || null,
-        downsell_message: downsellMessage || null,
-      } as any);
+      // Insert upsells into the new table
+      const upsellsToInsert = selectedUpsells
+        .filter(u => u.productId)
+        .map((u, index) => ({
+          product_id: selectedMainProduct,
+          upsell_product_id: u.productId,
+          upsell_message: u.message || null,
+          display_order: index + 1,
+        }));
+
+      const { error: upsellError } = await supabase
+        .from('product_upsells')
+        .insert(upsellsToInsert);
+
+      if (upsellError) throw upsellError;
+
+      // Update downsell on the product if set
+      if (selectedDownsell) {
+        await updateProduct.mutateAsync({
+          id: selectedMainProduct,
+          clientId: client.id,
+          downsell_product_id: selectedDownsell,
+          downsell_message: downsellMessage || null,
+        } as any);
+      }
+
+      // Refresh upsells
+      const { data: newUpsells } = await supabase
+        .from('product_upsells')
+        .select('*')
+        .eq('product_id', selectedMainProduct)
+        .order('display_order', { ascending: true });
+
+      setProductUpsells(prev => ({
+        ...prev,
+        [selectedMainProduct]: newUpsells || [],
+      }));
+
       toast.success('Funil criado com sucesso!');
       setIsAddOpen(false);
       setSelectedMainProduct('');
-      setSelectedUpsell('');
+      setSelectedUpsells([]);
       setSelectedDownsell('');
-      setUpsellMessage('');
       setDownsellMessage('');
     } catch (error) {
+      console.error('Error creating funnel:', error);
       toast.error('Erro ao criar funil');
     }
   };
 
   const handleRemoveFunnel = async (product: FunnelProduct) => {
     try {
+      // Delete all upsells from the new table
+      await supabase
+        .from('product_upsells')
+        .delete()
+        .eq('product_id', product.id);
+
+      // Clear downsell and legacy upsell
       await updateProduct.mutateAsync({
         id: product.id,
         clientId: client.id,
         upsell_product_id: null,
         downsell_product_id: null,
+        upsell_message: null,
+        downsell_message: null,
       } as any);
+
+      setProductUpsells(prev => {
+        const updated = { ...prev };
+        delete updated[product.id];
+        return updated;
+      });
+
       toast.success('Funil removido!');
     } catch (error) {
       toast.error('Erro ao remover funil');
     }
   };
 
-  const handleUpdateUpsell = async (product: FunnelProduct, upsellId: string) => {
-    try {
-      await updateProduct.mutateAsync({
-        id: product.id,
-        clientId: client.id,
-        upsell_product_id: upsellId || null,
-      } as any);
-      toast.success('Upsell atualizado!');
-    } catch (error) {
-      toast.error('Erro ao atualizar');
+  const handleAddUpsellToProduct = async (productId: string) => {
+    const currentUpsells = productUpsells[productId] || [];
+    const nextOrder = currentUpsells.length + 1;
+
+    const { data, error } = await supabase
+      .from('product_upsells')
+      .insert({
+        product_id: productId,
+        upsell_product_id: '',
+        display_order: nextOrder,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      // Don't show toast for empty insert - user needs to select product first
+      return;
     }
+
+    setProductUpsells(prev => ({
+      ...prev,
+      [productId]: [...(prev[productId] || []), data],
+    }));
   };
 
-  const handleUpdateUpsellMessage = async (product: FunnelProduct, message: string) => {
+  const handleUpdateUpsell = async (upsellId: string, productId: string, updates: Partial<ProductUpsell>) => {
+    const { error } = await supabase
+      .from('product_upsells')
+      .update(updates)
+      .eq('id', upsellId);
+
+    if (error) {
+      toast.error('Erro ao atualizar upsell');
+      return;
+    }
+
+    setProductUpsells(prev => ({
+      ...prev,
+      [productId]: prev[productId].map(u => 
+        u.id === upsellId ? { ...u, ...updates } : u
+      ),
+    }));
+
+    toast.success('Upsell atualizado!');
+  };
+
+  const handleDeleteUpsell = async (upsellId: string, productId: string) => {
+    const { error } = await supabase
+      .from('product_upsells')
+      .delete()
+      .eq('id', upsellId);
+
+    if (error) {
+      toast.error('Erro ao remover upsell');
+      return;
+    }
+
+    setProductUpsells(prev => ({
+      ...prev,
+      [productId]: prev[productId].filter(u => u.id !== upsellId),
+    }));
+
+    toast.success('Upsell removido!');
+  };
+
+  const handleUpdateDownsell = async (product: FunnelProduct, downsellId: string) => {
     try {
       await updateProduct.mutateAsync({
         id: product.id,
         clientId: client.id,
-        upsell_message: message || null,
+        downsell_product_id: downsellId || null,
       } as any);
-      toast.success('Mensagem de upsell atualizada!');
+      toast.success('Downsell atualizado!');
     } catch (error) {
       toast.error('Erro ao atualizar');
     }
@@ -133,20 +302,7 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
     }
   };
 
-  const handleUpdateDownsell = async (product: FunnelProduct, downsellId: string) => {
-    try {
-      await updateProduct.mutateAsync({
-        id: product.id,
-        clientId: client.id,
-        downsell_product_id: downsellId || null,
-      } as any);
-      toast.success('Downsell atualizado!');
-    } catch (error) {
-      toast.error('Erro ao atualizar');
-    }
-  };
-
-  if (isLoading) {
+  if (isLoading || loadingUpsells) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -163,10 +319,13 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
             Funil de Vendas
           </h1>
           <p className="text-muted-foreground">
-            Configure upsells e downsells para maximizar suas vendas
+            Configure múltiplos upsells e downsells para maximizar suas vendas
           </p>
         </div>
-        <Button onClick={() => setIsAddOpen(true)} disabled={availableProducts.length === 0}>
+        <Button onClick={() => {
+          setSelectedUpsells([{ productId: '', message: '' }]);
+          setIsAddOpen(true);
+        }} disabled={availableProducts.length === 0}>
           <Plus className="w-4 h-4 mr-2" />
           Adicionar Funil
         </Button>
@@ -252,15 +411,15 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
             <div className="flex items-start gap-2">
               <TrendingUp className="w-5 h-5 text-green-500 mt-0.5" />
               <div>
-                <p className="font-medium">Upsell</p>
-                <p className="text-muted-foreground">Oferecido após a compra confirmada</p>
+                <p className="font-medium">Upsells</p>
+                <p className="text-muted-foreground">Oferecidos em sequência após a compra</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
               <TrendingDown className="w-5 h-5 text-orange-500 mt-0.5" />
               <div>
                 <p className="font-medium">Downsell</p>
-                <p className="text-muted-foreground">Oferecido se recusar o upsell</p>
+                <p className="text-muted-foreground">Oferecido se recusar todos os upsells</p>
               </div>
             </div>
           </div>
@@ -275,7 +434,10 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
               <GitBranch className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">Nenhum funil configurado ainda.</p>
               <p className="text-sm text-muted-foreground mb-4">Clique em "Adicionar Funil" para começar.</p>
-              <Button onClick={() => setIsAddOpen(true)} disabled={availableProducts.length === 0}>
+              <Button onClick={() => {
+                setSelectedUpsells([{ productId: '', message: '' }]);
+                setIsAddOpen(true);
+              }} disabled={availableProducts.length === 0}>
                 <Plus className="w-4 h-4 mr-2" />
                 Adicionar Funil
               </Button>
@@ -283,9 +445,9 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
           </Card>
         ) : (
           funnelProducts.map((product) => {
-            const upsellProduct = getProductById(product.upsell_product_id);
+            const upsells = productUpsells[product.id] || [];
             const downsellProduct = getProductById(product.downsell_product_id);
-            const otherProducts = getOtherProducts(product.id);
+            const otherProducts = getOtherProducts(product.id, upsells.map(u => u.upsell_product_id));
 
             return (
               <Card key={product.id} className="glass-card overflow-hidden">
@@ -315,121 +477,160 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
                 </CardHeader>
 
                 <CardContent className="pt-0">
-                  <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
-                    {/* Main Product Visual */}
-                    <div className="flex-1 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="space-y-4">
+                    {/* Main Product */}
+                    <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                       <div className="flex items-center gap-2 mb-2">
                         <Package className="w-4 h-4 text-primary" />
                         <span className="text-sm font-medium">Produto Principal</span>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">{product.name}</p>
+                      <p className="text-sm text-muted-foreground">{product.name}</p>
                     </div>
 
-                    <ArrowRight className="w-5 h-5 text-muted-foreground hidden lg:block" />
-                    <ArrowDown className="w-5 h-5 text-muted-foreground mx-auto lg:hidden" />
+                    <div className="flex items-center justify-center">
+                      <ArrowDown className="w-5 h-5 text-muted-foreground" />
+                    </div>
 
-                    {/* Upsell */}
-                    <div className="flex-1 p-4 rounded-lg bg-green-500/5 border border-green-500/20">
-                      <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp className="w-4 h-4 text-green-500" />
-                        <span className="text-sm font-medium">Upsell</span>
-                        <Badge variant="outline" className="text-xs">Após compra</Badge>
+                    {/* Upsells */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-green-500" />
+                          <span className="text-sm font-medium">Upsells</span>
+                          <Badge variant="outline" className="text-xs">{upsells.length} configurado(s)</Badge>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddUpsellToProduct(product.id)}
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          Adicionar
+                        </Button>
                       </div>
-                      <Select 
-                        value={product.upsell_product_id || ''} 
-                        onValueChange={(v) => handleUpdateUpsell(product, v)}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Selecione..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {otherProducts.map(p => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.is_hot ? '🔥 ' : ''}{p.name} - {formatPrice(Number(p.price))}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+
+                      {upsells.map((upsell, index) => {
+                        const upsellProduct = getProductById(upsell.upsell_product_id);
+                        return (
+                          <div key={upsell.id} className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+                            <div className="flex items-start gap-3">
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <GripVertical className="w-4 h-4" />
+                                <span className="text-xs font-medium">{index + 1}º</span>
+                              </div>
+                              <div className="flex-1 space-y-2">
+                                <Select
+                                  value={upsell.upsell_product_id || 'none'}
+                                  onValueChange={(v) => handleUpdateUpsell(upsell.id, product.id, { 
+                                    upsell_product_id: v === 'none' ? '' : v 
+                                  })}
+                                >
+                                  <SelectTrigger className="h-9">
+                                    <SelectValue placeholder="Selecione o produto..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {upsellProduct && (
+                                      <SelectItem value={upsellProduct.id}>
+                                        {upsellProduct.is_hot ? '🔥 ' : ''}{upsellProduct.name} - {formatPrice(Number(upsellProduct.price))}
+                                      </SelectItem>
+                                    )}
+                                    {getOtherProducts(product.id, upsells.filter(u => u.id !== upsell.id).map(u => u.upsell_product_id)).map(p => (
+                                      <SelectItem key={p.id} value={p.id}>
+                                        {p.is_hot ? '🔥 ' : ''}{p.name} - {formatPrice(Number(p.price))}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Textarea
+                                  placeholder="Mensagem personalizada do upsell..."
+                                  value={upsell.upsell_message || ''}
+                                  onChange={(e) => handleUpdateUpsell(upsell.id, product.id, { 
+                                    upsell_message: e.target.value || null 
+                                  })}
+                                  rows={2}
+                                  className="resize-none text-sm"
+                                />
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-muted-foreground hover:text-destructive h-8 w-8"
+                                onClick={() => handleDeleteUpsell(upsell.id, product.id)}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {upsells.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-2">
+                          Nenhum upsell configurado. Clique em "Adicionar" acima.
+                        </p>
+                      )}
                     </div>
 
-                    <ArrowRight className="w-5 h-5 text-muted-foreground hidden lg:block" />
-                    <ArrowDown className="w-5 h-5 text-muted-foreground mx-auto lg:hidden" />
+                    <div className="flex items-center justify-center">
+                      <ArrowDown className="w-5 h-5 text-muted-foreground" />
+                    </div>
 
                     {/* Downsell */}
-                    <div className="flex-1 p-4 rounded-lg bg-orange-500/5 border border-orange-500/20">
-                      <div className="flex items-center gap-2 mb-2">
+                    <div className="p-4 rounded-lg bg-orange-500/5 border border-orange-500/20">
+                      <div className="flex items-center gap-2 mb-3">
                         <TrendingDown className="w-4 h-4 text-orange-500" />
                         <span className="text-sm font-medium">Downsell</span>
-                        <Badge variant="outline" className="text-xs">Se recusar</Badge>
+                        <Badge variant="outline" className="text-xs">Se recusar todos</Badge>
                       </div>
-                      <Select 
-                        value={product.downsell_product_id || 'none'} 
-                        onValueChange={(v) => handleUpdateDownsell(product, v === 'none' ? '' : v)}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Selecione..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Nenhum</SelectItem>
-                          {otherProducts.map(p => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.is_hot ? '🔥 ' : ''}{p.name} - {formatPrice(Number(p.price))}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Custom Messages */}
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <div className="flex items-center gap-2 mb-3">
-                      <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">Mensagens Personalizadas</span>
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-green-500">Mensagem do Upsell</Label>
-                        <Textarea
-                          placeholder="🔥 Oferta Especial! Que tal aproveitar e levar mais um produto?"
-                          value={product.upsell_message || ''}
-                          onChange={(e) => handleUpdateUpsellMessage(product, e.target.value)}
-                          rows={2}
-                          className="resize-none text-sm"
-                        />
-                      </div>
-                      {product.downsell_product_id && (
-                        <div className="space-y-1">
-                          <Label className="text-xs text-orange-500">Mensagem do Downsell</Label>
+                      <div className="space-y-2">
+                        <Select
+                          value={product.downsell_product_id || 'none'}
+                          onValueChange={(v) => handleUpdateDownsell(product, v === 'none' ? '' : v)}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Selecione o downsell..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Nenhum</SelectItem>
+                            {otherProducts.map(p => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.is_hot ? '🔥 ' : ''}{p.name} - {formatPrice(Number(p.price))}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {product.downsell_product_id && (
                           <Textarea
-                            placeholder="💰 Última Oferta! Que tal este produto com um preço especial?"
+                            placeholder="Mensagem personalizada do downsell..."
                             value={product.downsell_message || ''}
                             onChange={(e) => handleUpdateDownsellMessage(product, e.target.value)}
                             rows={2}
                             className="resize-none text-sm"
                           />
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Flow visualization */}
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <p className="text-xs text-muted-foreground mb-2">Fluxo do funil:</p>
-                    <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1">
-                      <span className="font-medium text-foreground">Cliente compra {product.name}</span>
-                      {upsellProduct && (
-                        <>
-                          <ArrowRight className="w-3 h-3" />
-                          <span className="text-green-500">Oferece {upsellProduct.name}</span>
-                          {downsellProduct && (
-                            <>
-                              <ArrowRight className="w-3 h-3" />
-                              <span className="text-orange-500">Se recusar: oferece {downsellProduct.name}</span>
-                            </>
-                          )}
-                        </>
-                      )}
+                    {/* Flow visualization */}
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <p className="text-xs text-muted-foreground mb-2">Fluxo do funil:</p>
+                      <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1">
+                        <span className="font-medium text-foreground">Cliente compra {product.name}</span>
+                        {upsells.length > 0 && (
+                          <>
+                            <ArrowRight className="w-3 h-3" />
+                            <span className="text-green-500">
+                              Oferece {upsells.length} upsell{upsells.length > 1 ? 's' : ''} em sequência
+                            </span>
+                          </>
+                        )}
+                        {downsellProduct && (
+                          <>
+                            <ArrowRight className="w-3 h-3" />
+                            <span className="text-orange-500">Se recusar: oferece {downsellProduct.name}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -446,8 +647,9 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
         </CardHeader>
         <CardContent>
           <ul className="text-sm text-muted-foreground space-y-2">
-            <li>• <strong>Upsell:</strong> Ofereça um produto complementar ou versão premium com valor maior</li>
-            <li>• <strong>Downsell:</strong> Ofereça algo mais acessível se o cliente recusar o upsell</li>
+            <li>• <strong>Múltiplos Upsells:</strong> Configure vários upsells que serão oferecidos em sequência</li>
+            <li>• <strong>Ordem importa:</strong> O primeiro upsell é oferecido logo após a compra</li>
+            <li>• <strong>Downsell:</strong> Oferecido apenas se o cliente recusar todos os upsells</li>
             <li>• <strong>Lembre-se:</strong> Ative o Upsell nas Configurações gerais para o funil funcionar</li>
           </ul>
         </CardContent>
@@ -455,7 +657,7 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
 
       {/* Add Funnel Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Adicionar Funil</DialogTitle>
           </DialogHeader>
@@ -464,7 +666,7 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
               <Label>Produto Principal *</Label>
               <Select value={selectedMainProduct} onValueChange={(v) => {
                 setSelectedMainProduct(v);
-                setSelectedUpsell('');
+                setSelectedUpsells([{ productId: '', message: '' }]);
                 setSelectedDownsell('');
               }}>
                 <SelectTrigger>
@@ -481,31 +683,73 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
               <p className="text-xs text-muted-foreground">O produto que o cliente vai comprar</p>
             </div>
 
-            <div className="space-y-2">
-              <Label>Upsell *</Label>
-              <Select 
-                value={selectedUpsell} 
-                onValueChange={setSelectedUpsell}
-                disabled={!selectedMainProduct}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o upsell..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {getOtherProducts(selectedMainProduct).map(p => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.is_hot ? '🔥 ' : ''}{p.name} - {formatPrice(Number(p.price))}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">Oferecido após a compra ser confirmada</p>
+            {/* Multiple Upsells */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Upsells *</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddUpsellToList}
+                  disabled={!selectedMainProduct}
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Mais Upsell
+                </Button>
+              </div>
+
+              {selectedUpsells.map((upsell, index) => (
+                <div key={index} className="p-3 rounded-lg bg-green-500/5 border border-green-500/20 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-green-500">{index + 1}º Upsell</span>
+                    {index > 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleRemoveUpsellFromList(index)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                  <Select
+                    value={upsell.productId}
+                    onValueChange={(v) => handleUpdateUpsellInList(index, 'productId', v)}
+                    disabled={!selectedMainProduct}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o upsell..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getOtherProducts(
+                        selectedMainProduct, 
+                        selectedUpsells.filter((_, i) => i !== index).map(u => u.productId).filter(Boolean)
+                      ).map(p => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.is_hot ? '🔥 ' : ''}{p.name} - {formatPrice(Number(p.price))}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Textarea
+                    placeholder="Mensagem personalizada (opcional)..."
+                    value={upsell.message}
+                    onChange={(e) => handleUpdateUpsellInList(index, 'message', e.target.value)}
+                    rows={2}
+                    className="resize-none"
+                  />
+                </div>
+              ))}
+              <p className="text-xs text-muted-foreground">Upsells serão oferecidos na ordem configurada</p>
             </div>
 
             <div className="space-y-2">
               <Label>Downsell (opcional)</Label>
-              <Select 
-                value={selectedDownsell || 'none'} 
+              <Select
+                value={selectedDownsell || 'none'}
                 onValueChange={(v) => setSelectedDownsell(v === 'none' ? '' : v)}
                 disabled={!selectedMainProduct}
               >
@@ -514,26 +758,17 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nenhum</SelectItem>
-                  {getOtherProducts(selectedMainProduct).map(p => (
+                  {getOtherProducts(
+                    selectedMainProduct, 
+                    selectedUpsells.map(u => u.productId).filter(Boolean)
+                  ).map(p => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.is_hot ? '🔥 ' : ''}{p.name} - {formatPrice(Number(p.price))}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Oferecido se o cliente recusar o upsell</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Mensagem de Upsell (opcional)</Label>
-              <Textarea
-                placeholder="🔥 Oferta Especial! Que tal aproveitar e levar mais um produto?"
-                value={upsellMessage}
-                onChange={(e) => setUpsellMessage(e.target.value)}
-                rows={2}
-                className="resize-none"
-              />
-              <p className="text-xs text-muted-foreground">Mensagem enviada na oferta de upsell</p>
+              <p className="text-xs text-muted-foreground">Oferecido se o cliente recusar todos os upsells</p>
             </div>
 
             {selectedDownsell && (
@@ -546,7 +781,6 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
                   rows={2}
                   className="resize-none"
                 />
-                <p className="text-xs text-muted-foreground">Mensagem enviada na oferta de downsell</p>
               </div>
             )}
           </div>
@@ -554,7 +788,10 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleAddFunnel} disabled={!selectedMainProduct || !selectedUpsell}>
+            <Button 
+              onClick={handleAddFunnel} 
+              disabled={!selectedMainProduct || selectedUpsells.length === 0 || !selectedUpsells[0].productId}
+            >
               Adicionar Funil
             </Button>
           </DialogFooter>
