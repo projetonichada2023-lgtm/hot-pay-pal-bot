@@ -111,7 +111,7 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
             <h1 className="text-2xl font-bold">Dashboard</h1>
             <p className="text-muted-foreground text-sm">Bem-vindo, {client.business_name}</p>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-sm">
+          <div className="hidden sm:flex items-center gap-2 text-sm mr-14">
             <div className={`w-2 h-2 rounded-full ${client.webhook_configured ? 'bg-success' : 'bg-warning'}`} />
             <span className="text-muted-foreground">
               Bot {client.webhook_configured ? 'Ativo' : 'Pendente'}
