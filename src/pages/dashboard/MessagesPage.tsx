@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Client } from '@/hooks/useClient';
 import { 
   useBotMessages, 
@@ -7,46 +7,20 @@ import {
   useDeleteBotMessage,
   useReorderBotMessages,
   BotMessage,
-  MessageButton,
 } from '@/hooks/useBotMessages';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Loader2, 
   MessageSquare, 
-  Save, 
-  Sparkles, 
-  Plus, 
-  Trash2, 
-  ChevronDown,
-  ChevronUp,
-  Image,
-  Video,
-  X,
-  Upload
+  Sparkles,
+  Search,
 } from 'lucide-react';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { ButtonEditor } from '@/components/messages/ButtonEditor';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { MessageTypeSection } from '@/components/messages/MessageTypeSection';
+import { Badge } from '@/components/ui/badge';
 
 interface MessagesPageProps {
   client: Client;
@@ -122,6 +96,14 @@ const messageLabels: Record<string, MessageConfig> = {
   },
 };
 
+const categories = {
+  all: { label: 'Todas', icon: '📋', types: Object.keys(messageLabels) },
+  welcome: { label: 'Boas-vindas', icon: '👋', types: ['welcome'] },
+  transactions: { label: 'Transações', icon: '💳', types: ['payment_instructions', 'payment_success', 'order_created', 'order_cancelled'] },
+  marketing: { label: 'Marketing', icon: '📈', types: ['cart_reminder', 'upsell'] },
+  other: { label: 'Outros', icon: '📋', types: ['support', 'product_delivered', 'no_products'] },
+};
+
 export const MessagesPage = ({ client }: MessagesPageProps) => {
   const { data: messages, isLoading } = useBotMessages(client.id);
   const updateMessage = useUpdateBotMessage();
@@ -129,45 +111,15 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
   const deleteMessage = useDeleteBotMessage();
   const reorderMessages = useReorderBotMessages();
   const { toast } = useToast();
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
-  const [editMediaUrl, setEditMediaUrl] = useState<string | null>(null);
-  const [editMediaType, setEditMediaType] = useState<string | null>(null);
-  const [editButtons, setEditButtons] = useState<MessageButton[]>([]);
+  
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set(['welcome']));
-  const [uploading, setUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const handleEdit = (message: BotMessage) => {
-    setEditingId(message.id);
-    setEditContent(message.message_content);
-    setEditMediaUrl(message.media_url);
-    setEditMediaType(message.media_type);
-    setEditButtons(message.buttons || []);
-  };
-
-  const handleSave = async (id: string) => {
+  const handleUpdateMessage = async (id: string, updates: Partial<BotMessage>) => {
     try {
-      await updateMessage.mutateAsync({ 
-        id, 
-        message_content: editContent,
-        media_url: editMediaUrl,
-        media_type: editMediaType,
-        buttons: editButtons,
-      });
-      setEditingId(null);
-      setEditMediaUrl(null);
-      setEditMediaType(null);
-      setEditButtons([]);
+      await updateMessage.mutateAsync({ id, ...updates });
       toast({ title: 'Mensagem atualizada!' });
-    } catch (error) {
-      toast({ title: 'Erro ao atualizar', variant: 'destructive' });
-    }
-  };
-
-  const handleToggle = async (id: string, isActive: boolean) => {
-    try {
-      await updateMessage.mutateAsync({ id, is_active: isActive });
-      toast({ title: isActive ? 'Mensagem ativada' : 'Mensagem desativada' });
     } catch (error) {
       toast({ title: 'Erro ao atualizar', variant: 'destructive' });
     }
@@ -183,12 +135,15 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
         display_order: maxOrder + 1,
       });
       toast({ title: 'Mensagem adicionada!' });
+      
+      // Expand the section
+      setExpandedTypes(prev => new Set([...prev, messageType]));
     } catch (error) {
       toast({ title: 'Erro ao adicionar', variant: 'destructive' });
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteMessage = async (id: string) => {
     try {
       await deleteMessage.mutateAsync(id);
       toast({ title: 'Mensagem removida!' });
@@ -199,7 +154,8 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
 
   const handleMoveUp = async (messageType: string, msgs: BotMessage[], index: number) => {
     if (index === 0) return;
-    const newMessages = [...msgs];
+    const sorted = [...msgs].sort((a, b) => a.display_order - b.display_order);
+    const newMessages = [...sorted];
     [newMessages[index - 1], newMessages[index]] = [newMessages[index], newMessages[index - 1]];
     const updates = newMessages.map((m, i) => ({ id: m.id, display_order: i + 1 }));
     try {
@@ -210,8 +166,9 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
   };
 
   const handleMoveDown = async (messageType: string, msgs: BotMessage[], index: number) => {
-    if (index === msgs.length - 1) return;
-    const newMessages = [...msgs];
+    const sorted = [...msgs].sort((a, b) => a.display_order - b.display_order);
+    if (index === sorted.length - 1) return;
+    const newMessages = [...sorted];
     [newMessages[index], newMessages[index + 1]] = [newMessages[index + 1], newMessages[index]];
     const updates = newMessages.map((m, i) => ({ id: m.id, display_order: i + 1 }));
     try {
@@ -221,8 +178,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
     }
   };
 
-  const handleMediaUpload = async (file: File) => {
-    setUploading(true);
+  const handleMediaUpload = async (file: File): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${client.id}/${Date.now()}.${fileExt}`;
@@ -237,38 +193,34 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
         .from('bot-media')
         .getPublicUrl(fileName);
       
-      const isVideo = file.type.startsWith('video/');
-      setEditMediaUrl(publicUrl);
-      setEditMediaType(isVideo ? 'video' : 'image');
-      
       toast({ title: 'Mídia enviada!' });
+      return publicUrl;
     } catch (error) {
       console.error('Upload error:', error);
       toast({ title: 'Erro ao enviar mídia', variant: 'destructive' });
-    } finally {
-      setUploading(false);
+      return null;
     }
-  };
-
-  const handleRemoveMedia = () => {
-    setEditMediaUrl(null);
-    setEditMediaType(null);
   };
 
   const toggleExpanded = (type: string) => {
-    const newSet = new Set(expandedTypes);
-    if (newSet.has(type)) {
-      newSet.delete(type);
-    } else {
-      newSet.add(type);
-    }
-    setExpandedTypes(newSet);
+    setExpandedTypes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(type)) {
+        newSet.delete(type);
+      } else {
+        newSet.add(type);
+      }
+      return newSet;
+    });
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="text-center space-y-4">
+          <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground">Carregando mensagens...</p>
+        </div>
       </div>
     );
   }
@@ -282,610 +234,132 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
     return acc;
   }, {} as Record<string, BotMessage[]>) || {};
 
-  // Get all message types (from existing + config)
-  const allMessageTypes = Array.from(new Set([
-    ...Object.keys(messageLabels),
-    ...Object.keys(groupedMessages),
-  ]));
+  // Get current category types
+  const currentCategory = categories[activeTab as keyof typeof categories];
+  const visibleTypes = currentCategory.types.filter(type => {
+    if (!searchQuery) return true;
+    const config = messageLabels[type];
+    return config?.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           config?.description.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
-  // Group by category for tabs
-  const categories = {
-    welcome: ['welcome'],
-    transactions: ['payment_instructions', 'payment_success', 'order_created', 'order_cancelled'],
-    marketing: ['cart_reminder', 'upsell'],
-    other: ['support', 'product_delivered', 'no_products'],
-  };
-
-  const categoryLabels = {
-    welcome: { label: 'Boas-vindas', icon: '👋' },
-    transactions: { label: 'Transações', icon: '💳' },
-    marketing: { label: 'Marketing', icon: '📈' },
-    other: { label: 'Outros', icon: '📋' },
-  };
+  // Stats
+  const totalMessages = messages?.length || 0;
+  const activeMessages = messages?.filter(m => m.is_active).length || 0;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-              <MessageSquare className="w-5 h-5 text-primary" />
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 flex items-center justify-center shadow-lg shadow-primary/10">
+              <MessageSquare className="w-7 h-7 text-primary" />
             </div>
-            Mensagens do Bot
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Personalize todas as mensagens e botões enviados pelo seu bot
-          </p>
+            <div>
+              <h1 className="text-2xl font-bold">Mensagens do Bot</h1>
+              <p className="text-muted-foreground mt-1">
+                Personalize todas as mensagens enviadas pelo seu bot
+              </p>
+              <div className="flex items-center gap-3 mt-3">
+                <Badge variant="secondary" className="font-normal">
+                  <Sparkles className="w-3 h-3 mr-1.5" />
+                  {totalMessages} mensagens
+                </Badge>
+                <Badge variant="outline" className="font-normal text-emerald-400 border-emerald-400/30">
+                  {activeMessages} ativas
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar tipo de mensagem..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 bg-secondary/50 border-border/50"
+          />
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {Object.entries(categoryLabels).map(([key, { label, icon }]) => {
-          const types = categories[key as keyof typeof categories];
-          const count = types.reduce((acc, type) => acc + (groupedMessages[type]?.length || 0), 0);
-          return (
-            <div 
-              key={key}
-              className="p-3 rounded-xl bg-card border border-border/60 hover:border-primary/40 transition-colors cursor-pointer"
-              onClick={() => {
-                const firstType = types[0];
-                if (!expandedTypes.has(firstType)) {
-                  toggleExpanded(firstType);
-                }
-                document.getElementById(`section-${firstType}`)?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              <span className="text-2xl">{icon}</span>
-              <p className="text-sm font-medium mt-1">{label}</p>
-              <p className="text-xs text-muted-foreground">{count} mensagens</p>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="grid gap-4">
-        {allMessageTypes.map((messageType) => {
-          const config = messageLabels[messageType] || {
-            label: messageType,
-            description: '',
-            icon: '📝',
-            allowMultiple: false,
-          };
-          const typeMessages = groupedMessages[messageType] || [];
-          const isExpanded = expandedTypes.has(messageType);
-          const hasMultiple = typeMessages.length > 1;
-
-          if (config.allowMultiple) {
+      {/* Category Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="w-full justify-start bg-secondary/30 p-1 h-auto flex-wrap">
+          {Object.entries(categories).map(([key, cat]) => {
+            const count = cat.types.reduce((acc, type) => acc + (groupedMessages[type]?.length || 0), 0);
             return (
-              <Collapsible key={messageType} open={isExpanded} onOpenChange={() => toggleExpanded(messageType)}>
-                <Card className="overflow-hidden border-border/60" id={`section-${messageType}`}>
-                  <CollapsibleTrigger asChild>
-                    <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center text-xl">
-                            {config.icon}
-                          </div>
-                          <div>
-                            <CardTitle className="text-base flex items-center gap-2">
-                              {config.label}
-                              {hasMultiple && (
-                                <span className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded-full font-medium">
-                                  {typeMessages.length}
-                                </span>
-                              )}
-                            </CardTitle>
-                            <CardDescription className="text-sm">
-                              {config.description}
-                            </CardDescription>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAddMessage(messageType, typeMessages);
-                            }}
-                            disabled={createMessage.isPending}
-                            className="hidden sm:flex"
-                          >
-                            <Plus className="w-4 h-4 mr-1" />
-                            Adicionar
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAddMessage(messageType, typeMessages);
-                            }}
-                            disabled={createMessage.isPending}
-                            className="sm:hidden h-8 w-8"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                          <div className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-                            <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                  </CollapsibleTrigger>
-                  
-                  <CollapsibleContent>
-                    <CardContent className="space-y-4 pt-0">
-                      {typeMessages.length === 0 ? (
-                        <p className="text-muted-foreground text-sm text-center py-4">
-                          Nenhuma mensagem configurada. Clique em "Adicionar" para criar uma.
-                        </p>
-                      ) : (
-                        typeMessages
-                          .sort((a, b) => a.display_order - b.display_order)
-                          .map((message, index) => (
-                            <MessageItem
-                              key={message.id}
-                              message={message}
-                              index={index}
-                              totalCount={typeMessages.length}
-                              isEditing={editingId === message.id}
-                              editContent={editContent}
-                              editMediaUrl={editMediaUrl}
-                              editMediaType={editMediaType}
-                              editButtons={editButtons}
-                              onEditContentChange={setEditContent}
-                              onEdit={() => handleEdit(message)}
-                              onSave={() => handleSave(message.id)}
-                              onCancel={() => {
-                                setEditingId(null);
-                                setEditMediaUrl(null);
-                                setEditMediaType(null);
-                                setEditButtons([]);
-                              }}
-                              onToggle={(checked) => handleToggle(message.id, checked)}
-                              onDelete={() => handleDelete(message.id)}
-                              onMoveUp={() => handleMoveUp(messageType, typeMessages.sort((a, b) => a.display_order - b.display_order), index)}
-                              onMoveDown={() => handleMoveDown(messageType, typeMessages.sort((a, b) => a.display_order - b.display_order), index)}
-                              onMediaUpload={handleMediaUpload}
-                              onRemoveMedia={handleRemoveMedia}
-                              onButtonsChange={setEditButtons}
-                              isPending={updateMessage.isPending}
-                              uploading={uploading}
-                              allowDelete={typeMessages.length > 1}
-                              showOrder={typeMessages.length > 1}
-                            />
-                          ))
-                      )}
-                    </CardContent>
-                  </CollapsibleContent>
-                </Card>
-              </Collapsible>
-            );
-          }
-
-          // Single message card for types that don't allow multiple
-          const message = typeMessages[0];
-          if (!message) return null;
-
-          const isEditing = editingId === message.id;
-
-          return (
-            <Card key={message.id} className="overflow-hidden border-border/60" id={`section-${messageType}`}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center text-xl">
-                      {config.icon}
-                    </div>
-                    <div>
-                      <CardTitle className="text-base">{config.label}</CardTitle>
-                      <CardDescription className="text-sm">
-                        {config.description}
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Label htmlFor={`toggle-${message.id}`} className="text-sm text-muted-foreground">
-                      {message.is_active ? 'Ativo' : 'Inativo'}
-                    </Label>
-                    <Switch
-                      id={`toggle-${message.id}`}
-                      checked={message.is_active}
-                      onCheckedChange={(checked) => handleToggle(message.id, checked)}
-                    />
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {isEditing ? (
-                  <MessageEditor
-                    content={editContent}
-                    mediaUrl={editMediaUrl}
-                    mediaType={editMediaType}
-                    buttons={editButtons}
-                    onContentChange={setEditContent}
-                    onMediaUpload={handleMediaUpload}
-                    onRemoveMedia={handleRemoveMedia}
-                    onButtonsChange={setEditButtons}
-                    onSave={() => handleSave(message.id)}
-                    onCancel={() => {
-                      setEditingId(null);
-                      setEditMediaUrl(null);
-                      setEditMediaType(null);
-                      setEditButtons([]);
-                    }}
-                    isPending={updateMessage.isPending}
-                    uploading={uploading}
-                  />
-                ) : (
-                  <>
-                    {message.media_url && (
-                      <MediaPreview url={message.media_url} type={message.media_type} />
-                    )}
-                    <div className="p-3 bg-secondary/50 rounded-lg text-sm whitespace-pre-wrap">
-                      {message.message_content}
-                    </div>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleEdit(message)}
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Editar Mensagem
-                    </Button>
-                  </>
+              <TabsTrigger
+                key={key}
+                value={key}
+                className="data-[state=active]:bg-background data-[state=active]:shadow-sm px-4 py-2.5"
+              >
+                <span className="mr-2">{cat.icon}</span>
+                <span className="hidden sm:inline">{cat.label}</span>
+                {count > 0 && (
+                  <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-[10px]">
+                    {count}
+                  </Badge>
                 )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
 
-// Media Preview Component
-const MediaPreview = ({ url, type }: { url: string; type: string | null }) => {
-  if (type === 'video') {
-    return (
-      <video 
-        src={url} 
-        controls 
-        className="max-h-48 rounded-lg w-full object-contain bg-secondary/30"
-      />
-    );
-  }
-  return (
-    <img 
-      src={url} 
-      alt="Media preview" 
-      className="max-h-48 rounded-lg object-contain"
-    />
-  );
-};
+        <TabsContent value={activeTab} className="mt-6">
+          <div className="space-y-4">
+            {visibleTypes.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-secondary/50 mb-4">
+                  <Search className="w-7 h-7 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground">
+                  Nenhum tipo de mensagem encontrado para "{searchQuery}"
+                </p>
+                <Button 
+                  variant="link" 
+                  onClick={() => setSearchQuery('')}
+                  className="mt-2"
+                >
+                  Limpar busca
+                </Button>
+              </div>
+            ) : (
+              visibleTypes.map((messageType) => {
+                const config = messageLabels[messageType] || {
+                  label: messageType,
+                  description: '',
+                  icon: '📝',
+                  allowMultiple: false,
+                };
+                const typeMessages = groupedMessages[messageType] || [];
 
-// Message Editor Component
-interface MessageEditorProps {
-  content: string;
-  mediaUrl: string | null;
-  mediaType: string | null;
-  buttons: MessageButton[];
-  onContentChange: (content: string) => void;
-  onMediaUpload: (file: File) => void;
-  onRemoveMedia: () => void;
-  onButtonsChange: (buttons: MessageButton[]) => void;
-  onSave: () => void;
-  onCancel: () => void;
-  isPending: boolean;
-  uploading: boolean;
-}
-
-const MessageEditor = ({
-  content,
-  mediaUrl,
-  mediaType,
-  buttons,
-  onContentChange,
-  onMediaUpload,
-  onRemoveMedia,
-  onButtonsChange,
-  onSave,
-  onCancel,
-  isPending,
-  uploading,
-}: MessageEditorProps) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  return (
-    <div className="space-y-3">
-      {/* Media preview with remove button */}
-      {mediaUrl && (
-        <div className="relative inline-block">
-          <MediaPreview url={mediaUrl} type={mediaType} />
-          <Button
-            size="icon"
-            variant="destructive"
-            className="absolute top-2 right-2 h-6 w-6"
-            onClick={onRemoveMedia}
-          >
-            <X className="h-3 w-3" />
-          </Button>
-        </div>
-      )}
-
-      {/* Media upload buttons */}
-      <div className="flex gap-2">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,video/*"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) onMediaUpload(file);
-          }}
-        />
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-        >
-          {uploading ? (
-            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-          ) : (
-            <Upload className="w-4 h-4 mr-2" />
-          )}
-          {mediaUrl ? 'Trocar Mídia' : 'Adicionar Foto/Vídeo'}
-        </Button>
-      </div>
-
-      <Textarea
-        value={content}
-        onChange={(e) => onContentChange(e.target.value)}
-        className="min-h-[100px] resize-none"
-        placeholder="Digite a mensagem..."
-      />
-
-      {/* Button editor */}
-      <ButtonEditor buttons={buttons} onChange={onButtonsChange} />
-
-      {/* Action buttons */}
-      <div className="flex gap-2">
-        <Button 
-          size="sm" 
-          onClick={onSave}
-          disabled={isPending || uploading}
-        >
-          {isPending ? (
-            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-          ) : (
-            <Save className="w-4 h-4 mr-2" />
-          )}
-          Salvar
-        </Button>
-        <Button 
-          size="sm" 
-          variant="ghost"
-          onClick={onCancel}
-        >
-          Cancelar
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Sub-component for individual message items in multi-message sections
-interface MessageItemProps {
-  message: BotMessage;
-  index: number;
-  totalCount: number;
-  isEditing: boolean;
-  editContent: string;
-  editMediaUrl: string | null;
-  editMediaType: string | null;
-  editButtons: MessageButton[];
-  onEditContentChange: (content: string) => void;
-  onEdit: () => void;
-  onSave: () => void;
-  onCancel: () => void;
-  onToggle: (checked: boolean) => void;
-  onDelete: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  onMediaUpload: (file: File) => void;
-  onRemoveMedia: () => void;
-  onButtonsChange: (buttons: MessageButton[]) => void;
-  isPending: boolean;
-  uploading: boolean;
-  allowDelete: boolean;
-  showOrder: boolean;
-}
-
-const MessageItem = ({
-  message,
-  index,
-  totalCount,
-  isEditing,
-  editContent,
-  editMediaUrl,
-  editMediaType,
-  editButtons,
-  onEditContentChange,
-  onEdit,
-  onSave,
-  onCancel,
-  onToggle,
-  onDelete,
-  onMoveUp,
-  onMoveDown,
-  onMediaUpload,
-  onRemoveMedia,
-  onButtonsChange,
-  isPending,
-  uploading,
-  allowDelete,
-  showOrder,
-}: MessageItemProps) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  return (
-    <div className="border border-border/50 rounded-lg p-4 space-y-3 bg-card/50">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {showOrder && (
-            <div className="flex flex-col gap-0.5">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-5 w-5"
-                onClick={onMoveUp}
-                disabled={index === 0}
-              >
-                <ChevronUp className="h-3 w-3" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-5 w-5"
-                onClick={onMoveDown}
-                disabled={index === totalCount - 1}
-              >
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">
-              Mensagem {index + 1}
-            </span>
-            {message.media_type && (
-              <span className="text-xs bg-secondary px-2 py-0.5 rounded flex items-center gap-1">
-                {message.media_type === 'video' ? <Video className="h-3 w-3" /> : <Image className="h-3 w-3" />}
-                {message.media_type === 'video' ? 'Vídeo' : 'Foto'}
-              </span>
+                return (
+                  <MessageTypeSection
+                    key={messageType}
+                    messageType={messageType}
+                    config={config}
+                    messages={typeMessages}
+                    isExpanded={expandedTypes.has(messageType)}
+                    onToggleExpanded={() => toggleExpanded(messageType)}
+                    onAddMessage={() => handleAddMessage(messageType, typeMessages)}
+                    onUpdateMessage={handleUpdateMessage}
+                    onDeleteMessage={handleDeleteMessage}
+                    onMoveUp={(index) => handleMoveUp(messageType, typeMessages, index)}
+                    onMoveDown={(index) => handleMoveDown(messageType, typeMessages, index)}
+                    onMediaUpload={handleMediaUpload}
+                    isPending={updateMessage.isPending}
+                    isCreating={createMessage.isPending}
+                  />
+                );
+              })
             )}
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Label htmlFor={`toggle-${message.id}`} className="text-xs text-muted-foreground">
-            {message.is_active ? 'Ativo' : 'Inativo'}
-          </Label>
-          <Switch
-            id={`toggle-${message.id}`}
-            checked={message.is_active}
-            onCheckedChange={onToggle}
-          />
-          {allowDelete && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Remover mensagem?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta ação não pode ser desfeita.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={onDelete}>Remover</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-        </div>
-      </div>
-
-      {isEditing ? (
-        <div className="space-y-3">
-          {/* Media preview */}
-          {editMediaUrl && (
-            <div className="relative inline-block">
-              <MediaPreview url={editMediaUrl} type={editMediaType} />
-              <Button
-                size="icon"
-                variant="destructive"
-                className="absolute top-2 right-2 h-6 w-6"
-                onClick={onRemoveMedia}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
-
-          {/* Media upload */}
-          <div className="flex gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,video/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onMediaUpload(file);
-              }}
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              {uploading ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <Upload className="w-4 h-4 mr-2" />
-              )}
-              {editMediaUrl ? 'Trocar' : 'Foto/Vídeo'}
-            </Button>
-          </div>
-
-          <Textarea
-            value={editContent}
-            onChange={(e) => onEditContentChange(e.target.value)}
-            className="min-h-[80px] resize-none"
-            placeholder="Digite a mensagem..."
-          />
-          
-          {/* Button editor */}
-          <ButtonEditor buttons={editButtons} onChange={onButtonsChange} />
-          
-          <div className="flex gap-2">
-            <Button size="sm" onClick={onSave} disabled={isPending || uploading}>
-              {isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
-              )}
-              Salvar
-            </Button>
-            <Button size="sm" variant="ghost" onClick={onCancel}>
-              Cancelar
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <>
-          {message.media_url && (
-            <MediaPreview url={message.media_url} type={message.media_type} />
-          )}
-          <div className="p-3 bg-secondary/30 rounded-lg text-sm whitespace-pre-wrap">
-            {message.message_content}
-          </div>
-          <Button size="sm" variant="outline" onClick={onEdit}>
-            <Sparkles className="w-4 h-4 mr-2" />
-            Editar
-          </Button>
-        </>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
