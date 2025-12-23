@@ -43,10 +43,7 @@ const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId
   const { toast } = useToast();
   const [delayValue, setDelayValue] = useState(message?.delay_minutes?.toString() || "30");
   const [timeUnit, setTimeUnit] = useState<'minutes' | 'hours' | 'days'>(message?.time_unit || 'minutes');
-  const [messageContent, setMessageContent] = useState(
-    message?.message_content || 
-    "Olá {nome}! 👋\n\nVimos que você não finalizou a compra do {produto}.\n\nO pagamento PIX no valor de {valor} ainda está disponível!\n\nApenas copie o código PIX e finalize sua compra. 💰"
-  );
+  const [messageContent, setMessageContent] = useState(message?.message_content || "");
   const [isActive, setIsActive] = useState(message?.is_active ?? true);
   const [mediaUrl, setMediaUrl] = useState(message?.media_url || "");
   const [mediaType, setMediaType] = useState<string | null>(message?.media_type || null);
