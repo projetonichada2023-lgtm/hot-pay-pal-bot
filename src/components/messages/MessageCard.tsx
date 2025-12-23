@@ -285,6 +285,7 @@ export const MessageCard = ({
                 >
                   <MessageEditor
                     message={message}
+                    messageType={message.message_type}
                     onSave={handleSave}
                     onCancel={handleCancel}
                     onMediaUpload={onMediaUpload}

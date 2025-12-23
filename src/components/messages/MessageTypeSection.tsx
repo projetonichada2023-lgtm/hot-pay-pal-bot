@@ -3,13 +3,14 @@ import { BotMessage, MessageButton } from '@/hooks/useBotMessages';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, ChevronDown } from 'lucide-react';
+import { Plus, ChevronDown, FileText } from 'lucide-react';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { MessageCard } from './MessageCard';
+import { MessageTemplates } from './MessageTemplates';
 
 interface MessageConfig {
   label: string;
@@ -25,6 +26,7 @@ interface MessageTypeSectionProps {
   isExpanded: boolean;
   onToggleExpanded: () => void;
   onAddMessage: () => void;
+  onAddMessageWithContent: (content: string, buttons?: MessageButton[]) => void;
   onUpdateMessage: (id: string, updates: Partial<BotMessage>) => Promise<void>;
   onDeleteMessage: (id: string) => Promise<void>;
   onMoveUp: (index: number) => void;
@@ -41,6 +43,7 @@ export const MessageTypeSection = ({
   isExpanded,
   onToggleExpanded,
   onAddMessage,
+  onAddMessageWithContent,
   onUpdateMessage,
   onDeleteMessage,
   onMoveUp,
@@ -51,6 +54,13 @@ export const MessageTypeSection = ({
 }: MessageTypeSectionProps) => {
   const sortedMessages = [...messages].sort((a, b) => a.display_order - b.display_order);
   const activeCount = messages.filter(m => m.is_active).length;
+
+  const handleTemplateSelect = (content: string, buttons?: Array<{ text: string; type: 'callback' | 'url'; value: string }>) => {
+    if (messages.length === 0) {
+      // Create new message with template content
+      onAddMessageWithContent(content, buttons as MessageButton[]);
+    }
+  };
 
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggleExpanded}>
@@ -135,12 +145,18 @@ export const MessageTypeSection = ({
                 <p className="text-muted-foreground mb-4">
                   Nenhuma mensagem configurada ainda.
                 </p>
-                {config.allowMultiple && (
-                  <Button onClick={onAddMessage} disabled={isCreating}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Criar Primeira Mensagem
-                  </Button>
-                )}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                  <MessageTemplates 
+                    messageType={messageType} 
+                    onSelectTemplate={handleTemplateSelect} 
+                  />
+                  {config.allowMultiple && (
+                    <Button variant="outline" onClick={onAddMessage} disabled={isCreating}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Criar do Zero
+                    </Button>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="space-y-3">

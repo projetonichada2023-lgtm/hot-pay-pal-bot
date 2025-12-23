@@ -3,7 +3,6 @@ import { BotMessage, MessageButton } from '@/hooks/useBotMessages';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -20,6 +19,7 @@ import {
 import { ButtonEditor } from './ButtonEditor';
 import { TelegramPreview } from './TelegramPreview';
 import { PlaceholderChips } from './PlaceholderChips';
+import { MessageTemplates } from './MessageTemplates';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface MessageEditorProps {
@@ -28,6 +28,7 @@ interface MessageEditorProps {
   onCancel: () => void;
   onMediaUpload: (file: File) => Promise<string | null>;
   isPending: boolean;
+  messageType: string;
 }
 
 export const MessageEditor = ({
@@ -36,6 +37,7 @@ export const MessageEditor = ({
   onCancel,
   onMediaUpload,
   isPending,
+  messageType,
 }: MessageEditorProps) => {
   const [content, setContent] = useState(message.message_content);
   const [mediaUrl, setMediaUrl] = useState<string | null>(message.media_url);
@@ -88,23 +90,36 @@ export const MessageEditor = ({
     }
   };
 
+  const handleSelectTemplate = (templateContent: string, templateButtons?: Array<{ text: string; type: 'callback' | 'url'; value: string }>) => {
+    setContent(templateContent);
+    if (templateButtons) {
+      setButtons(templateButtons);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      {/* Header with preview toggle */}
-      <div className="flex items-center justify-between">
+      {/* Header with template and preview toggle */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-primary" />
           <span className="font-medium text-sm">Editor de Mensagem</span>
         </div>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => setShowPreview(!showPreview)}
-          className="text-xs"
-        >
-          <Eye className="w-3.5 h-3.5 mr-1.5" />
-          {showPreview ? 'Ocultar' : 'Mostrar'} Preview
-        </Button>
+        <div className="flex items-center gap-2">
+          <MessageTemplates 
+            messageType={messageType} 
+            onSelectTemplate={handleSelectTemplate} 
+          />
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setShowPreview(!showPreview)}
+            className="text-xs"
+          >
+            <Eye className="w-3.5 h-3.5 mr-1.5" />
+            {showPreview ? 'Ocultar' : 'Mostrar'} Preview
+          </Button>
+        </div>
       </div>
 
       <div className={`grid gap-6 ${showPreview ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
