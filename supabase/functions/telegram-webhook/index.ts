@@ -568,9 +568,6 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
       `${deliveredMessage || '📦 Produto entregue!'}\n\n${deliveryMessages.join('\n\n')}`,
       { inline_keyboard: [[{ text: '🛍️ Ver Mais Produtos', callback_data: 'products' }]] }
     );
-    
-    // Check for upsell - pass the orderId for tracking
-    await handleUpsell(botToken, chatId, clientId, product.id, product, orderId);
   } else {
     await sendTelegramMessage(
       botToken, 
@@ -579,6 +576,9 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
       { inline_keyboard: [[{ text: '🛍️ Ver Mais Produtos', callback_data: 'products' }]] }
     );
   }
+  
+  // Always check for upsell after payment - pass the orderId for tracking
+  await handleUpsell(botToken, chatId, clientId, product.id, product, orderId);
 }
 
 async function handleCancelOrder(botToken: string, chatId: number, clientId: string, orderId: string, messageId: number) {
