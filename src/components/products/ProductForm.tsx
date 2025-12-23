@@ -144,10 +144,11 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
             <div className="text-xs text-muted-foreground space-y-1">
               <p><strong>Como obter o ID do grupo:</strong></p>
               <ol className="list-decimal list-inside space-y-0.5 ml-1">
-                <li>Adicione o bot <code className="bg-muted px-1 rounded">@ScanIDBot</code> ao seu grupo</li>
-                <li>Digite <code className="bg-muted px-1 rounded">/id</code> no grupo</li>
-                <li>O bot enviará o ID do grupo (começa com <code className="bg-muted px-1 rounded">-100</code>)</li>
-                <li>Remova o @ScanIDBot e adicione seu bot como admin com permissão de convidar membros</li>
+                <li>Abra o Telegram e busque por <code className="bg-muted px-1 rounded">@ScanIDBot</code></li>
+                <li>Envie <code className="bg-muted px-1 rounded">/start</code> no chat privado com o bot</li>
+                <li>Selecione a opção <strong>"Group"</strong></li>
+                <li>Escolha o grupo desejado e o bot enviará o ID (começa com <code className="bg-muted px-1 rounded">-100</code>)</li>
+                <li>Adicione seu bot como admin do grupo com permissão de convidar membros</li>
               </ol>
             </div>
           </div>
