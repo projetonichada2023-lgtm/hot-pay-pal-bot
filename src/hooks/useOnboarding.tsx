@@ -47,6 +47,13 @@ export const tourSteps: TourStep[] = [
     position: 'right',
   },
   {
+    id: 'messages',
+    target: '[data-tour="menu-messages"]',
+    title: 'Personalize suas Mensagens ✉️',
+    content: 'Customize todas as mensagens que seu bot envia: boas-vindas, confirmações de pedido, pagamentos e muito mais!',
+    position: 'right',
+  },
+  {
     id: 'funnel',
     target: '[data-tour="menu-funnel"]',
     title: 'Monte seu Funil',

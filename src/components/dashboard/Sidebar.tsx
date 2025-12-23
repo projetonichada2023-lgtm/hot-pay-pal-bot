@@ -123,6 +123,7 @@ export const Sidebar = ({ client }: SidebarProps) => {
                 if (item.path === '/dashboard/products') return 'menu-products';
                 if (item.path === '/dashboard/bot-config') return 'menu-bot-config';
                 if (item.path === '/dashboard/funnel') return 'menu-funnel';
+                if (item.path === '/dashboard/messages') return 'menu-messages';
                 return undefined;
               };
               const tourAttr = getTourAttribute();
