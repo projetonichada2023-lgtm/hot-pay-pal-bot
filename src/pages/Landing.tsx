@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, useInView, Variants } from "framer-motion";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
+import { DemoModal } from "@/components/landing/DemoModal";
 import unipayLogo from "@/assets/unipay-logo.png";
 
 const features = [
@@ -228,6 +229,7 @@ function ScrollReveal({
 export default function Landing() {
   const heroRef = useRef(null);
   const heroInView = useInView(heroRef, { once: true });
+  const [demoOpen, setDemoOpen] = useState(false);
 
   // Force dark mode on landing page
   useEffect(() => {
@@ -347,7 +349,12 @@ export default function Landing() {
               </motion.div>
             </Link>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button size="lg" variant="outline" className="gap-2 text-base px-8">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="gap-2 text-base px-8"
+                onClick={() => setDemoOpen(true)}
+              >
                 <MessageCircle className="w-5 h-5" />
                 Ver Demonstração
               </Button>
@@ -698,6 +705,9 @@ export default function Landing() {
           </p>
         </div>
       </motion.footer>
+
+      {/* Demo Modal */}
+      <DemoModal open={demoOpen} onOpenChange={setDemoOpen} />
     </div>
   );
 }
