@@ -332,11 +332,54 @@ function b64ToUuid(b64url: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-function getCallbackLabel(data: string): string {
+async function getCallbackLabel(data: string): Promise<string> {
   if (data === 'products') return 'Ver Produtos';
   if (data === 'menu') return 'Menu';
-  if (data.startsWith('product_')) return 'Ver Produto';
-  if (data.startsWith('buy_') || data.startsWith('buyu_') || data.startsWith('buyd_')) return 'Comprar';
+  
+  // Get product name for product-related callbacks
+  if (data.startsWith('product_')) {
+    const productId = data.replace('product_', '');
+    const product = await getProduct(productId);
+    return product ? `Ver "${product.name}"` : 'Ver Produto';
+  }
+  
+  if (data.startsWith('buy_')) {
+    const parts = data.split('_');
+    const productId = parts[1];
+    const product = await getProduct(productId);
+    if (parts.length >= 4 && parts[2] === 'upsell') {
+      return product ? `Aceitar Upsell "${product.name}"` : 'Aceitar Upsell';
+    }
+    if (parts.length >= 4 && parts[2] === 'downsell') {
+      return product ? `Aceitar Downsell "${product.name}"` : 'Aceitar Downsell';
+    }
+    return product ? `Comprar "${product.name}"` : 'Comprar';
+  }
+  
+  if (data.startsWith('buyu_')) {
+    try {
+      const parts = data.split('_');
+      const productB64 = parts[1];
+      const productId = b64ToUuid(productB64);
+      const product = await getProduct(productId);
+      return product ? `Aceitar Upsell "${product.name}"` : 'Aceitar Upsell';
+    } catch {
+      return 'Aceitar Upsell';
+    }
+  }
+  
+  if (data.startsWith('buyd_')) {
+    try {
+      const parts = data.split('_');
+      const productB64 = parts[1];
+      const productId = b64ToUuid(productB64);
+      const product = await getProduct(productId);
+      return product ? `Aceitar Downsell "${product.name}"` : 'Aceitar Downsell';
+    } catch {
+      return 'Aceitar Downsell';
+    }
+  }
+  
   if (data.startsWith('paid_')) return 'Confirmar Pagamento';
   if (data.startsWith('cancel_')) return 'Cancelar Pedido';
   if (data.startsWith('declu_') || data.startsWith('decline_upsell_')) return 'Recusar Oferta';
@@ -420,7 +463,7 @@ serve(async (req) => {
       const customer = await getOrCreateCustomer(clientId, telegramUser);
 
       // Save callback_query as an event in the conversation
-      const callbackLabel = getCallbackLabel(data);
+      const callbackLabel = await getCallbackLabel(data);
       await saveMessage(clientId, chatId, customer?.id || null, 'incoming', `[Clicou: ${callbackLabel}]`, messageId);
 
       // Show products list
