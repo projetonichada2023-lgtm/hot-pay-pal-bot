@@ -9,8 +9,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Settings2, GripVertical, RotateCcw } from 'lucide-react';
-import { MetricConfig } from '@/hooks/useDashboardPreferences';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Settings2, GripVertical, RotateCcw, BarChart3, LayoutGrid } from 'lucide-react';
+import { MetricConfig, WidgetConfig } from '@/hooks/useDashboardPreferences';
 import { cn } from '@/lib/utils';
 import {
   DndContext,
@@ -32,17 +33,20 @@ import { CSS } from '@dnd-kit/utilities';
 
 interface CustomizeDashboardDialogProps {
   metrics: MetricConfig[];
-  onToggle: (id: string) => void;
-  onReorder: (metrics: MetricConfig[]) => void;
+  widgets: WidgetConfig[];
+  onToggleMetric: (id: string) => void;
+  onReorderMetrics: (metrics: MetricConfig[]) => void;
+  onToggleWidget: (id: string) => void;
+  onReorderWidgets: (widgets: WidgetConfig[]) => void;
   onReset: () => void;
 }
 
-interface SortableMetricItemProps {
-  metric: MetricConfig;
+interface SortableItemProps {
+  item: { id: string; label: string; visible: boolean };
   onToggle: (id: string) => void;
 }
 
-const SortableMetricItem = ({ metric, onToggle }: SortableMetricItemProps) => {
+const SortableItem = ({ item, onToggle }: SortableItemProps) => {
   const {
     attributes,
     listeners,
@@ -50,7 +54,7 @@ const SortableMetricItem = ({ metric, onToggle }: SortableMetricItemProps) => {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: metric.id });
+  } = useSortable({ id: item.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -73,10 +77,10 @@ const SortableMetricItem = ({ metric, onToggle }: SortableMetricItemProps) => {
       >
         <GripVertical className="w-4 h-4" />
       </button>
-      <span className="flex-1 text-sm font-medium">{metric.label}</span>
+      <span className="flex-1 text-sm font-medium">{item.label}</span>
       <Switch
-        checked={metric.visible}
-        onCheckedChange={() => onToggle(metric.id)}
+        checked={item.visible}
+        onCheckedChange={() => onToggle(item.id)}
       />
     </div>
   );
@@ -84,8 +88,11 @@ const SortableMetricItem = ({ metric, onToggle }: SortableMetricItemProps) => {
 
 export const CustomizeDashboardDialog = ({
   metrics,
-  onToggle,
-  onReorder,
+  widgets,
+  onToggleMetric,
+  onReorderMetrics,
+  onToggleWidget,
+  onReorderWidgets,
   onReset,
 }: CustomizeDashboardDialogProps) => {
   const [open, setOpen] = useState(false);
@@ -97,13 +104,21 @@ export const CustomizeDashboardDialog = ({
     })
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleMetricsDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-
     if (over && active.id !== over.id) {
       const oldIndex = metrics.findIndex((m) => m.id === active.id);
       const newIndex = metrics.findIndex((m) => m.id === over.id);
-      onReorder(arrayMove(metrics, oldIndex, newIndex));
+      onReorderMetrics(arrayMove(metrics, oldIndex, newIndex));
+    }
+  };
+
+  const handleWidgetsDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = widgets.findIndex((w) => w.id === active.id);
+      const newIndex = widgets.findIndex((w) => w.id === over.id);
+      onReorderWidgets(arrayMove(widgets, oldIndex, newIndex));
     }
   };
 
@@ -119,30 +134,68 @@ export const CustomizeDashboardDialog = ({
         <DialogHeader>
           <DialogTitle>Personalizar Dashboard</DialogTitle>
           <DialogDescription>
-            Escolha quais métricas exibir e arraste para reordenar.
+            Escolha quais elementos exibir e arraste para reordenar.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-2 max-h-[400px] overflow-y-auto">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={metrics.map((m) => m.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              {metrics.map((metric) => (
-                <SortableMetricItem
-                  key={metric.id}
-                  metric={metric}
-                  onToggle={onToggle}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
-        </div>
+        <Tabs defaultValue="metrics" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="metrics" className="gap-2">
+              <LayoutGrid className="w-4 h-4" />
+              Cards
+            </TabsTrigger>
+            <TabsTrigger value="widgets" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Widgets
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="metrics" className="mt-4">
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleMetricsDragEnd}
+              >
+                <SortableContext
+                  items={metrics.map((m) => m.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {metrics.map((metric) => (
+                    <SortableItem
+                      key={metric.id}
+                      item={metric}
+                      onToggle={onToggleMetric}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="widgets" className="mt-4">
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleWidgetsDragEnd}
+              >
+                <SortableContext
+                  items={widgets.map((w) => w.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {widgets.map((widget) => (
+                    <SortableItem
+                      key={widget.id}
+                      item={widget}
+                      onToggle={onToggleWidget}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            </div>
+          </TabsContent>
+        </Tabs>
 
         <div className="flex justify-between pt-4 border-t">
           <Button variant="ghost" size="sm" onClick={onReset} className="gap-2">
