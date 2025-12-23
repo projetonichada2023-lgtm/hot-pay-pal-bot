@@ -11,6 +11,7 @@ import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface ChatsPageProps {
   client: Client;
@@ -102,14 +103,12 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
 
       {!hasConversations ? (
         <Card className="glass-card">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <MessageCircle className="w-8 h-8 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Nenhuma conversa ainda</h3>
-            <p className="text-muted-foreground text-center max-w-md">
-              As conversas aparecerão aqui quando clientes interagirem com seu bot no Telegram.
-            </p>
+          <CardContent className="p-0">
+            <EmptyState
+              variant="chats"
+              title="Nenhuma conversa ainda"
+              description="As conversas aparecerão aqui quando clientes interagirem com seu bot no Telegram."
+            />
           </CardContent>
         </Card>
       ) : (

@@ -7,6 +7,7 @@ import { CustomersTable } from '@/components/customers/CustomersTable';
 import { CustomerFilters } from '@/components/customers/CustomerFilters';
 import { CustomerDetailsDialog } from '@/components/customers/CustomerDetailsDialog';
 import { CustomerStats } from '@/components/customers/CustomerStats';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface CustomersPageProps {
   client: Client;
@@ -46,12 +47,26 @@ export const CustomersPage = ({ client }: CustomersPageProps) => {
 
       <Card className="glass-card">
         <CardContent className="p-6 space-y-6">
-          <CustomerFilters filters={filters} onFiltersChange={setFilters} />
-          <CustomersTable 
-            customers={customers} 
-            isLoading={isLoading} 
-            onViewCustomer={handleViewCustomer}
-          />
+          {customers.length > 0 ? (
+            <>
+              <CustomerFilters filters={filters} onFiltersChange={setFilters} />
+              <CustomersTable 
+                customers={customers} 
+                isLoading={isLoading} 
+                onViewCustomer={handleViewCustomer}
+              />
+            </>
+          ) : isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            </div>
+          ) : (
+            <EmptyState
+              variant="customers"
+              title="Nenhum cliente ainda"
+              description="Os clientes aparecerão aqui quando interagirem com seu bot no Telegram."
+            />
+          )}
         </CardContent>
       </Card>
 
