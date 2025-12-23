@@ -979,7 +979,7 @@ async function handleBuyProduct(botToken: string, chatId: number, clientId: stri
   const pixSent = await sendTelegramMessage(botToken, chatId, pixMessage, {
     inline_keyboard: [
       [copyPixButton],
-      [{ text: '✅ Já Paguei', callback_data: `paid_${order.id}` }],
+      [{ text: '✅ Verificar Pagamento', callback_data: `paid_${order.id}` }],
       [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${order.id}` }],
     ],
   });
