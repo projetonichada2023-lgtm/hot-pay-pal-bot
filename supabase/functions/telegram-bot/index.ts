@@ -18,7 +18,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 interface ClientContext {
   clientId: string;
   botToken: string;
-  fastsoftApiKey: string | null;
+  fastsoftPublicKey: string | null;
+  fastsoftSecretKey: string | null;
   fastsoftEnabled: boolean;
 }
 
@@ -81,14 +82,15 @@ async function getClientContext(botToken: string): Promise<ClientContext | null>
 
   const { data: settings } = await supabase
     .from('client_settings')
-    .select('fastsoft_api_key, fastsoft_enabled')
+    .select('fastsoft_api_key, fastsoft_public_key, fastsoft_enabled')
     .eq('client_id', client.id)
     .single();
 
   return {
     clientId: client.id,
     botToken: client.telegram_bot_token,
-    fastsoftApiKey: settings?.fastsoft_api_key || null,
+    fastsoftPublicKey: settings?.fastsoft_public_key || null,
+    fastsoftSecretKey: settings?.fastsoft_api_key || null,
     fastsoftEnabled: settings?.fastsoft_enabled || false,
   };
 }
@@ -172,13 +174,14 @@ async function getProduct(productId: string) {
 
 // Generate PIX using FastSoft API
 async function generatePixFastsoft(ctx: ClientContext, amount: number, orderId: string, customer: any): Promise<{ pixCode: string; qrCodeUrl: string; paymentId: string } | null> {
-  if (!ctx.fastsoftApiKey) {
-    console.error('FastSoft API key not configured');
+  if (!ctx.fastsoftPublicKey || !ctx.fastsoftSecretKey) {
+    console.error('FastSoft keys not configured');
     return null;
   }
 
   try {
-    const authHeader = 'Basic ' + btoa(`x:${ctx.fastsoftApiKey}`);
+    // Use public key + secret key for authentication
+    const authHeader = 'Basic ' + btoa(`${ctx.fastsoftPublicKey}:${ctx.fastsoftSecretKey}`);
     
     const requestBody = {
       amount: Math.round(amount * 100), // Convert to cents
@@ -278,7 +281,7 @@ async function createOrder(ctx: ClientContext, customerId: string, productId: st
   // Generate PIX - use FastSoft if enabled, otherwise mock
   let pix: { pixCode: string; qrCodeUrl: string; paymentId: string };
   
-  if (ctx.fastsoftEnabled && ctx.fastsoftApiKey) {
+  if (ctx.fastsoftEnabled && ctx.fastsoftPublicKey && ctx.fastsoftSecretKey) {
     const fastsoftPix = await generatePixFastsoft(ctx, amount, order.id, customer);
     if (fastsoftPix) {
       pix = fastsoftPix;

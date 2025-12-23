@@ -74,6 +74,7 @@ export type Database = {
           created_at: string | null
           fastsoft_api_key: string | null
           fastsoft_enabled: boolean | null
+          fastsoft_public_key: string | null
           fastsoft_webhook_secret: string | null
           id: string
           opening_time: string | null
@@ -94,6 +95,7 @@ export type Database = {
           created_at?: string | null
           fastsoft_api_key?: string | null
           fastsoft_enabled?: boolean | null
+          fastsoft_public_key?: string | null
           fastsoft_webhook_secret?: string | null
           id?: string
           opening_time?: string | null
@@ -114,6 +116,7 @@ export type Database = {
           created_at?: string | null
           fastsoft_api_key?: string | null
           fastsoft_enabled?: boolean | null
+          fastsoft_public_key?: string | null
           fastsoft_webhook_secret?: string | null
           id?: string
           opening_time?: string | null
