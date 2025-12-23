@@ -629,12 +629,16 @@ async function handleBuyProduct(botToken: string, chatId: number, clientId: stri
     `<code>${order.pix_code}</code>\n\n` +
     `⏰ <i>Você tem 15 minutos para efetuar o pagamento.</i>`;
 
-  await sendTelegramMessage(botToken, chatId, message, {
+  const sent = await sendTelegramMessage(botToken, chatId, message, {
     inline_keyboard: [
       [{ text: '✅ Já Paguei', callback_data: `paid_${order.id}` }],
       [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${order.id}` }]
     ]
   });
+
+  if (sent?.result?.message_id) {
+    await saveMessage(clientId, chatId, customerId, 'outgoing', message, sent.result.message_id);
+  }
 }
 
 async function handlePaymentConfirmed(botToken: string, chatId: number, clientId: string, orderId: string, telegramUserId: number) {
@@ -650,27 +654,33 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
     return;
   }
 
+  const customerId = (order as any).customer_id || null;
+
   // Update order to paid
   await updateOrderStatus(orderId, 'paid', { paid_at: new Date().toISOString() });
 
   const paymentSuccessMessage = await getClientMessage(clientId, 'payment_success');
-  await sendTelegramMessage(botToken, chatId, paymentSuccessMessage || '✅ Pagamento confirmado!');
+  const paymentText = paymentSuccessMessage || '✅ Pagamento confirmado!';
+  const paymentSent = await sendTelegramMessage(botToken, chatId, paymentText);
+  if (paymentSent?.result?.message_id) {
+    await saveMessage(clientId, chatId, customerId, 'outgoing', paymentText, paymentSent.result.message_id);
+  }
 
   // Auto-deliver the product
   const product = order.products as any;
-  
+
   let deliveryMessages: string[] = [];
-  
+
   // Check for file URL delivery
   if (product?.file_url) {
     deliveryMessages.push(`🔗 <b>Link de acesso:</b>\n${product.file_url}`);
   }
-  
+
   // Check for VIP group access
   if (product?.telegram_group_id) {
     console.log('Adding user to VIP group:', product.telegram_group_id, 'user:', telegramUserId);
     const result = await addUserToGroup(botToken, product.telegram_group_id, telegramUserId);
-    
+
     if (typeof result === 'string') {
       // Got an invite link as fallback (expires in 5 min, 1 use only)
       deliveryMessages.push(`👥 <b>Acesso ao Grupo VIP:</b>\n${result}\n\n⚠️ <i>Link único! Expira em 5 minutos. Use agora!</i>`);
@@ -680,26 +690,34 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
       deliveryMessages.push(`👥 <b>Grupo VIP:</b> Houve um problema ao te adicionar. Entre em contato com o suporte.`);
     }
   }
-  
+
   if (deliveryMessages.length > 0) {
     await updateOrderStatus(orderId, 'delivered', { delivered_at: new Date().toISOString() });
     await incrementProductSales(product.id);
-    
+
     const deliveredMessage = await getClientMessage(clientId, 'product_delivered');
-    
-    await sendTelegramMessage(
-      botToken, 
-      chatId, 
-      `${deliveredMessage || '📦 Produto entregue!'}\n\n${deliveryMessages.join('\n\n')}`,
-      { inline_keyboard: [[{ text: '🛍️ Ver Mais Produtos', callback_data: 'products' }]] }
+    const deliveredText = `${deliveredMessage || '📦 Produto entregue!'}\n\n${deliveryMessages.join('\n\n')}`;
+
+    const deliveredSent = await sendTelegramMessage(
+      botToken,
+      chatId,
+      deliveredText,
+      { inline_keyboard: [[{ text: '🛍️ Ver Mais Produtos', callback_data: 'products' }]] },
     );
+    if (deliveredSent?.result?.message_id) {
+      await saveMessage(clientId, chatId, customerId, 'outgoing', deliveredText, deliveredSent.result.message_id);
+    }
   } else {
-    await sendTelegramMessage(
-      botToken, 
-      chatId, 
-      '📦 Seu produto será entregue em breve pelo vendedor.',
-      { inline_keyboard: [[{ text: '🛍️ Ver Mais Produtos', callback_data: 'products' }]] }
+    const pendingDeliveryText = '📦 Seu produto será entregue em breve pelo vendedor.';
+    const pendingDeliverySent = await sendTelegramMessage(
+      botToken,
+      chatId,
+      pendingDeliveryText,
+      { inline_keyboard: [[{ text: '🛍️ Ver Mais Produtos', callback_data: 'products' }]] },
     );
+    if (pendingDeliverySent?.result?.message_id) {
+      await saveMessage(clientId, chatId, customerId, 'outgoing', pendingDeliveryText, pendingDeliverySent.result.message_id);
+    }
   }
   
   // Check for upsells - start with index 0
