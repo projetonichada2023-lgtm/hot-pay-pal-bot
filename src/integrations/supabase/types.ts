@@ -72,7 +72,10 @@ export type Database = {
           display_order: number
           id: string
           is_active: boolean | null
+          media_type: string | null
+          media_url: string | null
           message_content: string
+          time_unit: string | null
           updated_at: string | null
         }
         Insert: {
@@ -82,7 +85,10 @@ export type Database = {
           display_order?: number
           id?: string
           is_active?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
           message_content: string
+          time_unit?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -92,7 +98,10 @@ export type Database = {
           display_order?: number
           id?: string
           is_active?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
           message_content?: string
+          time_unit?: string | null
           updated_at?: string | null
         }
         Relationships: [

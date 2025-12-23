@@ -13,8 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Plus, Trash2, Clock, MessageSquare, Edit2, Save, X, Info, 
   RefreshCw, ShoppingCart, TrendingUp, AlertCircle, Loader2,
-  Send
+  Send, Image, Music, Upload
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -33,43 +34,128 @@ interface RecoveryMessageFormProps {
 }
 
 const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId }: RecoveryMessageFormProps) => {
-  const [delayMinutes, setDelayMinutes] = useState(message?.delay_minutes?.toString() || "30");
+  const { toast } = useToast();
+  const [delayValue, setDelayValue] = useState(message?.delay_minutes?.toString() || "30");
+  const [timeUnit, setTimeUnit] = useState<'minutes' | 'hours' | 'days'>(message?.time_unit || 'minutes');
   const [messageContent, setMessageContent] = useState(
     message?.message_content || 
     "Olá {nome}! 👋\n\nVimos que você não finalizou a compra do {produto}.\n\nO pagamento PIX no valor de {valor} ainda está disponível!\n\nApenas copie o código PIX e finalize sua compra. 💰"
   );
   const [isActive, setIsActive] = useState(message?.is_active ?? true);
+  const [mediaUrl, setMediaUrl] = useState(message?.media_url || "");
+  const [mediaType, setMediaType] = useState<string | null>(message?.media_type || null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'audio') => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (type === 'image' && !file.type.startsWith('image/')) {
+      toast({ title: "Arquivo inválido", description: "Selecione uma imagem válida.", variant: "destructive" });
+      return;
+    }
+    if (type === 'audio' && !file.type.startsWith('audio/')) {
+      toast({ title: "Arquivo inválido", description: "Selecione um áudio válido.", variant: "destructive" });
+      return;
+    }
+
+    // Max 10MB
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "Arquivo muito grande", description: "O arquivo deve ter no máximo 10MB.", variant: "destructive" });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `recovery_${clientId}_${Date.now()}.${fileExt}`;
+      const filePath = `${clientId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('bot-media')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicData } = supabase.storage
+        .from('bot-media')
+        .getPublicUrl(filePath);
+
+      setMediaUrl(publicData.publicUrl);
+      setMediaType(type);
+      toast({ title: "Upload concluído!", description: `${type === 'image' ? 'Imagem' : 'Áudio'} enviado com sucesso.` });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({ title: "Erro no upload", description: "Não foi possível enviar o arquivo.", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removeMedia = () => {
+    setMediaUrl("");
+    setMediaType(null);
+  };
 
   const handleSave = () => {
+    // Convert to minutes for storage
+    let delayMinutes = parseInt(delayValue) || 30;
+    
     onSave({
       id: message?.id,
       client_id: clientId,
-      delay_minutes: parseInt(delayMinutes) || 30,
+      delay_minutes: delayMinutes,
+      time_unit: timeUnit,
       message_content: messageContent,
+      media_url: mediaUrl || null,
+      media_type: mediaType,
       is_active: isActive,
       display_order: message?.display_order || displayOrder,
     });
   };
 
+  const getTimeUnitLabel = (unit: string) => {
+    switch (unit) {
+      case 'minutes': return 'Minutos';
+      case 'hours': return 'Horas';
+      case 'days': return 'Dias';
+      default: return 'Minutos';
+    }
+  };
+
   return (
     <Card className="border-2 border-primary/20">
       <CardContent className="pt-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="delay" className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-primary" />
-              Tempo de espera (minutos)
+              Tempo de espera
             </Label>
-            <Input
-              id="delay"
-              type="number"
-              min="1"
-              value={delayMinutes}
-              onChange={(e) => setDelayMinutes(e.target.value)}
-              placeholder="30"
-            />
+            <div className="flex gap-2">
+              <Input
+                id="delay"
+                type="number"
+                min="1"
+                value={delayValue}
+                onChange={(e) => setDelayValue(e.target.value)}
+                placeholder="30"
+                className="flex-1"
+              />
+              <Select value={timeUnit} onValueChange={(v: 'minutes' | 'hours' | 'days') => setTimeUnit(v)}>
+                <SelectTrigger className="w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="minutes">Minutos</SelectItem>
+                  <SelectItem value="hours">Horas</SelectItem>
+                  <SelectItem value="days">Dias</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <p className="text-xs text-muted-foreground">
-              Tempo após o pedido (ou última mensagem) para enviar
+              Tempo após o pedido (ou última mensagem)
             </p>
           </div>
           
@@ -81,6 +167,68 @@ const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId
               </p>
             </div>
             <Switch checked={isActive} onCheckedChange={setIsActive} />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Upload className="w-4 h-4 text-primary" />
+              Mídia (opcional)
+            </Label>
+            <div className="flex gap-2">
+              <label className="flex-1">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFileUpload(e, 'image')}
+                  disabled={isUploading}
+                />
+                <Button variant="outline" size="sm" className="w-full" asChild disabled={isUploading}>
+                  <span>
+                    <Image className="w-4 h-4 mr-1" />
+                    Imagem
+                  </span>
+                </Button>
+              </label>
+              <label className="flex-1">
+                <input
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  onChange={(e) => handleFileUpload(e, 'audio')}
+                  disabled={isUploading}
+                />
+                <Button variant="outline" size="sm" className="w-full" asChild disabled={isUploading}>
+                  <span>
+                    <Music className="w-4 h-4 mr-1" />
+                    Áudio
+                  </span>
+                </Button>
+              </label>
+            </div>
+            {isUploading && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Enviando...
+              </p>
+            )}
+            {mediaUrl && (
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                {mediaType === 'image' ? (
+                  <img src={mediaUrl} alt="Preview" className="w-12 h-12 object-cover rounded" />
+                ) : (
+                  <div className="w-12 h-12 bg-primary/10 rounded flex items-center justify-center">
+                    <Music className="w-6 h-6 text-primary" />
+                  </div>
+                )}
+                <span className="text-xs text-muted-foreground flex-1 truncate">
+                  {mediaType === 'image' ? 'Imagem' : 'Áudio'} anexado
+                </span>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={removeMedia}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -111,7 +259,7 @@ const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId
             <X className="w-4 h-4 mr-2" />
             Cancelar
           </Button>
-          <Button onClick={handleSave}>
+          <Button onClick={handleSave} disabled={isUploading}>
             <Save className="w-4 h-4 mr-2" />
             Salvar
           </Button>
@@ -464,21 +612,37 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
                           <CardContent className="pt-4">
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
+                                <div className="flex items-center gap-2 mb-2 flex-wrap">
                                   <span className="text-xs font-medium px-2 py-1 bg-primary/10 text-primary rounded">
                                     Mensagem {index + 1}
                                   </span>
                                   <span className="text-xs text-muted-foreground flex items-center gap-1">
                                     <Clock className="w-3 h-3" />
-                                    {msg.delay_minutes} min
+                                    {msg.delay_minutes} {msg.time_unit === 'hours' ? 'hora(s)' : msg.time_unit === 'days' ? 'dia(s)' : 'min'}
                                   </span>
+                                  {msg.media_type && (
+                                    <span className="text-xs px-2 py-1 bg-muted rounded flex items-center gap-1">
+                                      {msg.media_type === 'image' ? <Image className="w-3 h-3" /> : <Music className="w-3 h-3" />}
+                                      {msg.media_type === 'image' ? 'Imagem' : 'Áudio'}
+                                    </span>
+                                  )}
                                   {!msg.is_active && (
                                     <span className="text-xs text-muted-foreground">(Inativa)</span>
                                   )}
                                 </div>
-                                <p className="text-sm whitespace-pre-wrap line-clamp-3">
-                                  {msg.message_content}
-                                </p>
+                                <div className="flex gap-3">
+                                  {msg.media_url && msg.media_type === 'image' && (
+                                    <img src={msg.media_url} alt="Preview" className="w-16 h-16 object-cover rounded shrink-0" />
+                                  )}
+                                  {msg.media_url && msg.media_type === 'audio' && (
+                                    <div className="w-16 h-16 bg-primary/10 rounded flex items-center justify-center shrink-0">
+                                      <Music className="w-8 h-8 text-primary" />
+                                    </div>
+                                  )}
+                                  <p className="text-sm whitespace-pre-wrap line-clamp-3 flex-1">
+                                    {msg.message_content}
+                                  </p>
+                                </div>
                               </div>
                               <div className="flex gap-1">
                                 <Button

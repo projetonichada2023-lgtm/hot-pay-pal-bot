@@ -6,7 +6,10 @@ export interface CartRecoveryMessage {
   id: string;
   client_id: string;
   delay_minutes: number;
+  time_unit: 'minutes' | 'hours' | 'days';
   message_content: string;
+  media_url: string | null;
+  media_type: string | null;
   is_active: boolean;
   display_order: number;
   created_at: string;

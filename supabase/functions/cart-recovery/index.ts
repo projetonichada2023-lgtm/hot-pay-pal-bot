@@ -92,6 +92,16 @@ serve(async (req) => {
         // Calculate if it's time to send this message
         const orderCreatedAt = new Date(order.created_at);
         const now = new Date();
+        
+        // Convert delay to minutes based on time_unit
+        const timeUnit = nextMessage.time_unit || 'minutes';
+        let delayInMinutes = nextMessage.delay_minutes;
+        if (timeUnit === 'hours') {
+          delayInMinutes = nextMessage.delay_minutes * 60;
+        } else if (timeUnit === 'days') {
+          delayInMinutes = nextMessage.delay_minutes * 60 * 24;
+        }
+        
         const minutesSinceOrder = (now.getTime() - orderCreatedAt.getTime()) / (1000 * 60);
         
         // Check if we should send based on delay_minutes
@@ -103,11 +113,11 @@ serve(async (req) => {
         // For first message, check against order creation time
         // For subsequent messages, check against last recovery sent time
         const shouldSend = messagesSent === 0 
-          ? minutesSinceOrder >= nextMessage.delay_minutes
-          : minutesSinceLastRecovery >= nextMessage.delay_minutes;
+          ? minutesSinceOrder >= delayInMinutes
+          : minutesSinceLastRecovery >= delayInMinutes;
 
         if (!shouldSend) {
-          console.log(`Order ${order.id}: Not time yet for message ${messagesSent + 1} (${minutesSinceOrder.toFixed(1)} min elapsed, need ${nextMessage.delay_minutes} min)`);
+          console.log(`Order ${order.id}: Not time yet for message ${messagesSent + 1} (${minutesSinceOrder.toFixed(1)} min elapsed, need ${delayInMinutes} min)`);
           continue;
         }
 
@@ -123,32 +133,73 @@ serve(async (req) => {
 
         // Send message via Telegram
         try {
-          const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
-          const telegramResponse = await fetch(telegramUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: customer.telegram_id,
-              text: messageContent,
-              parse_mode: "HTML",
-            }),
-          });
-
-          if (telegramResponse.ok) {
-            console.log(`Recovery message sent successfully for order ${order.id}`);
-            
-            // Update order with recovery message count
-            await supabase
-              .from("orders")
-              .update({
-                recovery_messages_sent: messagesSent + 1,
-                last_recovery_sent_at: now.toISOString(),
-              })
-              .eq("id", order.id);
+          // Check if there's media to send
+          const mediaUrl = nextMessage.media_url;
+          const mediaType = nextMessage.media_type;
+          
+          if (mediaUrl && mediaType) {
+            // Send media first
+            if (mediaType === 'image') {
+              const photoResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: customer.telegram_id,
+                  photo: mediaUrl,
+                  caption: messageContent,
+                  parse_mode: "HTML",
+                }),
+              });
+              
+              if (!photoResponse.ok) {
+                console.error(`Failed to send photo for order ${order.id}:`, await photoResponse.text());
+              }
+            } else if (mediaType === 'audio') {
+              // Send audio
+              const audioResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendAudio`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: customer.telegram_id,
+                  audio: mediaUrl,
+                  caption: messageContent,
+                  parse_mode: "HTML",
+                }),
+              });
+              
+              if (!audioResponse.ok) {
+                console.error(`Failed to send audio for order ${order.id}:`, await audioResponse.text());
+              }
+            }
           } else {
-            const errorText = await telegramResponse.text();
-            console.error(`Failed to send Telegram message for order ${order.id}:`, errorText);
+            // Send text only
+            const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+            const telegramResponse = await fetch(telegramUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: customer.telegram_id,
+                text: messageContent,
+                parse_mode: "HTML",
+              }),
+            });
+
+            if (!telegramResponse.ok) {
+              const errorText = await telegramResponse.text();
+              console.error(`Failed to send Telegram message for order ${order.id}:`, errorText);
+            }
           }
+
+          console.log(`Recovery message sent successfully for order ${order.id}`);
+          
+          // Update order with recovery message count
+          await supabase
+            .from("orders")
+            .update({
+              recovery_messages_sent: messagesSent + 1,
+              last_recovery_sent_at: now.toISOString(),
+            })
+            .eq("id", order.id);
         } catch (telegramError) {
           console.error(`Error sending Telegram message for order ${order.id}:`, telegramError);
         }
