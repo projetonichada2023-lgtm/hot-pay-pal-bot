@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Loader2, CreditCard, Eye, EyeOff } from 'lucide-react';
+import { Settings, Loader2, CreditCard, Eye, EyeOff, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
 
 interface SettingsPageProps {
@@ -16,10 +16,8 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   const { data: settings, isLoading } = useClientSettings(client.id);
   const updateSettings = useUpdateClientSettings();
   const { toast } = useToast();
-  const [showPublicKey, setShowPublicKey] = useState(false);
-  const [showSecretKey, setShowSecretKey] = useState(false);
-  const [publicKey, setPublicKey] = useState('');
-  const [secretKey, setSecretKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [apiKey, setApiKey] = useState('');
 
   const handleToggle = async (field: string, value: boolean) => {
     if (!settings) return;
@@ -31,39 +29,43 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
     }
   };
 
-  const handleHoursChange = async (hours: number) => {
-    if (!settings) return;
+  const handleSaveApiKey = async () => {
+    if (!settings || !apiKey.trim()) return;
     try {
-      await updateSettings.mutateAsync({ id: settings.id, cart_reminder_hours: hours });
-      toast({ title: 'Configuração atualizada!' });
-    } catch (error) {
-      toast({ title: 'Erro ao atualizar', variant: 'destructive' });
-    }
-  };
-
-  const handleSaveKeys = async () => {
-    if (!settings || (!publicKey.trim() && !secretKey.trim())) return;
-    try {
-      const updateData: any = { id: settings.id };
-      if (publicKey.trim()) updateData.fastsoft_public_key = publicKey.trim();
-      if (secretKey.trim()) updateData.fastsoft_api_key = secretKey.trim();
-      
-      await updateSettings.mutateAsync(updateData);
-      toast({ title: 'Chaves salvas com sucesso!' });
-      setPublicKey('');
-      setSecretKey('');
+      await updateSettings.mutateAsync({ 
+        id: settings.id, 
+        fastsoft_api_key: apiKey.trim(),
+        fastsoft_enabled: true
+      } as any);
+      toast({ title: 'Chave API salva com sucesso!' });
+      setApiKey('');
     } catch (error) {
       toast({ title: 'Erro ao salvar', variant: 'destructive' });
     }
   };
 
-  const handleToggleFastsoft = async (enabled: boolean) => {
+  const handleToggleUnipay = async (enabled: boolean) => {
     if (!settings) return;
     try {
       await updateSettings.mutateAsync({ id: settings.id, fastsoft_enabled: enabled } as any);
-      toast({ title: enabled ? 'FastSoft ativado!' : 'FastSoft desativado!' });
+      toast({ title: enabled ? 'UniPay ativado!' : 'UniPay desativado!' });
     } catch (error) {
       toast({ title: 'Erro ao atualizar', variant: 'destructive' });
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!settings) return;
+    try {
+      await updateSettings.mutateAsync({ 
+        id: settings.id, 
+        fastsoft_api_key: null,
+        fastsoft_public_key: null,
+        fastsoft_enabled: false
+      } as any);
+      toast({ title: 'UniPay desconectado!' });
+    } catch (error) {
+      toast({ title: 'Erro ao desconectar', variant: 'destructive' });
     }
   };
 
@@ -77,10 +79,8 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
 
   if (!settings) return null;
 
-  const hasPublicKey = !!(settings as any).fastsoft_public_key;
-  const hasSecretKey = !!(settings as any).fastsoft_api_key;
-  const hasKeys = hasPublicKey && hasSecretKey;
-  const fastsoftEnabled = (settings as any).fastsoft_enabled || false;
+  const hasApiKey = !!(settings as any).fastsoft_api_key;
+  const unipayEnabled = (settings as any).fastsoft_enabled || false;
 
   return (
     <div className="space-y-6">
@@ -94,102 +94,127 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
         </p>
       </div>
 
-      {/* Payment Gateway */}
+      {/* Payment Gateway - UniPay */}
       <Card className="glass-card border-primary/20">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="w-5 h-5" />
-            Gateway de Pagamento (FastSoft/UniPay)
-          </CardTitle>
-          <CardDescription>
-            Configure suas credenciais para receber pagamentos PIX reais
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                Gateway de Pagamento
+              </CardTitle>
+              <CardDescription>
+                Integração exclusiva com UniPay para pagamentos PIX
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-xs font-medium text-primary">UniPay</span>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>FastSoft Ativo</Label>
-              <p className="text-sm text-muted-foreground">
-                {hasKeys ? 'Usar FastSoft para pagamentos PIX' : 'Configure as chaves primeiro'}
-              </p>
-            </div>
-            <Switch
-              checked={fastsoftEnabled}
-              onCheckedChange={handleToggleFastsoft}
-              disabled={!hasKeys}
-            />
-          </div>
+          {hasApiKey ? (
+            <>
+              {/* Connected State */}
+              <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  <div className="flex-1">
+                    <p className="font-medium text-green-600 dark:text-green-400">
+                      UniPay Conectado
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Sua conta está pronta para receber pagamentos PIX
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-          <div className="space-y-4 pt-4 border-t border-border">
-            {/* Public Key */}
-            <div className="space-y-2">
-              <Label>Chave Pública (Public Key)</Label>
-              <div className="relative">
-                <Input
-                  type={showPublicKey ? 'text' : 'password'}
-                  placeholder={hasPublicKey ? '••••••••••••••••' : 'Cole sua chave pública aqui'}
-                  value={publicKey}
-                  onChange={(e) => setPublicKey(e.target.value)}
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                <div className="space-y-0.5">
+                  <Label>Pagamentos Ativos</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receber pagamentos PIX via UniPay
+                  </p>
+                </div>
+                <Switch
+                  checked={unipayEnabled}
+                  onCheckedChange={handleToggleUnipay}
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-1/2 -translate-y-1/2"
-                  onClick={() => setShowPublicKey(!showPublicKey)}
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => window.open('https://unipay.com.br/dashboard', '_blank')}
                 >
-                  {showPublicKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Acessar Painel UniPay
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={handleDisconnect}
+                >
+                  Desconectar
                 </Button>
               </div>
-              {hasPublicKey && (
-                <p className="text-xs text-green-600 dark:text-green-400">✓ Chave pública configurada</p>
-              )}
-            </div>
+            </>
+          ) : (
+            <>
+              {/* Not Connected State */}
+              <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Conecte sua conta UniPay para começar a receber pagamentos PIX automaticamente.
+                </p>
+                
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label>Chave API UniPay</Label>
+                    <div className="relative">
+                      <Input
+                        type={showApiKey ? 'text' : 'password'}
+                        placeholder="Cole sua chave API aqui"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                      >
+                        {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
 
-            {/* Secret Key */}
-            <div className="space-y-2">
-              <Label>Chave Secreta (Secret Key)</Label>
-              <div className="relative">
-                <Input
-                  type={showSecretKey ? 'text' : 'password'}
-                  placeholder={hasSecretKey ? '••••••••••••••••' : 'Cole sua chave secreta aqui'}
-                  value={secretKey}
-                  onChange={(e) => setSecretKey(e.target.value)}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-1/2 -translate-y-1/2"
-                  onClick={() => setShowSecretKey(!showSecretKey)}
-                >
-                  {showSecretKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
+                  <Button 
+                    onClick={handleSaveApiKey} 
+                    disabled={!apiKey.trim()}
+                    className="w-full"
+                  >
+                    Conectar UniPay
+                  </Button>
+                </div>
               </div>
-              {hasSecretKey && (
-                <p className="text-xs text-green-600 dark:text-green-400">✓ Chave secreta configurada</p>
-              )}
-            </div>
 
-            <Button 
-              onClick={handleSaveKeys} 
-              disabled={!publicKey.trim() && !secretKey.trim()}
-              className="w-full"
-            >
-              Salvar Chaves
-            </Button>
-            
-            <p className="text-xs text-muted-foreground">
-              Obtenha as chaves em: Painel FastSoft → Configurações → Credenciais da API
-            </p>
-          </div>
-
-          {hasKeys && (
-            <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-              <p className="text-sm text-green-600 dark:text-green-400">
-                ✓ Chaves configuradas. Os pagamentos PIX serão processados pela FastSoft.
-              </p>
-            </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <ExternalLink className="w-4 h-4" />
+                <span>Não tem uma conta?</span>
+                <a 
+                  href="https://unipay.com.br" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Criar conta na UniPay
+                </a>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -236,7 +261,6 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
                 onCheckedChange={(checked) => handleToggle('cart_reminder_enabled', checked)}
               />
             </div>
-
           </div>
         </CardContent>
       </Card>
