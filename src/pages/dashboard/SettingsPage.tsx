@@ -92,19 +92,6 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Upsell</Label>
-              <p className="text-sm text-muted-foreground">
-                Oferecer produtos adicionais após compra
-              </p>
-            </div>
-            <Switch
-              checked={settings.upsell_enabled}
-              onCheckedChange={(checked) => handleToggle('upsell_enabled', checked)}
-            />
-          </div>
-
           <div className="space-y-3 pt-4 border-t border-border">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
