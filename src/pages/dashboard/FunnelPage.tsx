@@ -228,13 +228,27 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
 
   const handleAddUpsellToProduct = async (productId: string) => {
     const currentUpsells = productUpsells[productId] || [];
+    const usedUpsellIds = currentUpsells.map(u => u.upsell_product_id);
+    
+    // Find first available product that isn't already used as upsell and isn't the main product
+    const availableProduct = products?.find(p => 
+      p.id !== productId && 
+      !usedUpsellIds.includes(p.id) && 
+      p.is_active
+    );
+
+    if (!availableProduct) {
+      toast.error('Não há mais produtos disponíveis para adicionar como upsell');
+      return;
+    }
+
     const nextOrder = currentUpsells.length + 1;
 
     const { data, error } = await supabase
       .from('product_upsells')
       .insert({
         product_id: productId,
-        upsell_product_id: products?.[0]?.id || '',
+        upsell_product_id: availableProduct.id,
         display_order: nextOrder,
       })
       .select()
@@ -250,7 +264,7 @@ export const FunnelPage = ({ client }: FunnelPageProps) => {
       [productId]: [...(prev[productId] || []), data],
     }));
 
-    toast.success('Upsell adicionado! Selecione o produto.');
+    toast.success('Upsell adicionado!');
   };
 
   const handleUpdateUpsell = async (upsellId: string, productId: string, updates: Partial<ProductUpsell>) => {
