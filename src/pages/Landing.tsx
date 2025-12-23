@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, useInView, Variants } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 
 const features = [
   {
@@ -195,6 +195,11 @@ function ScrollReveal({
 export default function Landing() {
   const heroRef = useRef(null);
   const heroInView = useInView(heroRef, { once: true });
+
+  // Force dark mode on landing page
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
