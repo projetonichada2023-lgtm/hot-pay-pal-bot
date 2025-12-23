@@ -1,10 +1,11 @@
+import { useState, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Product } from '@/hooks/useProducts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { GripVertical, Trash2 } from 'lucide-react';
+import { GripVertical, Trash2, Save } from 'lucide-react';
 
 interface ProductUpsell {
   id: string;
@@ -38,6 +39,9 @@ export function SortableUpsellItem({
   onUpdate,
   onDelete,
 }: SortableUpsellItemProps) {
+  const [localMessage, setLocalMessage] = useState(upsell.upsell_message || '');
+  const [hasChanges, setHasChanges] = useState(false);
+
   const {
     attributes,
     listeners,
@@ -52,6 +56,24 @@ export function SortableUpsellItem({
     transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 1000 : 'auto',
+  };
+
+  // Sync local state when upsell changes
+  useEffect(() => {
+    setLocalMessage(upsell.upsell_message || '');
+    setHasChanges(false);
+  }, [upsell.upsell_message]);
+
+  const handleMessageChange = (value: string) => {
+    setLocalMessage(value);
+    setHasChanges(value !== (upsell.upsell_message || ''));
+  };
+
+  const handleSaveMessage = () => {
+    onUpdate(upsell.id, productId, {
+      upsell_message: localMessage || null
+    });
+    setHasChanges(false);
   };
 
   const upsellProduct = getProductById(upsell.upsell_product_id);
@@ -94,15 +116,25 @@ export function SortableUpsellItem({
               ))}
             </SelectContent>
           </Select>
-          <Textarea
-            placeholder="Mensagem personalizada do upsell..."
-            value={upsell.upsell_message || ''}
-            onChange={(e) => onUpdate(upsell.id, productId, {
-              upsell_message: e.target.value || null
-            })}
-            rows={2}
-            className="resize-none text-sm"
-          />
+          <div className="flex gap-2">
+            <Textarea
+              placeholder="Mensagem personalizada do upsell..."
+              value={localMessage}
+              onChange={(e) => handleMessageChange(e.target.value)}
+              rows={2}
+              className="resize-none text-sm flex-1"
+            />
+            <Button
+              variant={hasChanges ? "default" : "outline"}
+              size="icon"
+              className="h-auto min-h-[60px]"
+              onClick={handleSaveMessage}
+              disabled={!hasChanges}
+              title="Salvar mensagem"
+            >
+              <Save className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
         <Button
           variant="ghost"
