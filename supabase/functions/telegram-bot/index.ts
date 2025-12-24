@@ -172,6 +172,34 @@ async function getProduct(productId: string) {
   return data;
 }
 
+// Get product fees
+async function getProductFees(productId: string) {
+  const { data } = await supabase
+    .from('product_fees')
+    .select('*')
+    .eq('product_id', productId)
+    .eq('is_active', true)
+    .order('display_order', { ascending: true });
+  
+  return data || [];
+}
+
+// Get pending fees for an order (fees not yet paid)
+async function getPendingFees(orderId: string, productId: string): Promise<any[]> {
+  const allFees = await getProductFees(productId);
+  
+  // Get order to check which fees were already paid
+  const { data: order } = await supabase
+    .from('orders')
+    .select('fees_paid')
+    .eq('id', orderId)
+    .single();
+  
+  const paidFeeIds: string[] = order?.fees_paid || [];
+  
+  return allFees.filter(fee => !paidFeeIds.includes(fee.id));
+}
+
 // Generate PIX using FastSoft API
 async function generatePixFastsoft(ctx: ClientContext, amount: number, orderId: string, customer: any): Promise<{ pixCode: string; qrCodeUrl: string; paymentId: string } | null> {
   if (!ctx.fastsoftPublicKey || !ctx.fastsoftSecretKey) {
@@ -493,29 +521,174 @@ async function handlePaidConfirmation(ctx: ClientContext, chatId: number, orderI
     await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', successMsg);
   }
   
-  // Auto delivery if enabled
+  // Check if product requires fees before delivery
+  const product = order.products;
+  if (product?.require_fees_before_delivery) {
+    const pendingFees = await getPendingFees(orderId, product.id);
+    
+    if (pendingFees.length > 0) {
+      // Show next fee to pay
+      await showNextFee(ctx, chatId, orderId, pendingFees[0], pendingFees.length, customer);
+      return;
+    }
+  }
+  
+  // Auto delivery if enabled and no pending fees
   if (settings.auto_delivery && order.products?.file_url) {
-    await supabase
-      .from('orders')
-      .update({
-        status: 'delivered',
-        delivered_at: new Date().toISOString(),
-      })
-      .eq('id', orderId);
-    
-    await supabase
-      .from('products')
-      .update({ sales_count: (order.products.sales_count || 0) + 1 })
-      .eq('id', order.product_id);
-    
-    const deliveryMsg = await getBotMessage(ctx.clientId, 'product_delivered', '📦 Produto entregue! Obrigado pela compra!');
-    await sendTelegramMessage(
-      ctx.botToken,
-      chatId,
-      `${deliveryMsg}\n\n🔗 Acesse seu produto:\n${order.products.file_url}`
-    );
+    await deliverProduct(ctx, chatId, orderId, order, customer);
   } else {
     await sendTelegramMessage(ctx.botToken, chatId, '📦 Seu produto será entregue em breve pelo vendedor.');
+  }
+}
+
+// Show next fee to pay
+async function showNextFee(ctx: ClientContext, chatId: number, orderId: string, fee: any, remainingCount: number, customer: any) {
+  const message = `💳 <b>Taxa Obrigatória</b>\n\n` +
+    `Para receber seu produto, você precisa pagar a seguinte taxa:\n\n` +
+    `<b>${fee.name}</b>${fee.description ? `\n${fee.description}` : ''}\n\n` +
+    `💰 <b>Valor: R$ ${Number(fee.amount).toFixed(2)}</b>\n\n` +
+    `📋 Taxas restantes: ${remainingCount}`;
+  
+  // Generate PIX for fee
+  const { data: feeOrder } = await supabase
+    .from('orders')
+    .insert({
+      client_id: ctx.clientId,
+      customer_id: customer?.id,
+      product_id: null,
+      amount: fee.amount,
+      status: 'pending',
+      payment_method: 'pix',
+      parent_order_id: orderId,
+    })
+    .select()
+    .single();
+  
+  if (!feeOrder) {
+    await sendTelegramMessage(ctx.botToken, chatId, '❌ Erro ao gerar pagamento da taxa. Tente novamente.');
+    return;
+  }
+  
+  // Generate PIX
+  const pix = generateMockPix(fee.amount, feeOrder.id);
+  
+  await supabase
+    .from('orders')
+    .update({
+      pix_code: pix.pixCode,
+      pix_qrcode: pix.qrCodeUrl,
+      payment_id: pix.paymentId,
+    })
+    .eq('id', feeOrder.id);
+  
+  const fullMessage = `${message}\n\n<code>${pix.pixCode}</code>`;
+  
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: '✅ Paguei a Taxa', callback_data: `fee_paid_${orderId}_${fee.id}_${feeOrder.id}` }],
+      [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
+    ],
+  };
+  
+  try {
+    if (pix.qrCodeUrl) {
+      await sendTelegramPhoto(ctx.botToken, chatId, pix.qrCodeUrl, fullMessage, keyboard);
+    } else {
+      await sendTelegramMessage(ctx.botToken, chatId, fullMessage, keyboard);
+    }
+  } catch {
+    await sendTelegramMessage(ctx.botToken, chatId, fullMessage, keyboard);
+  }
+  
+  if (customer) {
+    await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', fullMessage);
+  }
+}
+
+// Handle fee payment confirmation
+async function handleFeePaid(ctx: ClientContext, chatId: number, parentOrderId: string, feeId: string, feeOrderId: string, telegramUser: any) {
+  const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
+  
+  // Get parent order
+  const { data: parentOrder } = await supabase
+    .from('orders')
+    .select('*, products(*)')
+    .eq('id', parentOrderId)
+    .single();
+  
+  if (!parentOrder) {
+    await sendTelegramMessage(ctx.botToken, chatId, '❌ Pedido não encontrado.');
+    return;
+  }
+  
+  // Mark fee order as paid
+  await supabase
+    .from('orders')
+    .update({
+      status: 'paid',
+      paid_at: new Date().toISOString(),
+    })
+    .eq('id', feeOrderId);
+  
+  // Add fee to paid list
+  const currentPaidFees: string[] = parentOrder.fees_paid || [];
+  const updatedPaidFees = [...currentPaidFees, feeId];
+  
+  await supabase
+    .from('orders')
+    .update({ fees_paid: updatedPaidFees })
+    .eq('id', parentOrderId);
+  
+  await sendTelegramMessage(ctx.botToken, chatId, '✅ Taxa paga com sucesso!');
+  
+  if (customer) {
+    await logMessage(ctx.clientId, customer.id, chatId, 'incoming', '[Clicou: Paguei a Taxa]');
+  }
+  
+  // Check for more pending fees
+  const pendingFees = await getPendingFees(parentOrderId, parentOrder.product_id);
+  // Filter out the fee we just paid
+  const remainingFees = pendingFees.filter(f => f.id !== feeId);
+  
+  if (remainingFees.length > 0) {
+    // Show next fee
+    await showNextFee(ctx, chatId, parentOrderId, remainingFees[0], remainingFees.length, customer);
+  } else {
+    // All fees paid - deliver product
+    const settings = await getClientSettings(ctx.clientId);
+    
+    if (settings.auto_delivery && parentOrder.products?.file_url) {
+      await deliverProduct(ctx, chatId, parentOrderId, parentOrder, customer);
+    } else {
+      await sendTelegramMessage(ctx.botToken, chatId, '🎉 Todas as taxas foram pagas! Seu produto será entregue em breve.');
+    }
+  }
+}
+
+// Deliver product
+async function deliverProduct(ctx: ClientContext, chatId: number, orderId: string, order: any, customer: any) {
+  await supabase
+    .from('orders')
+    .update({
+      status: 'delivered',
+      delivered_at: new Date().toISOString(),
+    })
+    .eq('id', orderId);
+  
+  await supabase
+    .from('products')
+    .update({ sales_count: (order.products?.sales_count || 0) + 1 })
+    .eq('id', order.product_id);
+  
+  const deliveryMsg = await getBotMessage(ctx.clientId, 'product_delivered', '📦 Produto entregue! Obrigado pela compra!');
+  await sendTelegramMessage(
+    ctx.botToken,
+    chatId,
+    `${deliveryMsg}\n\n🔗 Acesse seu produto:\n${order.products?.file_url}`
+  );
+  
+  if (customer) {
+    await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', deliveryMsg);
   }
 }
 
@@ -702,6 +875,15 @@ serve(async (req) => {
       } else if (data.startsWith('buy_')) {
         const productId = data.replace('buy_', '');
         await handleBuy(ctx, chatId, productId, telegramUser);
+      } else if (data.startsWith('fee_paid_')) {
+        // Format: fee_paid_{parentOrderId}_{feeId}_{feeOrderId}
+        const parts = data.replace('fee_paid_', '').split('_');
+        if (parts.length >= 3) {
+          const parentOrderId = parts[0];
+          const feeId = parts[1];
+          const feeOrderId = parts[2];
+          await handleFeePaid(ctx, chatId, parentOrderId, feeId, feeOrderId, telegramUser);
+        }
       } else if (data.startsWith('paid_')) {
         const orderId = data.replace('paid_', '');
         await handlePaidConfirmation(ctx, chatId, orderId, telegramUser);
