@@ -3,11 +3,13 @@ import { Client } from '@/hooks/useClient';
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, Product } from '@/hooks/useProducts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Plus, Loader2 } from 'lucide-react';
+import { Package, Plus, Loader2, Lock } from 'lucide-react';
 import { ProductsTable } from '@/components/products/ProductsTable';
 import { ProductForm, ProductFormData } from '@/components/products/ProductForm';
 import { DeleteProductDialog } from '@/components/products/DeleteProductDialog';
 import { toast } from 'sonner';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { Badge } from '@/components/ui/badge';
 
 interface ProductsPageProps {
   client: Client;
@@ -22,8 +24,13 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
+  const { canAddProduct, getRemainingProducts, showLimitReachedToast, planLimits } = usePlanLimits();
 
   const handleCreate = () => {
+    if (!canAddProduct()) {
+      showLimitReachedToast("produtos");
+      return;
+    }
     setSelectedProduct(null);
     setIsFormOpen(true);
   };
@@ -96,15 +103,26 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
             <Package className="w-6 h-6 text-primary" />
             Produtos
           </h1>
-          <p className="text-muted-foreground">
-            Gerencie seus produtos digitais
-          </p>
-        </div>
-        <Button onClick={handleCreate}>
-          <Plus className="w-4 h-4 mr-2" />
+        <p className="text-muted-foreground">
+          Gerencie seus produtos digitais
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        {planLimits && planLimits.max_products !== -1 && (
+          <Badge variant="outline" className="text-muted-foreground">
+            {products?.length || 0} / {planLimits.max_products} produtos
+          </Badge>
+        )}
+        <Button onClick={handleCreate} disabled={!canAddProduct()}>
+          {!canAddProduct() ? (
+            <Lock className="w-4 h-4 mr-2" />
+          ) : (
+            <Plus className="w-4 h-4 mr-2" />
+          )}
           Novo Produto
         </Button>
       </div>
+    </div>
 
       <Card className="glass-card">
         <CardHeader>

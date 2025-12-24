@@ -9,6 +9,9 @@ import { Settings, Loader2, CreditCard, Eye, EyeOff, ExternalLink, CheckCircle2,
 import { useState } from 'react';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useNavigate } from 'react-router-dom';
+import { SubscriptionCard } from '@/components/subscription/SubscriptionCard';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+
 interface SettingsPageProps {
   client: Client;
 }
@@ -21,6 +24,7 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const { resetOnboarding, isResetting } = useOnboarding(client.id, client.onboarding_completed);
+  const { usage } = usePlanLimits();
 
   const handleRestartTour = () => {
     resetOnboarding();
@@ -105,6 +109,13 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
           Configure o comportamento do seu bot
         </p>
       </div>
+
+      {/* Subscription Card */}
+      <SubscriptionCard 
+        currentProductsCount={usage?.productsCount || 0}
+        currentOrdersThisMonth={usage?.ordersThisMonth || 0}
+        currentRecoveryMessagesCount={usage?.recoveryMessagesCount || 0}
+      />
 
       {/* Payment Gateway - UniPay */}
       <Card className="glass-card border-primary/20">
