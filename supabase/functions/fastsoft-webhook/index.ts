@@ -11,19 +11,116 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// Send Telegram message
-async function sendTelegramMessage(botToken: string, chatId: number, text: string) {
+// Send Telegram message with optional inline keyboard
+async function sendTelegramMessage(botToken: string, chatId: number, text: string, replyMarkup?: object) {
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+  const body: any = { chat_id: chatId, text, parse_mode: 'HTML' };
+  if (replyMarkup) body.reply_markup = replyMarkup;
+  
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: 'HTML',
-    }),
+    body: JSON.stringify(body),
   });
   return response.json();
+}
+
+// UUID to Base64 URL-safe conversion (for callback_data)
+function uuidToB64(uuid: string): string {
+  const hex = uuid.replace(/-/g, '');
+  const bytes = new Uint8Array(hex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+  const b64 = btoa(String.fromCharCode(...bytes));
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Get product fees
+async function getProductFees(productId: string) {
+  const { data } = await supabase
+    .from('product_fees')
+    .select('*')
+    .eq('product_id', productId)
+    .eq('is_active', true)
+    .order('display_order', { ascending: true });
+  
+  return data || [];
+}
+
+// Get pending fees for an order
+async function getPendingFees(orderId: string, productId: string): Promise<any[]> {
+  const allFees = await getProductFees(productId);
+  
+  const { data: order } = await supabase
+    .from('orders')
+    .select('fees_paid')
+    .eq('id', orderId)
+    .single();
+  
+  const paidFeeIds: string[] = order?.fees_paid || [];
+  
+  return allFees.filter(fee => !paidFeeIds.includes(fee.id));
+}
+
+// Build fee message
+function buildFeeMessage(fee: any, remainingCount: number): string {
+  const customMessage = fee.payment_message;
+  
+  if (customMessage) {
+    return customMessage
+      .replace(/{fee_name}/g, fee.name)
+      .replace(/{fee_amount}/g, Number(fee.amount).toFixed(2))
+      .replace(/{fee_description}/g, fee.description || '')
+      .replace(/{remaining_count}/g, String(remainingCount));
+  }
+  
+  return `💳 <b>Taxa Obrigatória</b>\n\n` +
+    `Para receber seu produto, você precisa pagar a seguinte taxa:\n\n` +
+    `<b>${fee.name}</b>${fee.description ? `\n${fee.description}` : ''}\n\n` +
+    `💰 <b>Valor: R$ ${Number(fee.amount).toFixed(2)}</b>\n\n` +
+    `📋 Taxas restantes: ${remainingCount}`;
+}
+
+// Show next fee to user
+async function showNextFee(botToken: string, chatId: number, orderId: string, fee: any, remainingCount: number) {
+  console.log('Showing next fee:', fee.name, 'for order:', orderId);
+  
+  const message = buildFeeMessage(fee, remainingCount);
+  const buttonText = fee.button_text || '💳 Gerar PIX para Pagar';
+  
+  const feeIdShort = uuidToB64(fee.id);
+  const orderIdShort = uuidToB64(orderId);
+  
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: buttonText, callback_data: `gf:${feeIdShort}:${orderIdShort}` }],
+    ],
+  };
+  
+  await sendTelegramMessage(botToken, chatId, message, keyboard);
+}
+
+// Create invite link for VIP group
+async function createInviteLink(botToken: string, groupId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/createChatInviteLink`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: groupId,
+        member_limit: 1,
+        expire_date: Math.floor(Date.now() / 1000) + 300,
+        creates_join_request: false,
+      }),
+    });
+    
+    const data = await res.json();
+    if (data.ok && data.result?.invite_link) {
+      return data.result.invite_link;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error creating invite link:', error);
+    return null;
+  }
 }
 
 serve(async (req) => {
@@ -133,6 +230,7 @@ async function processPaymentUpdate(order: any, status: string, transaction: any
 
   const botToken = client?.telegram_bot_token;
   const customerTelegramId = order.telegram_customers?.telegram_id;
+  const product = order.products;
 
   if (status === 'PAID' || status === 'AUTHORIZED') {
     console.log(`Payment confirmed for order ${orderId}`);
@@ -151,8 +249,50 @@ async function processPaymentUpdate(order: any, status: string, transaction: any
       const successMsg = getMessageContent('payment_success', '✅ Pagamento confirmado! Seu produto será entregue em instantes.');
       await sendTelegramMessage(botToken, customerTelegramId, successMsg);
 
-      // Auto delivery if enabled
-      if (settings?.auto_delivery && order.products?.file_url) {
+      // Check if product requires fees before delivery
+      if (product?.require_fees_before_delivery && product?.id) {
+        const pendingFees = await getPendingFees(orderId, product.id);
+        
+        if (pendingFees.length > 0) {
+          console.log('Product requires fees before delivery, showing first fee');
+          await showNextFee(botToken, customerTelegramId, orderId, pendingFees[0], pendingFees.length);
+          
+          // Log message
+          await supabase.from('telegram_messages').insert({
+            client_id: clientId,
+            customer_id: order.customer_id,
+            telegram_chat_id: customerTelegramId,
+            direction: 'outgoing',
+            message_type: 'text',
+            message_content: '[Sistema] Pagamento confirmado, mostrando taxas obrigatórias',
+          });
+          
+          return; // Don't deliver yet, wait for fees
+        }
+      }
+
+      // No fees required - proceed with delivery
+      let delivered = false;
+      let deliveryMessages: string[] = [];
+
+      // Check for file URL delivery
+      if (product?.file_url) {
+        deliveryMessages.push(`🔗 <b>Link de acesso:</b>\n${product.file_url}`);
+      }
+
+      // Check for VIP group access
+      if (product?.telegram_group_id) {
+        console.log('Creating invite link for VIP group:', product.telegram_group_id);
+        const inviteLink = await createInviteLink(botToken, product.telegram_group_id);
+        
+        if (inviteLink) {
+          deliveryMessages.push(`👥 <b>Acesso ao Grupo VIP:</b>\n${inviteLink}\n\n⚠️ <i>Link único! Expira em 5 minutos. Use agora!</i>`);
+        } else {
+          deliveryMessages.push(`👥 <b>Grupo VIP:</b> Houve um problema ao gerar o convite. Entre em contato com o suporte.`);
+        }
+      }
+
+      if (deliveryMessages.length > 0 && settings?.auto_delivery) {
         await supabase
           .from('orders')
           .update({
@@ -164,19 +304,25 @@ async function processPaymentUpdate(order: any, status: string, transaction: any
         // Increment sales count
         await supabase
           .from('products')
-          .update({ sales_count: (order.products.sales_count || 0) + 1 })
+          .update({ sales_count: (product?.sales_count || 0) + 1 })
           .eq('id', order.product_id);
 
         const deliveryMsg = getMessageContent('product_delivered', '📦 Produto entregue! Obrigado pela compra!');
         await sendTelegramMessage(
           botToken,
           customerTelegramId,
-          `${deliveryMsg}\n\n🔗 Acesse seu produto:\n${order.products.file_url}`
+          `${deliveryMsg}\n\n${deliveryMessages.join('\n\n')}`,
+          { inline_keyboard: [[{ text: '🛍️ Ver Mais Produtos', callback_data: 'products' }]] }
         );
-      } else {
+        delivered = true;
+      }
+
+      if (!delivered) {
         // Manual delivery notification
         const manualDeliveryMsg = '📦 Seu produto será entregue em breve pelo vendedor.';
-        await sendTelegramMessage(botToken, customerTelegramId, manualDeliveryMsg);
+        await sendTelegramMessage(botToken, customerTelegramId, manualDeliveryMsg, {
+          inline_keyboard: [[{ text: '🛍️ Ver Mais Produtos', callback_data: 'products' }]]
+        });
       }
     }
 
