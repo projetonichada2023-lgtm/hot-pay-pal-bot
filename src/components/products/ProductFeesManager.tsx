@@ -114,15 +114,19 @@ const TelegramFeePreview = ({
 interface SortableFeeItemProps {
   fee: ProductFee;
   editingFeeId: string | null;
-  editingMessage: string;
-  editingButtonText: string;
+  editingData: {
+    name: string;
+    amount: number;
+    description: string;
+    payment_message: string;
+    button_text: string;
+  };
   onToggleActive: (fee: ProductFee) => void;
   onDelete: (fee: ProductFee) => void;
   onStartEdit: (fee: ProductFee) => void;
-  onSaveMessage: (feeId: string) => void;
+  onSaveFee: (feeId: string) => void;
   onCancelEdit: () => void;
-  onEditingMessageChange: (value: string) => void;
-  onEditingButtonTextChange: (value: string) => void;
+  onEditingDataChange: (data: Partial<SortableFeeItemProps['editingData']>) => void;
   onInsertPlaceholder: (placeholder: string) => void;
   isPending: boolean;
 }
@@ -130,15 +134,13 @@ interface SortableFeeItemProps {
 const SortableFeeItem = ({
   fee,
   editingFeeId,
-  editingMessage,
-  editingButtonText,
+  editingData,
   onToggleActive,
   onDelete,
   onStartEdit,
-  onSaveMessage,
+  onSaveFee,
   onCancelEdit,
-  onEditingMessageChange,
-  onEditingButtonTextChange,
+  onEditingDataChange,
   onInsertPlaceholder,
   isPending,
 }: SortableFeeItemProps) => {
@@ -157,15 +159,121 @@ const SortableFeeItem = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const isEditing = editingFeeId === fee.id;
+
   return (
-    <Collapsible>
-      <div
-        ref={setNodeRef}
-        style={style}
-        className={`rounded-md border ${
-          fee.is_active ? 'bg-background' : 'bg-muted/50 opacity-60'
-        } ${isDragging ? 'shadow-lg z-50' : ''}`}
-      >
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`rounded-md border ${
+        fee.is_active ? 'bg-background' : 'bg-muted/50 opacity-60'
+      } ${isDragging ? 'shadow-lg z-50' : ''}`}
+    >
+      {isEditing ? (
+        <div className="p-3 space-y-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Form fields */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Nome da taxa</Label>
+                  <Input
+                    value={editingData.name}
+                    onChange={(e) => onEditingDataChange({ name: e.target.value })}
+                    placeholder="Ex: Taxa de processamento"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Valor (R$)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editingData.amount || ''}
+                    onChange={(e) => onEditingDataChange({ amount: parseFloat(e.target.value) || 0 })}
+                    placeholder="0.00"
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Descrição (opcional)</Label>
+                <Input
+                  value={editingData.description}
+                  onChange={(e) => onEditingDataChange({ description: e.target.value })}
+                  placeholder="Breve descrição da taxa"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Texto do botão de gerar PIX (opcional)</Label>
+                <Input
+                  value={editingData.button_text}
+                  onChange={(e) => onEditingDataChange({ button_text: e.target.value })}
+                  placeholder="💳 Gerar PIX para Pagar"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Mensagem de cobrança (opcional)</Label>
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {PLACEHOLDERS.map((p) => (
+                    <Button
+                      key={p.key}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-6 text-xs"
+                      onClick={() => onInsertPlaceholder(p.key)}
+                    >
+                      {p.label}
+                    </Button>
+                  ))}
+                </div>
+                <Textarea
+                  value={editingData.payment_message}
+                  onChange={(e) => onEditingDataChange({ payment_message: e.target.value })}
+                  placeholder="Deixe vazio para usar a mensagem padrão..."
+                  className="min-h-[120px] text-sm font-mono"
+                />
+              </div>
+            </div>
+            
+            {/* Preview */}
+            <div className="lg:sticky lg:top-4">
+              <TelegramFeePreview
+                message={editingData.payment_message}
+                buttonText={editingData.button_text}
+                feeName={editingData.name}
+                feeAmount={editingData.amount}
+                feeDescription={editingData.description}
+              />
+            </div>
+          </div>
+          
+          <div className="flex gap-2 justify-end pt-2 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onCancelEdit}
+            >
+              <X className="h-3.5 w-3.5 mr-1" />
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => onSaveFee(fee.id)}
+              disabled={isPending}
+            >
+              <Check className="h-3.5 w-3.5 mr-1" />
+              {isPending ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </div>
+        </div>
+      ) : (
         <div className="flex items-center gap-2 p-2">
           <div
             {...attributes}
@@ -183,16 +291,15 @@ const SortableFeeItem = ({
           <span className="text-sm font-medium tabular-nums">
             R$ {Number(fee.amount).toFixed(2)}
           </span>
-          <CollapsibleTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              title="Personalizar mensagem"
-            >
-              <MessageSquare className="h-3.5 w-3.5" />
-            </Button>
-          </CollapsibleTrigger>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            title="Editar taxa"
+            onClick={() => onStartEdit(fee)}
+          >
+            <Edit2 className="h-3.5 w-3.5" />
+          </Button>
           <Switch
             checked={fee.is_active}
             onCheckedChange={() => onToggleActive(fee)}
@@ -207,89 +314,8 @@ const SortableFeeItem = ({
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
-        
-        <CollapsibleContent>
-          <div className="px-3 pb-3 pt-1 border-t space-y-2">
-            <Label className="text-xs font-medium">Mensagem de cobrança personalizada</Label>
-            
-            {editingFeeId === fee.id ? (
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-xs font-medium mb-1 block">Texto do botão de confirmação</Label>
-                  <Input
-                    value={editingButtonText}
-                    onChange={(e) => onEditingButtonTextChange(e.target.value)}
-                    placeholder="Paguei a Taxa ✅"
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs font-medium mb-1 block">Mensagem de cobrança</Label>
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {PLACEHOLDERS.map((p) => (
-                      <Button
-                        key={p.key}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-6 text-xs"
-                        onClick={() => onInsertPlaceholder(p.key)}
-                      >
-                        {p.label}
-                      </Button>
-                    ))}
-                  </div>
-                  <Textarea
-                    value={editingMessage}
-                    onChange={(e) => onEditingMessageChange(e.target.value)}
-                    placeholder="Mensagem personalizada para cobrança da taxa..."
-                    className="min-h-[150px] text-sm font-mono"
-                  />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={onCancelEdit}
-                  >
-                    <X className="h-3.5 w-3.5 mr-1" />
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => onSaveMessage(fee.id)}
-                    disabled={isPending}
-                  >
-                    <Check className="h-3.5 w-3.5 mr-1" />
-                    Salvar
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="text-xs text-muted-foreground">
-                  <span className="font-medium">Botão:</span> {(fee as any).button_text || 'Paguei a Taxa ✅'}
-                </div>
-                <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded max-h-24 overflow-y-auto whitespace-pre-wrap font-mono">
-                  {(fee as any).payment_message || '(Usando mensagem padrão)'}
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onStartEdit(fee)}
-                >
-                  <Edit2 className="h-3.5 w-3.5 mr-1" />
-                  Personalizar
-                </Button>
-              </div>
-            )}
-          </div>
-        </CollapsibleContent>
-      </div>
-    </Collapsible>
+      )}
+    </div>
   );
 };
 
@@ -303,11 +329,10 @@ export const ProductFeesManager = ({
   const updateFee = useUpdateProductFee();
   const deleteFee = useDeleteProductFee();
 
-const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
+  const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
   const [isAdding, setIsAdding] = useState(false);
   const [editingFeeId, setEditingFeeId] = useState<string | null>(null);
-  const [editingMessage, setEditingMessage] = useState('');
-  const [editingButtonText, setEditingButtonText] = useState('');
+  const [editingData, setEditingData] = useState({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
 
   const handleAddFee = async () => {
     if (!newFee.name.trim() || newFee.amount <= 0) {
@@ -350,39 +375,54 @@ const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', pay
     }
   };
 
-  const handleStartEditMessage = (fee: ProductFee) => {
+  const handleStartEdit = (fee: ProductFee) => {
     setEditingFeeId(fee.id);
-    setEditingMessage((fee as any).payment_message || DEFAULT_FEE_MESSAGE);
-    setEditingButtonText((fee as any).button_text || 'Paguei a Taxa ✅');
+    setEditingData({
+      name: fee.name,
+      amount: Number(fee.amount),
+      description: fee.description || '',
+      payment_message: fee.payment_message || DEFAULT_FEE_MESSAGE,
+      button_text: fee.button_text || '💳 Gerar PIX para Pagar',
+    });
   };
 
-  const handleSaveMessage = async (feeId: string) => {
+  const handleSaveFee = async (feeId: string) => {
+    if (!editingData.name.trim() || editingData.amount <= 0) {
+      toast.error('Preencha o nome e um valor maior que zero');
+      return;
+    }
+    
     try {
       await updateFee.mutateAsync({ 
         id: feeId, 
-        payment_message: editingMessage.trim() || null,
-        button_text: editingButtonText.trim() || null,
+        name: editingData.name.trim(),
+        amount: editingData.amount,
+        description: editingData.description.trim() || null,
+        payment_message: editingData.payment_message.trim() || null,
+        button_text: editingData.button_text.trim() || null,
       } as any);
       setEditingFeeId(null);
-      setEditingMessage('');
-      setEditingButtonText('');
-      toast.success('Mensagem atualizada');
+      setEditingData({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
+      toast.success('Taxa atualizada');
     } catch (error) {
-      toast.error('Erro ao salvar mensagem');
+      toast.error('Erro ao salvar taxa');
     }
   };
 
-  const handleCancelEditMessage = () => {
+  const handleCancelEdit = () => {
     setEditingFeeId(null);
-    setEditingMessage('');
-    setEditingButtonText('');
+    setEditingData({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
+  };
+
+  const handleEditingDataChange = (data: Partial<typeof editingData>) => {
+    setEditingData(prev => ({ ...prev, ...data }));
   };
 
   const insertPlaceholder = (placeholder: string, isNew = false) => {
     if (isNew) {
       setNewFee(prev => ({ ...prev, payment_message: prev.payment_message + placeholder }));
     } else {
-      setEditingMessage(prev => prev + placeholder);
+      setEditingData(prev => ({ ...prev, payment_message: prev.payment_message + placeholder }));
     }
   };
 
@@ -469,15 +509,13 @@ const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', pay
                     key={fee.id}
                     fee={fee}
                     editingFeeId={editingFeeId}
-                    editingMessage={editingMessage}
-                    editingButtonText={editingButtonText}
+                    editingData={editingData}
                     onToggleActive={handleToggleFeeActive}
                     onDelete={handleDeleteFee}
-                    onStartEdit={handleStartEditMessage}
-                    onSaveMessage={handleSaveMessage}
-                    onCancelEdit={handleCancelEditMessage}
-                    onEditingMessageChange={setEditingMessage}
-                    onEditingButtonTextChange={setEditingButtonText}
+                    onStartEdit={handleStartEdit}
+                    onSaveFee={handleSaveFee}
+                    onCancelEdit={handleCancelEdit}
+                    onEditingDataChange={handleEditingDataChange}
                     onInsertPlaceholder={(p) => insertPlaceholder(p)}
                     isPending={updateFee.isPending}
                   />
