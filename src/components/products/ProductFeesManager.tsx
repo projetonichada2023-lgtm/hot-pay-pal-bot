@@ -111,6 +111,29 @@ const TelegramFeePreview = ({
 };
 
 // Sortable fee item component
+interface FeeValidationErrors {
+  name?: string;
+  amount?: string;
+}
+
+const validateFeeData = (data: { name: string; amount: number }): FeeValidationErrors => {
+  const errors: FeeValidationErrors = {};
+  
+  if (!data.name.trim()) {
+    errors.name = 'Nome é obrigatório';
+  } else if (data.name.trim().length > 100) {
+    errors.name = 'Nome deve ter no máximo 100 caracteres';
+  }
+  
+  if (data.amount <= 0) {
+    errors.amount = 'Valor deve ser maior que zero';
+  } else if (data.amount > 999999.99) {
+    errors.amount = 'Valor máximo é R$ 999.999,99';
+  }
+  
+  return errors;
+};
+
 interface SortableFeeItemProps {
   fee: ProductFee;
   editingFeeId: string | null;
@@ -121,6 +144,7 @@ interface SortableFeeItemProps {
     payment_message: string;
     button_text: string;
   };
+  validationErrors: FeeValidationErrors;
   onToggleActive: (fee: ProductFee) => void;
   onDelete: (fee: ProductFee) => void;
   onStartEdit: (fee: ProductFee) => void;
@@ -135,6 +159,7 @@ const SortableFeeItem = ({
   fee,
   editingFeeId,
   editingData,
+  validationErrors,
   onToggleActive,
   onDelete,
   onStartEdit,
@@ -175,16 +200,19 @@ const SortableFeeItem = ({
             {/* Form fields */}
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
-                <div>
+                <div className="space-y-1">
                   <Label className="text-xs">Nome da taxa</Label>
                   <Input
                     value={editingData.name}
                     onChange={(e) => onEditingDataChange({ name: e.target.value })}
                     placeholder="Ex: Taxa de processamento"
-                    className="h-8 text-sm"
+                    className={`h-8 text-sm ${validationErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   />
+                  {validationErrors.name && (
+                    <p className="text-xs text-destructive">{validationErrors.name}</p>
+                  )}
                 </div>
-                <div>
+                <div className="space-y-1">
                   <Label className="text-xs">Valor (R$)</Label>
                   <Input
                     type="number"
@@ -193,8 +221,11 @@ const SortableFeeItem = ({
                     value={editingData.amount || ''}
                     onChange={(e) => onEditingDataChange({ amount: parseFloat(e.target.value) || 0 })}
                     placeholder="0.00"
-                    className="h-8 text-sm"
+                    className={`h-8 text-sm ${validationErrors.amount ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   />
+                  {validationErrors.amount && (
+                    <p className="text-xs text-destructive">{validationErrors.amount}</p>
+                  )}
                 </div>
               </div>
               <div>
@@ -266,7 +297,7 @@ const SortableFeeItem = ({
               type="button"
               size="sm"
               onClick={() => onSaveFee(fee.id)}
-              disabled={isPending}
+              disabled={isPending || Object.keys(validationErrors).length > 0}
             >
               <Check className="h-3.5 w-3.5 mr-1" />
               {isPending ? 'Salvando...' : 'Salvar'}
@@ -330,13 +361,23 @@ export const ProductFeesManager = ({
   const deleteFee = useDeleteProductFee();
 
   const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
+  const [newFeeErrors, setNewFeeErrors] = useState<FeeValidationErrors>({});
   const [isAdding, setIsAdding] = useState(false);
   const [editingFeeId, setEditingFeeId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
+  const [editingErrors, setEditingErrors] = useState<FeeValidationErrors>({});
+
+  const handleNewFeeChange = (data: Partial<typeof newFee>) => {
+    const updatedFee = { ...newFee, ...data };
+    setNewFee(updatedFee);
+    setNewFeeErrors(validateFeeData(updatedFee));
+  };
 
   const handleAddFee = async () => {
-    if (!newFee.name.trim() || newFee.amount <= 0) {
-      toast.error('Preencha o nome e um valor maior que zero');
+    const errors = validateFeeData(newFee);
+    setNewFeeErrors(errors);
+    
+    if (Object.keys(errors).length > 0) {
       return;
     }
 
@@ -351,6 +392,7 @@ export const ProductFeesManager = ({
         button_text: newFee.button_text.trim() || undefined,
       });
       setNewFee({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
+      setNewFeeErrors({});
       setIsAdding(false);
       toast.success('Taxa adicionada');
     } catch (error) {
@@ -377,18 +419,22 @@ export const ProductFeesManager = ({
 
   const handleStartEdit = (fee: ProductFee) => {
     setEditingFeeId(fee.id);
-    setEditingData({
+    const data = {
       name: fee.name,
       amount: Number(fee.amount),
       description: fee.description || '',
       payment_message: fee.payment_message || DEFAULT_FEE_MESSAGE,
       button_text: fee.button_text || '💳 Gerar PIX para Pagar',
-    });
+    };
+    setEditingData(data);
+    setEditingErrors({});
   };
 
   const handleSaveFee = async (feeId: string) => {
-    if (!editingData.name.trim() || editingData.amount <= 0) {
-      toast.error('Preencha o nome e um valor maior que zero');
+    const errors = validateFeeData(editingData);
+    setEditingErrors(errors);
+    
+    if (Object.keys(errors).length > 0) {
       return;
     }
     
@@ -412,10 +458,13 @@ export const ProductFeesManager = ({
   const handleCancelEdit = () => {
     setEditingFeeId(null);
     setEditingData({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
+    setEditingErrors({});
   };
 
   const handleEditingDataChange = (data: Partial<typeof editingData>) => {
-    setEditingData(prev => ({ ...prev, ...data }));
+    const updatedData = { ...editingData, ...data };
+    setEditingData(updatedData);
+    setEditingErrors(validateFeeData(updatedData));
   };
 
   const insertPlaceholder = (placeholder: string, isNew = false) => {
@@ -510,6 +559,7 @@ export const ProductFeesManager = ({
                     fee={fee}
                     editingFeeId={editingFeeId}
                     editingData={editingData}
+                    validationErrors={editingErrors}
                     onToggleActive={handleToggleFeeActive}
                     onDelete={handleDeleteFee}
                     onStartEdit={handleStartEdit}
@@ -538,33 +588,39 @@ export const ProductFeesManager = ({
               {/* Form fields */}
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
-                  <div>
+                  <div className="space-y-1">
                     <Label className="text-xs">Nome da taxa</Label>
                     <Input
                       value={newFee.name}
-                      onChange={(e) => setNewFee({ ...newFee, name: e.target.value })}
+                      onChange={(e) => handleNewFeeChange({ name: e.target.value })}
                       placeholder="Ex: Taxa de processamento"
-                      className="h-8 text-sm"
+                      className={`h-8 text-sm ${newFeeErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     />
+                    {newFeeErrors.name && (
+                      <p className="text-xs text-destructive">{newFeeErrors.name}</p>
+                    )}
                   </div>
-                  <div>
+                  <div className="space-y-1">
                     <Label className="text-xs">Valor (R$)</Label>
                     <Input
                       type="number"
                       step="0.01"
                       min="0"
                       value={newFee.amount || ''}
-                      onChange={(e) => setNewFee({ ...newFee, amount: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) => handleNewFeeChange({ amount: parseFloat(e.target.value) || 0 })}
                       placeholder="0.00"
-                      className="h-8 text-sm"
+                      className={`h-8 text-sm ${newFeeErrors.amount ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     />
+                    {newFeeErrors.amount && (
+                      <p className="text-xs text-destructive">{newFeeErrors.amount}</p>
+                    )}
                   </div>
                 </div>
                 <div>
                   <Label className="text-xs">Descrição (opcional)</Label>
                   <Input
                     value={newFee.description}
-                    onChange={(e) => setNewFee({ ...newFee, description: e.target.value })}
+                    onChange={(e) => handleNewFeeChange({ description: e.target.value })}
                     placeholder="Breve descrição da taxa"
                     className="h-8 text-sm"
                   />
@@ -573,7 +629,7 @@ export const ProductFeesManager = ({
                   <Label className="text-xs">Texto do botão de gerar PIX (opcional)</Label>
                   <Input
                     value={newFee.button_text}
-                    onChange={(e) => setNewFee({ ...newFee, button_text: e.target.value })}
+                    onChange={(e) => handleNewFeeChange({ button_text: e.target.value })}
                     placeholder="💳 Gerar PIX para Pagar"
                     className="h-8 text-sm"
                   />
@@ -594,9 +650,9 @@ export const ProductFeesManager = ({
                       </Button>
                     ))}
                   </div>
-                  <Textarea
+                <Textarea
                     value={newFee.payment_message}
-                    onChange={(e) => setNewFee({ ...newFee, payment_message: e.target.value })}
+                    onChange={(e) => handleNewFeeChange({ payment_message: e.target.value })}
                     placeholder="Deixe vazio para usar a mensagem padrão..."
                     className="min-h-[120px] text-sm font-mono"
                   />
@@ -623,6 +679,7 @@ export const ProductFeesManager = ({
                 onClick={() => {
                   setIsAdding(false);
                   setNewFee({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
+                  setNewFeeErrors({});
                 }}
               >
                 Cancelar
@@ -631,7 +688,7 @@ export const ProductFeesManager = ({
                 type="button"
                 size="sm"
                 onClick={handleAddFee}
-                disabled={createFee.isPending}
+                disabled={createFee.isPending || Object.keys(newFeeErrors).length > 0}
               >
                 {createFee.isPending ? 'Salvando...' : 'Adicionar'}
               </Button>
