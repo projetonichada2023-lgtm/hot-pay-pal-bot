@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 interface SubscriptionCardProps {
   currentProductsCount: number;
@@ -30,6 +31,7 @@ export const SubscriptionCard = ({
   currentRecoveryMessagesCount,
 }: SubscriptionCardProps) => {
   const { subscription, planLimits, isLoading, planType, isActive } = useSubscription();
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -221,7 +223,11 @@ export const SubscriptionCard = ({
 
         {/* Upgrade Button */}
         {planType !== "enterprise" && (
-          <Button className="w-full" variant="default">
+          <Button 
+            className="w-full" 
+            variant="default"
+            onClick={() => navigate("/dashboard/upgrade")}
+          >
             <ArrowUp className="w-4 h-4 mr-2" />
             Fazer Upgrade
           </Button>
