@@ -47,7 +47,7 @@ export const ImpersonationBanner = () => {
       <div className="flex items-center justify-center gap-4 text-sm">
         <ShieldAlert className="w-4 h-4" />
         <span>
-          Você está acessando a conta de um cliente como administrador
+          Você está acessando a conta de um cliente. Para voltar, faça login novamente como admin.
         </span>
         <Button
           size="sm"
@@ -56,7 +56,7 @@ export const ImpersonationBanner = () => {
           className="h-7 gap-2"
         >
           <ArrowLeft className="w-3 h-3" />
-          Voltar para minha conta
+          Sair e fazer login
         </Button>
       </div>
     </div>
