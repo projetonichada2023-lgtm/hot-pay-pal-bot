@@ -229,6 +229,53 @@ async function showNextFee(
   
   const message = buildFeeMessage(fee, remainingCount);
   
+  const buttonText = fee.button_text || '💳 Gerar PIX para Pagar';
+  
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: buttonText, callback_data: `genfee:${fee.id}:${orderId}` }],
+      [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
+    ],
+  };
+  
+  await sendTelegramMessage(botToken, chatId, message, keyboard);
+  
+  if (customerId) {
+    await saveMessage(clientId, chatId, customerId, 'outgoing', message);
+  }
+}
+
+async function handleGenerateFeePixCallback(
+  botToken: string,
+  chatId: number,
+  clientId: string,
+  feeId: string,
+  orderId: string,
+  telegramUserId: number
+) {
+  console.log('Generating PIX for fee:', { feeId, orderId });
+
+  // Get fee details
+  const { data: fee } = await supabase
+    .from('product_fees')
+    .select('*')
+    .eq('id', feeId)
+    .single();
+
+  if (!fee) {
+    await sendTelegramMessage(botToken, chatId, '❌ Taxa não encontrada.');
+    return;
+  }
+
+  // Get parent order to get customer
+  const { data: parentOrder } = await supabase
+    .from('orders')
+    .select('customer_id')
+    .eq('id', orderId)
+    .single();
+
+  const customerId = parentOrder?.customer_id as string | null;
+
   // Create fee order
   const { data: feeOrder } = await supabase
     .from('orders')
@@ -240,8 +287,7 @@ async function showNextFee(
       status: 'pending',
       payment_method: 'pix',
       parent_order_id: orderId,
-      // store which fee this order refers to (keeps callback_data short)
-      fees_paid: [fee.id],
+      fees_paid: [feeId],
     })
     .select()
     .single();
@@ -263,22 +309,21 @@ async function showNextFee(
     })
     .eq('id', feeOrder.id);
   
-  const fullMessage = `${message}\n\n<code>${pix.pixCode}</code>`;
+  const pixMessage = `✅ <b>PIX Gerado!</b>\n\n💰 <b>Valor: R$ ${Number(fee.amount).toFixed(2)}</b>\n\nCopie o código abaixo:\n\n<code>${pix.pixCode}</code>`;
   
-  const buttonText = fee.button_text || '✅ Paguei a Taxa';
+  const confirmButtonText = fee.button_text ? fee.button_text.replace(/gerar pix|💳/gi, '').trim() || '✅ Paguei a Taxa' : '✅ Paguei a Taxa';
   
   const keyboard = {
     inline_keyboard: [
-      [{ text: buttonText, callback_data: `feepaid:${feeOrder.id}` }],
+      [{ text: confirmButtonText, callback_data: `feepaid:${feeOrder.id}` }],
       [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
     ],
   };
   
-  // Send as text to avoid Telegram failing to fetch external QR image URLs
-  await sendTelegramMessage(botToken, chatId, fullMessage, keyboard);
+  await sendTelegramMessage(botToken, chatId, pixMessage, keyboard);
   
   if (customerId) {
-    await saveMessage(clientId, chatId, customerId, 'outgoing', fullMessage);
+    await saveMessage(clientId, chatId, customerId, 'outgoing', pixMessage);
   }
 }
 
@@ -1094,6 +1139,15 @@ serve(async (req) => {
         const productId = parts[0];
         const parentOrderId = parts[1];
         await handleDeclineUpsell(botToken, chatId, clientId, productId, parentOrderId);
+      }
+
+      // Handle generate fee PIX (format: genfee:FEEID:ORDERID)
+      if (data.startsWith('genfee:')) {
+        const parts = data.replace('genfee:', '').split(':');
+        const feeId = parts[0];
+        const orderId = parts[1];
+        console.log('Generate fee PIX callback:', { feeId, orderId });
+        await handleGenerateFeePixCallback(botToken, chatId, clientId, feeId, orderId, telegramUser.id);
       }
 
       // Handle fee payment confirmation (format: feepaid:FEEORDERID)
