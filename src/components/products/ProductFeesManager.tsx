@@ -67,6 +67,8 @@ const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', pay
         amount: newFee.amount,
         description: newFee.description.trim() || undefined,
         display_order: fees.length + 1,
+        payment_message: newFee.payment_message.trim() || undefined,
+        button_text: newFee.button_text.trim() || undefined,
       });
       setNewFee({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
       setIsAdding(false);
@@ -121,8 +123,12 @@ const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', pay
     setEditingButtonText('');
   };
 
-  const insertPlaceholder = (placeholder: string) => {
-    setEditingMessage(prev => prev + placeholder);
+  const insertPlaceholder = (placeholder: string, isNew = false) => {
+    if (isNew) {
+      setNewFee(prev => ({ ...prev, payment_message: prev.payment_message + placeholder }));
+    } else {
+      setEditingMessage(prev => prev + placeholder);
+    }
   };
 
   const totalFees = fees.filter(f => f.is_active).reduce((sum, fee) => sum + Number(fee.amount), 0);
@@ -295,7 +301,7 @@ const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', pay
         )}
 
         {isAdding ? (
-          <div className="space-y-2 p-3 border rounded-md bg-muted/30">
+          <div className="space-y-3 p-3 border rounded-md bg-muted/30">
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-xs">Nome da taxa</Label>
@@ -328,13 +334,45 @@ const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', pay
                 className="h-8 text-sm"
               />
             </div>
+            <div>
+              <Label className="text-xs">Texto do botão de gerar PIX (opcional)</Label>
+              <Input
+                value={newFee.button_text}
+                onChange={(e) => setNewFee({ ...newFee, button_text: e.target.value })}
+                placeholder="💳 Gerar PIX para Pagar"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Mensagem de cobrança (opcional)</Label>
+              <div className="flex flex-wrap gap-1 mb-2">
+                {PLACEHOLDERS.map((p) => (
+                  <Button
+                    key={p.key}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 text-xs"
+                    onClick={() => insertPlaceholder(p.key, true)}
+                  >
+                    {p.label}
+                  </Button>
+                ))}
+              </div>
+              <Textarea
+                value={newFee.payment_message}
+                onChange={(e) => setNewFee({ ...newFee, payment_message: e.target.value })}
+                placeholder="Deixe vazio para usar a mensagem padrão..."
+                className="min-h-[100px] text-sm font-mono"
+              />
+            </div>
             <div className="flex gap-2 justify-end">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                setIsAdding(false);
+                  setIsAdding(false);
                   setNewFee({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
                 }}
               >
