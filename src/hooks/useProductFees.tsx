@@ -43,6 +43,27 @@ export const useProductFees = (productId: string) => {
   });
 };
 
+// Hook to fetch fees from all products of a client (for importing)
+export const useAllClientFees = (clientId: string | undefined) => {
+  return useQuery({
+    queryKey: ['all-client-fees', clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_fees')
+        .select(`
+          *,
+          products!inner(id, name, client_id)
+        `)
+        .eq('products.client_id', clientId!)
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      return data as (ProductFee & { products: { id: string; name: string; client_id: string } })[];
+    },
+    enabled: !!clientId,
+  });
+};
+
 export const useCreateProductFee = () => {
   const queryClient = useQueryClient();
 

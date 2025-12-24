@@ -1,18 +1,25 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, GripVertical, Receipt, Edit2, X, Check, MessageSquare, Eye } from 'lucide-react';
-import { useProductFees, useCreateProductFee, useUpdateProductFee, useDeleteProductFee, ProductFee } from '@/hooks/useProductFees';
+import { Plus, Trash2, GripVertical, Receipt, Edit2, X, Check, Eye, Copy } from 'lucide-react';
+import { useProductFees, useCreateProductFee, useUpdateProductFee, useDeleteProductFee, useAllClientFees, ProductFee } from '@/hooks/useProductFees';
 import { toast } from 'sonner';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   DndContext,
   closestCenter,
@@ -30,6 +37,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useClient } from '@/hooks/useClient';
 
 interface ProductFeesManagerProps {
   productId: string;
@@ -354,7 +362,9 @@ export const ProductFeesManager = ({
   requireFeesBeforeDelivery, 
   onRequireFeesChange 
 }: ProductFeesManagerProps) => {
+  const { data: client } = useClient();
   const { data: fees = [], isLoading } = useProductFees(productId);
+  const { data: allClientFees = [] } = useAllClientFees(client?.id);
   const createFee = useCreateProductFee();
   const updateFee = useUpdateProductFee();
   const deleteFee = useDeleteProductFee();
@@ -365,6 +375,38 @@ export const ProductFeesManager = ({
   const [editingFeeId, setEditingFeeId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
   const [editingErrors, setEditingErrors] = useState<FeeValidationErrors>({});
+
+  // Group fees by product for import dropdown
+  const availableFeesToImport = useMemo(() => {
+    const currentFeeNames = fees.map(f => f.name.toLowerCase());
+    return allClientFees
+      .filter(f => f.product_id !== productId && !currentFeeNames.includes(f.name.toLowerCase()))
+      .reduce((acc, fee) => {
+        const productName = fee.products.name;
+        if (!acc[productName]) {
+          acc[productName] = [];
+        }
+        acc[productName].push(fee);
+        return acc;
+      }, {} as Record<string, typeof allClientFees>);
+  }, [allClientFees, productId, fees]);
+
+  const handleImportFee = async (fee: typeof allClientFees[0]) => {
+    try {
+      await createFee.mutateAsync({
+        product_id: productId,
+        name: fee.name,
+        amount: Number(fee.amount),
+        description: fee.description || undefined,
+        display_order: fees.length + 1,
+        payment_message: fee.payment_message || undefined,
+        button_text: fee.button_text || undefined,
+      });
+      toast.success(`Taxa "${fee.name}" importada`);
+    } catch (error) {
+      toast.error('Erro ao importar taxa');
+    }
+  };
 
   const handleNewFeeChange = (data: Partial<typeof newFee>) => {
     const updatedFee = { ...newFee, ...data };
@@ -694,16 +736,51 @@ export const ProductFeesManager = ({
             </div>
           </div>
         ) : (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() => setIsAdding(true)}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Adicionar Taxa
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={() => setIsAdding(true)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Adicionar Taxa
+            </Button>
+            
+            {Object.keys(availableFeesToImport).length > 0 && (
+              <Select onValueChange={(value) => {
+                const fee = allClientFees.find(f => f.id === value);
+                if (fee) handleImportFee(fee);
+              }}>
+                <SelectTrigger className="w-[200px] h-8 text-sm">
+                  <div className="flex items-center gap-1">
+                    <Copy className="h-3.5 w-3.5" />
+                    <SelectValue placeholder="Importar taxa..." />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(availableFeesToImport).map(([productName, productFees]) => (
+                    <div key={productName}>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                        {productName}
+                      </div>
+                      {productFees.map((fee) => (
+                        <SelectItem key={fee.id} value={fee.id} className="text-sm">
+                          <div className="flex items-center justify-between gap-4 w-full">
+                            <span className="truncate">{fee.name}</span>
+                            <span className="text-muted-foreground text-xs">
+                              R$ {Number(fee.amount).toFixed(2)}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </div>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
