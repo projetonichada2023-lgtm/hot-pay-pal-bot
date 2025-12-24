@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, GripVertical, Receipt, Edit2, X, Check, MessageSquare } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Receipt, Edit2, X, Check, MessageSquare, Eye } from 'lucide-react';
 import { useProductFees, useCreateProductFee, useUpdateProductFee, useDeleteProductFee, ProductFee } from '@/hooks/useProductFees';
 import { toast } from 'sonner';
 import {
@@ -37,6 +37,61 @@ const PLACEHOLDERS = [
   { key: '{fee_description}', label: 'Descrição da taxa' },
   { key: '{remaining_count}', label: 'Qtd taxas restantes' },
 ];
+
+// Helper to convert HTML-like tags to styled spans for preview
+const formatTelegramMessage = (text: string): string => {
+  return text
+    .replace(/<b>/g, '<strong>')
+    .replace(/<\/b>/g, '</strong>')
+    .replace(/<i>/g, '<em>')
+    .replace(/<\/i>/g, '</em>')
+    .replace(/<code>/g, '<code class="bg-muted px-1 rounded text-xs">')
+    .replace(/\n/g, '<br/>');
+};
+
+// Preview component for Telegram-style message
+const TelegramFeePreview = ({ 
+  message, 
+  buttonText, 
+  feeName, 
+  feeAmount, 
+  feeDescription 
+}: { 
+  message: string; 
+  buttonText: string; 
+  feeName: string; 
+  feeAmount: number; 
+  feeDescription: string; 
+}) => {
+  const previewMessage = (message || DEFAULT_FEE_MESSAGE)
+    .replace(/{fee_name}/g, feeName || 'Nome da Taxa')
+    .replace(/{fee_amount}/g, feeAmount > 0 ? feeAmount.toFixed(2) : '0.00')
+    .replace(/{fee_description}/g, feeDescription || '')
+    .replace(/{remaining_count}/g, '1');
+
+  const formattedMessage = formatTelegramMessage(previewMessage);
+  const displayButtonText = buttonText || '💳 Gerar PIX para Pagar';
+
+  return (
+    <div className="rounded-lg border bg-[#0e1621] p-3 space-y-2">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+        <Eye className="h-3 w-3" />
+        Preview no Telegram
+      </div>
+      <div className="bg-[#182533] rounded-lg p-3 text-white text-sm">
+        <div 
+          className="whitespace-pre-wrap break-words"
+          dangerouslySetInnerHTML={{ __html: formattedMessage }}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <button className="w-full bg-[#2f6ea5] hover:bg-[#3a7db5] text-white text-sm py-2 px-4 rounded transition-colors">
+          {displayButtonText}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const ProductFeesManager = ({ 
   productId, 
@@ -366,6 +421,14 @@ const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', pay
                 className="min-h-[100px] text-sm font-mono"
               />
             </div>
+            
+            <TelegramFeePreview
+              message={newFee.payment_message}
+              buttonText={newFee.button_text}
+              feeName={newFee.name}
+              feeAmount={newFee.amount}
+              feeDescription={newFee.description}
+            />
             <div className="flex gap-2 justify-end">
               <Button
                 type="button"
