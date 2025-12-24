@@ -71,12 +71,12 @@ export const AdminAuditPage = () => {
         <CardContent>
           {/* Filters */}
           <div className="flex gap-4 mb-6">
-            <Select value={entityType} onValueChange={setEntityType}>
+            <Select value={entityType || "all"} onValueChange={(v) => setEntityType(v === "all" ? "" : v)}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Tipo de Entidade" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="client">Cliente</SelectItem>
                 <SelectItem value="product">Produto</SelectItem>
                 <SelectItem value="order">Pedido</SelectItem>
@@ -86,12 +86,12 @@ export const AdminAuditPage = () => {
               </SelectContent>
             </Select>
 
-            <Select value={action} onValueChange={setAction}>
+            <Select value={action || "all"} onValueChange={(v) => setAction(v === "all" ? "" : v)}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Tipo de Ação" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas</SelectItem>
+                <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="create">Criação</SelectItem>
                 <SelectItem value="update">Atualização</SelectItem>
                 <SelectItem value="delete">Exclusão</SelectItem>
