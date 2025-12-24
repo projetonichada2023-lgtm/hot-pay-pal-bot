@@ -30,9 +30,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useAuth } from "@/hooks/useAuth";
+import { setImpersonationFlag } from "@/components/dashboard/ImpersonationBanner";
 
 export const AdminClientsPage = () => {
   const { clients, isLoading, toggleClientActive } = useAdminClients();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<AdminClient | null>(null);
   const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
@@ -60,6 +63,10 @@ export const AdminClientsPage = () => {
       }
 
       if (data?.url) {
+        // Set impersonation flag before redirecting
+        if (user?.email) {
+          setImpersonationFlag(user.email);
+        }
         toast.success(`Redirecionando para conta de ${client.business_name}...`);
         window.location.href = data.url;
       } else {

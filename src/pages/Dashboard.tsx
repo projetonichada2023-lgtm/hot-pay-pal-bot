@@ -5,6 +5,7 @@ import { useClient } from '@/hooks/useClient';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { DashboardContent } from '@/components/dashboard/DashboardContent';
 import { NotificationCenter } from '@/components/dashboard/NotificationCenter';
+import { ImpersonationBanner } from '@/components/dashboard/ImpersonationBanner';
 import { OnboardingTour } from '@/components/onboarding/OnboardingTour';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { Loader2 } from 'lucide-react';
@@ -43,10 +44,12 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <Sidebar client={client} />
-      <DashboardContent client={client} />
-      <NotificationCenter clientId={client.id} onNavigate={navigate} />
+    <>
+      <ImpersonationBanner />
+      <div className="min-h-screen bg-background flex">
+        <Sidebar client={client} />
+        <DashboardContent client={client} />
+        <NotificationCenter clientId={client.id} onNavigate={navigate} />
       
       {isOnboardingActive && currentTourStep && (
         <OnboardingTour
@@ -58,7 +61,8 @@ const Dashboard = () => {
           onSkip={skipTour}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
