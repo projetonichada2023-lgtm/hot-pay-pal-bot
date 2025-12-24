@@ -9,6 +9,7 @@ import {
   LogOut,
   ShoppingCart,
   DollarSign,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,6 +21,7 @@ const navItems = [
   { icon: DollarSign, label: "Financeiro", path: "/admin/financials" },
   { icon: CreditCard, label: "Assinaturas", path: "/admin/subscriptions" },
   { icon: BarChart3, label: "Estatísticas", path: "/admin/stats" },
+  { icon: Settings, label: "Configurações", path: "/admin/settings" },
 ];
 
 export const AdminSidebar = () => {
