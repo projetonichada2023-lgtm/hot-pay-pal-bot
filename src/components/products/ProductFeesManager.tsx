@@ -180,8 +180,7 @@ const SortableFeeItem = ({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transition: transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1)',
   };
 
   const isEditing = editingFeeId === fee.id;
@@ -190,9 +189,9 @@ const SortableFeeItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-md border ${
+      className={`rounded-md border transition-all duration-200 ${
         fee.is_active ? 'bg-background' : 'bg-muted/50 opacity-60'
-      } ${isDragging ? 'shadow-lg z-50' : ''}`}
+      } ${isDragging ? 'shadow-xl z-50 scale-[1.02] opacity-90 ring-2 ring-primary/20' : ''}`}
     >
       {isEditing ? (
         <div className="p-3 space-y-3">
