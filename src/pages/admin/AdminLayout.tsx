@@ -4,6 +4,8 @@ import { AdminDashboardPage } from "./AdminDashboardPage";
 import { AdminClientsPage } from "./AdminClientsPage";
 import { AdminSubscriptionsPage } from "./AdminSubscriptionsPage";
 import { AdminStatsPage } from "./AdminStatsPage";
+import { AdminOrdersPage } from "./AdminOrdersPage";
+import { AdminFinancialsPage } from "./AdminFinancialsPage";
 
 export const AdminLayout = () => {
   return (
@@ -15,6 +17,8 @@ export const AdminLayout = () => {
           <Route path="/clients" element={<AdminClientsPage />} />
           <Route path="/subscriptions" element={<AdminSubscriptionsPage />} />
           <Route path="/stats" element={<AdminStatsPage />} />
+          <Route path="/orders" element={<AdminOrdersPage />} />
+          <Route path="/financials" element={<AdminFinancialsPage />} />
         </Routes>
       </main>
     </div>
