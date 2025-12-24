@@ -8,13 +8,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Product } from '@/hooks/useProducts';
 import { ProductFeesManager } from './ProductFeesManager';
+import { PendingFeesManager, PendingFee } from './PendingFeesManager';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface ProductFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: ProductFormData) => void;
+  onSubmit: (data: ProductFormData, pendingFees?: PendingFee[]) => void;
   product?: Product | null;
   isLoading?: boolean;
 }
@@ -44,6 +45,7 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
     require_fees_before_delivery: false,
   });
   const [requireFees, setRequireFees] = useState(false);
+  const [pendingFees, setPendingFees] = useState<PendingFee[]>([]);
 
   useEffect(() => {
     if (product) {
@@ -60,6 +62,7 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
         require_fees_before_delivery: requireFeesValue,
       });
       setRequireFees(requireFeesValue);
+      setPendingFees([]);
     } else {
       setFormData({
         name: '',
@@ -73,6 +76,7 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
         require_fees_before_delivery: false,
       });
       setRequireFees(false);
+      setPendingFees([]);
     }
   }, [product, open]);
 
@@ -93,9 +97,14 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
     }
   };
 
+  const handlePendingRequireFeesChange = (value: boolean) => {
+    setRequireFees(value);
+    setFormData({ ...formData, require_fees_before_delivery: value });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit(formData, product ? undefined : pendingFees);
   };
 
   return (
@@ -244,16 +253,17 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
                 </p>
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="text-4xl mb-3">💰</div>
-                <h3 className="font-medium text-foreground mb-2">Taxas Obrigatórias</h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  Após criar o produto, você poderá adicionar taxas obrigatórias que o cliente deverá pagar antes de receber o produto.
+              <>
+                <PendingFeesManager
+                  fees={pendingFees}
+                  onFeesChange={setPendingFees}
+                  requireFeesBeforeDelivery={requireFees}
+                  onRequireFeesChange={handlePendingRequireFeesChange}
+                />
+                <p className="text-xs text-muted-foreground mt-4">
+                  Quando ativado, o cliente só receberá o produto após pagar todas as taxas obrigatórias configuradas acima.
                 </p>
-                <p className="text-xs text-muted-foreground mt-3">
-                  Salve o produto primeiro para configurar as taxas.
-                </p>
-              </div>
+              </>
             )}
           </TabsContent>
         </Tabs>
