@@ -1030,16 +1030,12 @@ serve(async (req) => {
         const welcomeMessages = await getClientMessagesWithMedia(clientId, 'welcome');
         
         if (welcomeMessages.length > 0) {
-          // Send all welcome messages in sequence
+          // Send all welcome messages in sequence (without buttons - catalog comes after)
           for (let i = 0; i < welcomeMessages.length; i++) {
             const msg = welcomeMessages[i];
-            const isLast = i === welcomeMessages.length - 1;
             
-            // Use custom buttons if available, otherwise use default
-            const defaultButtons = { inline_keyboard: [[{ text: '🛍️ Ver Produtos', callback_data: 'products' }]] };
-            const replyMarkup = isLast 
-              ? buildInlineKeyboard(msg.buttons, defaultButtons)
-              : buildInlineKeyboard(msg.buttons);
+            // Use custom buttons if available on the message
+            const replyMarkup = buildInlineKeyboard(msg.buttons);
             
             let sent;
             if (msg.media_url && msg.media_type === 'video') {
@@ -1055,15 +1051,16 @@ serve(async (req) => {
             }
           }
         } else {
-          // Fallback message
-          const msgText = '👋 Bem-vindo! Use o botão abaixo para ver nossos produtos.';
-          const sent = await sendTelegramMessage(botToken, chatId, msgText, {
-            inline_keyboard: [[{ text: '🛍️ Ver Produtos', callback_data: 'products' }]]
-          });
+          // Fallback welcome message
+          const msgText = '👋 Bem-vindo à nossa loja!';
+          const sent = await sendTelegramMessage(botToken, chatId, msgText);
           if (sent?.result?.message_id) {
             await saveMessage(clientId, chatId, customer?.id || null, 'outgoing', msgText, sent.result.message_id);
           }
         }
+        
+        // Always show products catalog after welcome
+        await handleShowProducts(botToken, chatId, clientId, customer?.id || null);
       }
 
       // Handle /produtos command
