@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Plus, Trash2, Clock, MessageSquare, Edit2, Save, X, Info, 
   RefreshCw, ShoppingCart, TrendingUp, AlertCircle, Loader2,
-  Send, Image, Music, Upload, Package
+  Send, Image, Music, Upload, Package, Lock
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableRecoveryMessage } from "@/components/recovery/SortableRecoveryMessage";
 import { RecoveryTelegramPreview } from "@/components/recovery/RecoveryTelegramPreview";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 
 interface RecoveryPageProps {
   client: Client;
@@ -355,6 +356,15 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
   const { data: products = [] } = useProducts(client?.id);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const { canAddRecoveryMessage, canUseCartRecovery, showLimitReachedToast, planLimits } = usePlanLimits();
+
+  const handleAddMessage = () => {
+    if (!canAddRecoveryMessage()) {
+      showLimitReachedToast("mensagens de recuperação");
+      return;
+    }
+    setIsCreating(true);
+  };
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -754,10 +764,20 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
                     <Button
                       variant="outline"
                       className="w-full"
-                      onClick={() => setIsCreating(true)}
+                      onClick={handleAddMessage}
+                      disabled={!canAddRecoveryMessage()}
                     >
-                      <Plus className="w-4 h-4 mr-2" />
+                      {!canAddRecoveryMessage() ? (
+                        <Lock className="w-4 h-4 mr-2" />
+                      ) : (
+                        <Plus className="w-4 h-4 mr-2" />
+                      )}
                       Adicionar Mensagem de Recuperação
+                      {planLimits && planLimits.max_recovery_messages !== -1 && (
+                        <Badge variant="secondary" className="ml-2">
+                          {messages.length}/{planLimits.max_recovery_messages}
+                        </Badge>
+                      )}
                     </Button>
                   )}
                 </div>
