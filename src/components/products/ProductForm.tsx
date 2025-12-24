@@ -263,6 +263,20 @@ export const ProductForm = ({ open, onOpenChange, onSubmit, product, isLoading }
                 <p className="text-xs text-muted-foreground mt-4">
                   Quando ativado, o cliente só receberá o produto após pagar todas as taxas obrigatórias configuradas acima.
                 </p>
+                
+                <DialogFooter className="pt-4">
+                  <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+                    Cancelar
+                  </Button>
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    disabled={isLoading || !formData.name || formData.price <= 0}
+                    onClick={handleSubmit as any}
+                  >
+                    {isLoading ? 'Salvando...' : 'Criar Produto'}
+                  </Button>
+                </DialogFooter>
               </>
             )}
           </TabsContent>
