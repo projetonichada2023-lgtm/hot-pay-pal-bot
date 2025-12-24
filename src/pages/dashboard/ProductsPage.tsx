@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Client } from '@/hooks/useClient';
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, Product } from '@/hooks/useProducts';
+import { useCreateProductFee } from '@/hooks/useProductFees';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, Plus, Loader2, Lock } from 'lucide-react';
 import { ProductsTable } from '@/components/products/ProductsTable';
 import { ProductForm, ProductFormData } from '@/components/products/ProductForm';
 import { DeleteProductDialog } from '@/components/products/DeleteProductDialog';
+import { PendingFee } from '@/components/products/PendingFeesManager';
 import { toast } from 'sonner';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +26,7 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
+  const createFee = useCreateProductFee();
   const { canAddProduct, getRemainingProducts, showLimitReachedToast, planLimits } = usePlanLimits();
 
   const handleCreate = () => {
@@ -45,7 +48,7 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
     setIsDeleteOpen(true);
   };
 
-  const handleSubmit = async (data: ProductFormData) => {
+  const handleSubmit = async (data: ProductFormData, pendingFees?: PendingFee[]) => {
     try {
       if (selectedProduct) {
         await updateProduct.mutateAsync({
@@ -62,7 +65,8 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
         } as any);
         toast.success('Produto atualizado com sucesso!');
       } else {
-        await createProduct.mutateAsync({
+        // Create the product first
+        const newProduct = await createProduct.mutateAsync({
           client_id: client.id,
           name: data.name,
           description: data.description || null,
@@ -72,7 +76,27 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
           telegram_group_id: data.telegram_group_id || null,
           is_active: data.is_active,
           is_hot: data.is_hot,
+          require_fees_before_delivery: data.require_fees_before_delivery,
         } as any);
+
+        // Create pending fees if any
+        if (pendingFees && pendingFees.length > 0) {
+          await Promise.all(
+            pendingFees.map((fee, index) =>
+              createFee.mutateAsync({
+                product_id: newProduct.id,
+                name: fee.name,
+                amount: fee.amount,
+                description: fee.description || undefined,
+                payment_message: fee.payment_message || undefined,
+                button_text: fee.button_text || undefined,
+                display_order: index + 1,
+                is_active: fee.is_active,
+              })
+            )
+          );
+        }
+
         toast.success('Produto criado com sucesso!');
       }
       setIsFormOpen(false);
