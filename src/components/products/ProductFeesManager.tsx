@@ -48,10 +48,11 @@ export const ProductFeesManager = ({
   const updateFee = useUpdateProductFee();
   const deleteFee = useDeleteProductFee();
 
-  const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', payment_message: '' });
+const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
   const [isAdding, setIsAdding] = useState(false);
   const [editingFeeId, setEditingFeeId] = useState<string | null>(null);
   const [editingMessage, setEditingMessage] = useState('');
+  const [editingButtonText, setEditingButtonText] = useState('');
 
   const handleAddFee = async () => {
     if (!newFee.name.trim() || newFee.amount <= 0) {
@@ -67,7 +68,7 @@ export const ProductFeesManager = ({
         description: newFee.description.trim() || undefined,
         display_order: fees.length + 1,
       });
-      setNewFee({ name: '', amount: 0, description: '', payment_message: '' });
+      setNewFee({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
       setIsAdding(false);
       toast.success('Taxa adicionada');
     } catch (error) {
@@ -95,16 +96,19 @@ export const ProductFeesManager = ({
   const handleStartEditMessage = (fee: ProductFee) => {
     setEditingFeeId(fee.id);
     setEditingMessage((fee as any).payment_message || DEFAULT_FEE_MESSAGE);
+    setEditingButtonText((fee as any).button_text || 'Paguei a Taxa ✅');
   };
 
   const handleSaveMessage = async (feeId: string) => {
     try {
       await updateFee.mutateAsync({ 
         id: feeId, 
-        payment_message: editingMessage.trim() || null 
+        payment_message: editingMessage.trim() || null,
+        button_text: editingButtonText.trim() || null,
       } as any);
       setEditingFeeId(null);
       setEditingMessage('');
+      setEditingButtonText('');
       toast.success('Mensagem atualizada');
     } catch (error) {
       toast.error('Erro ao salvar mensagem');
@@ -114,6 +118,7 @@ export const ProductFeesManager = ({
   const handleCancelEditMessage = () => {
     setEditingFeeId(null);
     setEditingMessage('');
+    setEditingButtonText('');
   };
 
   const insertPlaceholder = (placeholder: string) => {
@@ -201,28 +206,40 @@ export const ProductFeesManager = ({
                     <div className="px-3 pb-3 pt-1 border-t space-y-2">
                       <Label className="text-xs font-medium">Mensagem de cobrança personalizada</Label>
                       
-                      {editingFeeId === fee.id ? (
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap gap-1 mb-2">
-                            {PLACEHOLDERS.map((p) => (
-                              <Button
-                                key={p.key}
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-6 text-xs"
-                                onClick={() => insertPlaceholder(p.key)}
-                              >
-                                {p.label}
-                              </Button>
-                            ))}
+                        {editingFeeId === fee.id ? (
+                        <div className="space-y-3">
+                          <div>
+                            <Label className="text-xs font-medium mb-1 block">Texto do botão de confirmação</Label>
+                            <Input
+                              value={editingButtonText}
+                              onChange={(e) => setEditingButtonText(e.target.value)}
+                              placeholder="Paguei a Taxa ✅"
+                              className="h-8 text-sm"
+                            />
                           </div>
-                          <Textarea
-                            value={editingMessage}
-                            onChange={(e) => setEditingMessage(e.target.value)}
-                            placeholder="Mensagem personalizada para cobrança da taxa..."
-                            className="min-h-[150px] text-sm font-mono"
-                          />
+                          <div>
+                            <Label className="text-xs font-medium mb-1 block">Mensagem de cobrança</Label>
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {PLACEHOLDERS.map((p) => (
+                                <Button
+                                  key={p.key}
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 text-xs"
+                                  onClick={() => insertPlaceholder(p.key)}
+                                >
+                                  {p.label}
+                                </Button>
+                              ))}
+                            </div>
+                            <Textarea
+                              value={editingMessage}
+                              onChange={(e) => setEditingMessage(e.target.value)}
+                              placeholder="Mensagem personalizada para cobrança da taxa..."
+                              className="min-h-[150px] text-sm font-mono"
+                            />
+                          </div>
                           <div className="flex gap-2 justify-end">
                             <Button
                               type="button"
@@ -246,6 +263,9 @@ export const ProductFeesManager = ({
                         </div>
                       ) : (
                         <div className="space-y-2">
+                          <div className="text-xs text-muted-foreground">
+                            <span className="font-medium">Botão:</span> {(fee as any).button_text || 'Paguei a Taxa ✅'}
+                          </div>
                           <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded max-h-24 overflow-y-auto whitespace-pre-wrap font-mono">
                             {(fee as any).payment_message || '(Usando mensagem padrão)'}
                           </div>
@@ -256,7 +276,7 @@ export const ProductFeesManager = ({
                             onClick={() => handleStartEditMessage(fee)}
                           >
                             <Edit2 className="h-3.5 w-3.5 mr-1" />
-                            Personalizar mensagem
+                            Personalizar
                           </Button>
                         </div>
                       )}
@@ -314,8 +334,8 @@ export const ProductFeesManager = ({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setIsAdding(false);
-                  setNewFee({ name: '', amount: 0, description: '', payment_message: '' });
+                setIsAdding(false);
+                  setNewFee({ name: '', amount: 0, description: '', payment_message: '', button_text: '' });
                 }}
               >
                 Cancelar
