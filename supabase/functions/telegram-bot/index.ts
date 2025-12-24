@@ -585,7 +585,7 @@ async function showNextFee(ctx: ClientContext, chatId: number, orderId: string, 
   
   const keyboard = {
     inline_keyboard: [
-      [{ text: '✅ Paguei a Taxa', callback_data: `fee_paid_${orderId}_${fee.id}_${feeOrder.id}` }],
+      [{ text: '✅ Paguei a Taxa', callback_data: `feepaid:${orderId}:${fee.id}:${feeOrder.id}` }],
       [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
     ],
   };
@@ -875,14 +875,15 @@ serve(async (req) => {
       } else if (data.startsWith('buy_')) {
         const productId = data.replace('buy_', '');
         await handleBuy(ctx, chatId, productId, telegramUser);
-      } else if (data.startsWith('fee_paid_')) {
-        // Format: fee_paid_{parentOrderId}_{feeId}_{feeOrderId}
-        const parts = data.replace('fee_paid_', '').split('_');
-        if (parts.length >= 3) {
-          const parentOrderId = parts[0];
-          const feeId = parts[1];
-          const feeOrderId = parts[2];
+      } else if (data.startsWith('feepaid:')) {
+        // Format: feepaid:{parentOrderId}:{feeId}:{feeOrderId}
+        const parts = data.replace('feepaid:', '').split(':');
+        if (parts.length === 3) {
+          const [parentOrderId, feeId, feeOrderId] = parts;
+          console.log('Fee paid callback:', { parentOrderId, feeId, feeOrderId });
           await handleFeePaid(ctx, chatId, parentOrderId, feeId, feeOrderId, telegramUser);
+        } else {
+          console.error('Invalid feepaid callback format:', data);
         }
       } else if (data.startsWith('paid_')) {
         const orderId = data.replace('paid_', '');
