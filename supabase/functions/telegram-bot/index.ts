@@ -200,7 +200,36 @@ async function getPendingFees(orderId: string, productId: string): Promise<any[]
   return allFees.filter(fee => !paidFeeIds.includes(fee.id));
 }
 
-// Build fee message from custom template or default
+// UUID to Base64 URL-safe encoding (for short callback data)
+function uuidToB64(uuid: string): string {
+  const hex = uuid.replace(/-/g, '');
+  const bytes = new Uint8Array(16);
+  for (let i = 0; i < 16; i++) {
+    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+// Base64 URL-safe to UUID
+function b64ToUuid(b64url: string): string {
+  const padded = b64url.length % 4 === 0 ? b64url : b64url + '='.repeat(4 - (b64url.length % 4));
+  const base64 = padded.replace(/-/g, '+').replace(/_/g, '/');
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+  const hex = Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 function buildFeeMessage(fee: any, remainingCount: number): string {
   const customMessage = fee.payment_message;
   
@@ -567,9 +596,13 @@ async function showNextFee(ctx: ClientContext, chatId: number, orderId: string, 
   
   const buttonText = fee.button_text || '💳 Gerar PIX para Pagar';
   
+  // Use shortened UUIDs to fit Telegram's 64-byte limit
+  const feeIdShort = uuidToB64(fee.id);
+  const orderIdShort = uuidToB64(orderId);
+  
   const keyboard = {
     inline_keyboard: [
-      [{ text: buttonText, callback_data: `genfee:${fee.id}:${orderId}` }],
+      [{ text: buttonText, callback_data: `gf:${feeIdShort}:${orderIdShort}` }],
       [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
     ],
   };
@@ -582,7 +615,11 @@ async function showNextFee(ctx: ClientContext, chatId: number, orderId: string, 
 }
 
 // Handle generate fee PIX
-async function handleGenerateFeePix(ctx: ClientContext, chatId: number, feeId: string, orderId: string, telegramUser: any) {
+async function handleGenerateFeePix(ctx: ClientContext, chatId: number, feeIdShort: string, orderIdShort: string, telegramUser: any) {
+  // Convert shortened UUIDs back to full UUIDs
+  const feeId = b64ToUuid(feeIdShort);
+  const orderId = b64ToUuid(orderIdShort);
+  
   const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
 
   // Get fee details
@@ -618,8 +655,18 @@ async function handleGenerateFeePix(ctx: ClientContext, chatId: number, feeId: s
     return;
   }
   
-  // Generate PIX
-  const pix = generateMockPix(fee.amount, feeOrder.id);
+  // Generate PIX using FastSoft if available, otherwise mock
+  let pix: { pixCode: string; qrCodeUrl: string; paymentId: string };
+  if (ctx.fastsoftEnabled && ctx.fastsoftSecretKey) {
+    const fastsoftPix = await generatePixFastsoft(ctx, fee.amount, feeOrder.id, customer);
+    if (fastsoftPix) {
+      pix = fastsoftPix;
+    } else {
+      pix = generateMockPix(fee.amount, feeOrder.id);
+    }
+  } else {
+    pix = generateMockPix(fee.amount, feeOrder.id);
+  }
   
   await supabase
     .from('orders')
@@ -632,11 +679,12 @@ async function handleGenerateFeePix(ctx: ClientContext, chatId: number, feeId: s
   
   const pixMessage = `✅ <b>PIX Gerado!</b>\n\n💰 <b>Valor: R$ ${Number(fee.amount).toFixed(2)}</b>\n\nCopie o código abaixo:\n\n<code>${pix.pixCode}</code>`;
   
-  const confirmButtonText = fee.button_text ? fee.button_text.replace(/gerar pix|💳/gi, '').trim() || '✅ Paguei a Taxa' : '✅ Paguei a Taxa';
+  // Use shortened UUID for feepaid callback
+  const feeOrderIdShort = uuidToB64(feeOrder.id);
   
   const keyboard = {
     inline_keyboard: [
-      [{ text: confirmButtonText, callback_data: `feepaid:${feeOrder.id}` }],
+      [{ text: '✅ Paguei a Taxa', callback_data: `fp:${feeOrderIdShort}` }],
       [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
     ],
   };
@@ -649,7 +697,9 @@ async function handleGenerateFeePix(ctx: ClientContext, chatId: number, feeId: s
 }
 
 // Handle fee payment confirmation
-async function handleFeePaid(ctx: ClientContext, chatId: number, feeOrderId: string, telegramUser: any) {
+async function handleFeePaid(ctx: ClientContext, chatId: number, feeOrderIdShort: string, telegramUser: any) {
+  // Convert shortened UUID back to full UUID
+  const feeOrderId = b64ToUuid(feeOrderIdShort);
   const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
 
   const { data: feeOrder } = await supabase
@@ -928,18 +978,18 @@ serve(async (req) => {
       } else if (data.startsWith('buy_')) {
         const productId = data.replace('buy_', '');
         await handleBuy(ctx, chatId, productId, telegramUser);
-      } else if (data.startsWith('feepaid:')) {
-        // Format: feepaid:{feeOrderId}
-        const feeOrderId = data.replace('feepaid:', '');
-        console.log('Fee paid callback:', { feeOrderId });
-        await handleFeePaid(ctx, chatId, feeOrderId, telegramUser);
-      } else if (data.startsWith('genfee:')) {
-        // Format: genfee:{feeId}:{orderId}
-        const parts = data.replace('genfee:', '').split(':');
-        const feeId = parts[0];
-        const orderId = parts[1];
-        console.log('Generate fee PIX callback:', { feeId, orderId });
-        await handleGenerateFeePix(ctx, chatId, feeId, orderId, telegramUser);
+      } else if (data.startsWith('fp:')) {
+        // Format: fp:{feeOrderIdShort}
+        const feeOrderIdShort = data.replace('fp:', '');
+        console.log('Fee paid callback:', { feeOrderIdShort });
+        await handleFeePaid(ctx, chatId, feeOrderIdShort, telegramUser);
+      } else if (data.startsWith('gf:')) {
+        // Format: gf:{feeIdShort}:{orderIdShort}
+        const parts = data.replace('gf:', '').split(':');
+        const feeIdShort = parts[0];
+        const orderIdShort = parts[1];
+        console.log('Generate fee PIX callback:', { feeIdShort, orderIdShort });
+        await handleGenerateFeePix(ctx, chatId, feeIdShort, orderIdShort, telegramUser);
       } else if (data.startsWith('paid_')) {
         const orderId = data.replace('paid_', '');
         await handlePaidConfirmation(ctx, chatId, orderId, telegramUser);

@@ -185,7 +185,31 @@ async function getPendingFees(orderId: string, productId: string): Promise<any[]
   return allFees.filter(fee => !paidFeeIds.includes(fee.id));
 }
 
-function generateMockPixForFee(amount: number, orderId: string): { pixCode: string; qrCodeUrl: string; paymentId: string } {
+// Generate PIX for fee using gateway or mock fallback
+async function generatePixForFee(
+  clientId: string,
+  amount: number,
+  orderId: string,
+  customerName: string
+): Promise<{ pixCode: string; qrCodeUrl: string; paymentId: string }> {
+  const settings = await getClientSettings(clientId);
+  
+  if (settings?.fastsoft_enabled && settings?.fastsoft_api_key) {
+    console.log('Using FastSoft for fee PIX generation');
+    const fastsoftPix = await generatePixFastsoft(
+      settings.fastsoft_api_key,
+      amount,
+      orderId,
+      clientId,
+      customerName
+    );
+    if (fastsoftPix) {
+      return fastsoftPix;
+    }
+    console.log('FastSoft failed for fee, falling back to mock PIX');
+  }
+  
+  // Mock fallback
   const randomId = crypto.randomUUID();
   const pixCode = `00020126580014BR.GOV.BCB.PIX0136${randomId}52040000530398654${amount.toFixed(2).replace('.', '')}5802BR5913LOJA DIGITAL6009SAO PAULO62070503***6304`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCode)}`;
@@ -231,9 +255,13 @@ async function showNextFee(
   
   const buttonText = fee.button_text || '💳 Gerar PIX para Pagar';
   
+  // Use shortened UUIDs to fit Telegram's 64-byte limit
+  const feeIdShort = uuidToB64(fee.id);
+  const orderIdShort = uuidToB64(orderId);
+  
   const keyboard = {
     inline_keyboard: [
-      [{ text: buttonText, callback_data: `genfee:${fee.id}:${orderId}` }],
+      [{ text: buttonText, callback_data: `gf:${feeIdShort}:${orderIdShort}` }],
       [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
     ],
   };
@@ -249,10 +277,14 @@ async function handleGenerateFeePixCallback(
   botToken: string,
   chatId: number,
   clientId: string,
-  feeId: string,
-  orderId: string,
+  feeIdShort: string,
+  orderIdShort: string,
   telegramUserId: number
 ) {
+  // Convert shortened UUIDs back to full UUIDs
+  const feeId = b64ToUuid(feeIdShort);
+  const orderId = b64ToUuid(orderIdShort);
+  
   console.log('Generating PIX for fee:', { feeId, orderId });
 
   // Get fee details
@@ -275,6 +307,19 @@ async function handleGenerateFeePixCallback(
     .single();
 
   const customerId = parentOrder?.customer_id as string | null;
+  
+  // Get customer name for FastSoft
+  let customerName = 'Cliente';
+  if (customerId) {
+    const { data: customer } = await supabase
+      .from('telegram_customers')
+      .select('first_name, last_name')
+      .eq('id', customerId)
+      .single();
+    if (customer) {
+      customerName = [customer.first_name, customer.last_name].filter(Boolean).join(' ') || 'Cliente';
+    }
+  }
 
   // Create fee order
   const { data: feeOrder } = await supabase
@@ -297,8 +342,8 @@ async function handleGenerateFeePixCallback(
     return;
   }
   
-  // Generate PIX for fee
-  const pix = generateMockPixForFee(fee.amount, feeOrder.id);
+  // Generate PIX for fee using gateway
+  const pix = await generatePixForFee(clientId, fee.amount, feeOrder.id, customerName);
   
   await supabase
     .from('orders')
@@ -311,11 +356,12 @@ async function handleGenerateFeePixCallback(
   
   const pixMessage = `✅ <b>PIX Gerado!</b>\n\n💰 <b>Valor: R$ ${Number(fee.amount).toFixed(2)}</b>\n\nCopie o código abaixo:\n\n<code>${pix.pixCode}</code>`;
   
-  const confirmButtonText = fee.button_text ? fee.button_text.replace(/gerar pix|💳/gi, '').trim() || '✅ Paguei a Taxa' : '✅ Paguei a Taxa';
+  // Use shortened UUID for feepaid callback
+  const feeOrderIdShort = uuidToB64(feeOrder.id);
   
   const keyboard = {
     inline_keyboard: [
-      [{ text: confirmButtonText, callback_data: `feepaid:${feeOrder.id}` }],
+      [{ text: '✅ Paguei a Taxa', callback_data: `fp:${feeOrderIdShort}` }],
       [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
     ],
   };
@@ -331,9 +377,11 @@ async function handleFeePaidCallback(
   botToken: string,
   chatId: number,
   clientId: string,
-  feeOrderId: string,
+  feeOrderIdShort: string,
   telegramUserId: number
 ) {
+  // Convert shortened UUID back to full UUID
+  const feeOrderId = b64ToUuid(feeOrderIdShort);
   console.log('Handling fee paid by feeOrderId:', { feeOrderId });
 
   const { data: feeOrder } = await supabase
@@ -1141,20 +1189,20 @@ serve(async (req) => {
         await handleDeclineUpsell(botToken, chatId, clientId, productId, parentOrderId);
       }
 
-      // Handle generate fee PIX (format: genfee:FEEID:ORDERID)
-      if (data.startsWith('genfee:')) {
-        const parts = data.replace('genfee:', '').split(':');
-        const feeId = parts[0];
-        const orderId = parts[1];
-        console.log('Generate fee PIX callback:', { feeId, orderId });
-        await handleGenerateFeePixCallback(botToken, chatId, clientId, feeId, orderId, telegramUser.id);
+      // Handle generate fee PIX (format: gf:FEEID_SHORT:ORDERID_SHORT)
+      if (data.startsWith('gf:')) {
+        const parts = data.replace('gf:', '').split(':');
+        const feeIdShort = parts[0];
+        const orderIdShort = parts[1];
+        console.log('Generate fee PIX callback:', { feeIdShort, orderIdShort });
+        await handleGenerateFeePixCallback(botToken, chatId, clientId, feeIdShort, orderIdShort, telegramUser.id);
       }
 
-      // Handle fee payment confirmation (format: feepaid:FEEORDERID)
-      if (data.startsWith('feepaid:')) {
-        const feeOrderId = data.replace('feepaid:', '');
-        console.log('Fee paid callback in webhook:', { feeOrderId });
-        await handleFeePaidCallback(botToken, chatId, clientId, feeOrderId, telegramUser.id);
+      // Handle fee payment confirmation (format: fp:FEEORDERID_SHORT)
+      if (data.startsWith('fp:')) {
+        const feeOrderIdShort = data.replace('fp:', '');
+        console.log('Fee paid callback in webhook:', { feeOrderIdShort });
+        await handleFeePaidCallback(botToken, chatId, clientId, feeOrderIdShort, telegramUser.id);
       }
 
       // Back to menu
