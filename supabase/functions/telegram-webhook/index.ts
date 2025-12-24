@@ -225,6 +225,8 @@ async function showNextFee(
       status: 'pending',
       payment_method: 'pix',
       parent_order_id: orderId,
+      // store which fee this order refers to (keeps callback_data short)
+      fees_paid: [fee.id],
     })
     .select()
     .single();
@@ -250,7 +252,7 @@ async function showNextFee(
   
   const keyboard = {
     inline_keyboard: [
-      [{ text: '✅ Paguei a Taxa', callback_data: `feepaid:${orderId}:${fee.id}:${feeOrder.id}` }],
+      [{ text: '✅ Paguei a Taxa', callback_data: `feepaid:${feeOrder.id}` }],
       [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
     ],
   };
@@ -264,64 +266,74 @@ async function showNextFee(
 }
 
 async function handleFeePaidCallback(
-  botToken: string, 
-  chatId: number, 
-  clientId: string, 
-  parentOrderId: string, 
-  feeId: string, 
+  botToken: string,
+  chatId: number,
+  clientId: string,
   feeOrderId: string,
   telegramUserId: number
 ) {
-  console.log('Handling fee paid:', { parentOrderId, feeId, feeOrderId });
-  
-  // Get parent order
+  console.log('Handling fee paid by feeOrderId:', { feeOrderId });
+
+  const { data: feeOrder } = await supabase
+    .from('orders')
+    .select('id, parent_order_id, fees_paid, customer_id')
+    .eq('id', feeOrderId)
+    .single();
+
+  if (!feeOrder?.parent_order_id) {
+    await sendTelegramMessage(botToken, chatId, '❌ Taxa não encontrada ou expirada.');
+    return;
+  }
+
+  const parentOrderId = feeOrder.parent_order_id as string;
+  const feeId = Array.isArray(feeOrder.fees_paid) ? (feeOrder.fees_paid[0] as string | undefined) : undefined;
+
+  if (!feeId) {
+    await sendTelegramMessage(botToken, chatId, '❌ Não consegui identificar a taxa desta cobrança.');
+    return;
+  }
+
   const { data: parentOrder } = await supabase
     .from('orders')
     .select('*, products(*)')
     .eq('id', parentOrderId)
     .single();
-  
+
   if (!parentOrder) {
     await sendTelegramMessage(botToken, chatId, '❌ Pedido não encontrado.');
     return;
   }
-  
-  const customerId = parentOrder.customer_id;
-  
+
+  const customerId = parentOrder.customer_id as string | null;
+
   // Mark fee order as paid
   await supabase
     .from('orders')
-    .update({
-      status: 'paid',
-      paid_at: new Date().toISOString(),
-    })
+    .update({ status: 'paid', paid_at: new Date().toISOString() })
     .eq('id', feeOrderId);
-  
-  // Add fee to paid list
+
+  // Add fee to parent's paid list (unique)
   const currentPaidFees: string[] = parentOrder.fees_paid || [];
-  const updatedPaidFees = [...currentPaidFees, feeId];
-  
+  const updatedPaidFees = Array.from(new Set([...currentPaidFees, feeId]));
+
   await supabase
     .from('orders')
     .update({ fees_paid: updatedPaidFees })
     .eq('id', parentOrderId);
-  
+
   await sendTelegramMessage(botToken, chatId, '✅ Taxa paga com sucesso!');
-  
+
   if (customerId) {
     await saveMessage(clientId, chatId, customerId, 'incoming', '[Clicou: Paguei a Taxa]');
   }
-  
+
   // Check for more pending fees
   const product = parentOrder.products as any;
   const pendingFees = await getPendingFees(parentOrderId, product?.id);
-  const remainingFees = pendingFees.filter(f => f.id !== feeId);
-  
-  if (remainingFees.length > 0) {
-    // Show next fee
-    await showNextFee(botToken, chatId, clientId, parentOrderId, remainingFees[0], remainingFees.length, customerId);
+
+  if (pendingFees.length > 0) {
+    await showNextFee(botToken, chatId, clientId, parentOrderId, pendingFees[0], pendingFees.length, customerId);
   } else {
-    // All fees paid - deliver product
     await deliverProductAfterFees(botToken, chatId, clientId, parentOrderId, parentOrder, telegramUserId, customerId);
   }
 }
@@ -1067,16 +1079,11 @@ serve(async (req) => {
         await handleDeclineUpsell(botToken, chatId, clientId, productId, parentOrderId);
       }
 
-      // Handle fee payment confirmation (format: feepaid:PARENTORDERID:FEEID:FEEORDERID)
+      // Handle fee payment confirmation (format: feepaid:FEEORDERID)
       if (data.startsWith('feepaid:')) {
-        const parts = data.replace('feepaid:', '').split(':');
-        if (parts.length === 3) {
-          const [parentOrderId, feeId, feeOrderId] = parts;
-          console.log('Fee paid callback in webhook:', { parentOrderId, feeId, feeOrderId });
-          await handleFeePaidCallback(botToken, chatId, clientId, parentOrderId, feeId, feeOrderId, telegramUser.id);
-        } else {
-          console.error('Invalid feepaid callback format:', data);
-        }
+        const feeOrderId = data.replace('feepaid:', '');
+        console.log('Fee paid callback in webhook:', { feeOrderId });
+        await handleFeePaidCallback(botToken, chatId, clientId, feeOrderId, telegramUser.id);
       }
 
       // Back to menu
