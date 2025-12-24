@@ -200,6 +200,26 @@ async function getPendingFees(orderId: string, productId: string): Promise<any[]
   return allFees.filter(fee => !paidFeeIds.includes(fee.id));
 }
 
+// Build fee message from custom template or default
+function buildFeeMessage(fee: any, remainingCount: number): string {
+  const customMessage = fee.payment_message;
+  
+  if (customMessage) {
+    return customMessage
+      .replace(/{fee_name}/g, fee.name)
+      .replace(/{fee_amount}/g, Number(fee.amount).toFixed(2))
+      .replace(/{fee_description}/g, fee.description || '')
+      .replace(/{remaining_count}/g, String(remainingCount));
+  }
+  
+  // Default message
+  return `💳 <b>Taxa Obrigatória</b>\n\n` +
+    `Para receber seu produto, você precisa pagar a seguinte taxa:\n\n` +
+    `<b>${fee.name}</b>${fee.description ? `\n${fee.description}` : ''}\n\n` +
+    `💰 <b>Valor: R$ ${Number(fee.amount).toFixed(2)}</b>\n\n` +
+    `📋 Taxas restantes: ${remainingCount}`;
+}
+
 // Generate PIX using FastSoft API
 async function generatePixFastsoft(ctx: ClientContext, amount: number, orderId: string, customer: any): Promise<{ pixCode: string; qrCodeUrl: string; paymentId: string } | null> {
   if (!ctx.fastsoftPublicKey || !ctx.fastsoftSecretKey) {
@@ -543,11 +563,7 @@ async function handlePaidConfirmation(ctx: ClientContext, chatId: number, orderI
 
 // Show next fee to pay
 async function showNextFee(ctx: ClientContext, chatId: number, orderId: string, fee: any, remainingCount: number, customer: any) {
-  const message = `💳 <b>Taxa Obrigatória</b>\n\n` +
-    `Para receber seu produto, você precisa pagar a seguinte taxa:\n\n` +
-    `<b>${fee.name}</b>${fee.description ? `\n${fee.description}` : ''}\n\n` +
-    `💰 <b>Valor: R$ ${Number(fee.amount).toFixed(2)}</b>\n\n` +
-    `📋 Taxas restantes: ${remainingCount}`;
+  const message = buildFeeMessage(fee, remainingCount);
   
   // Generate PIX for fee
   const { data: feeOrder } = await supabase

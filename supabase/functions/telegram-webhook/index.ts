@@ -197,6 +197,25 @@ function generateMockPixForFee(amount: number, orderId: string): { pixCode: stri
   };
 }
 
+function buildFeeMessage(fee: any, remainingCount: number): string {
+  const customMessage = fee.payment_message;
+  
+  if (customMessage) {
+    return customMessage
+      .replace(/{fee_name}/g, fee.name)
+      .replace(/{fee_amount}/g, Number(fee.amount).toFixed(2))
+      .replace(/{fee_description}/g, fee.description || '')
+      .replace(/{remaining_count}/g, String(remainingCount));
+  }
+  
+  // Default message
+  return `💳 <b>Taxa Obrigatória</b>\n\n` +
+    `Para receber seu produto, você precisa pagar a seguinte taxa:\n\n` +
+    `<b>${fee.name}</b>${fee.description ? `\n${fee.description}` : ''}\n\n` +
+    `💰 <b>Valor: R$ ${Number(fee.amount).toFixed(2)}</b>\n\n` +
+    `📋 Taxas restantes: ${remainingCount}`;
+}
+
 async function showNextFee(
   botToken: string, 
   chatId: number, 
@@ -208,11 +227,7 @@ async function showNextFee(
 ) {
   console.log('Showing next fee:', fee.name, 'for order:', orderId);
   
-  const message = `💳 <b>Taxa Obrigatória</b>\n\n` +
-    `Para receber seu produto, você precisa pagar a seguinte taxa:\n\n` +
-    `<b>${fee.name}</b>${fee.description ? `\n${fee.description}` : ''}\n\n` +
-    `💰 <b>Valor: R$ ${Number(fee.amount).toFixed(2)}</b>\n\n` +
-    `📋 Taxas restantes: ${remainingCount}`;
+  const message = buildFeeMessage(fee, remainingCount);
   
   // Create fee order
   const { data: feeOrder } = await supabase

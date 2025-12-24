@@ -9,6 +9,7 @@ export interface ProductFee {
   amount: number;
   display_order: number;
   is_active: boolean;
+  payment_message: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -20,6 +21,7 @@ export interface ProductFeeInsert {
   amount: number;
   display_order?: number;
   is_active?: boolean;
+  payment_message?: string;
 }
 
 export const useProductFees = (productId: string) => {
