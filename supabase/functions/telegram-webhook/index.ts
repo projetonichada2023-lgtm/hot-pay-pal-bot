@@ -1246,7 +1246,10 @@ async function handleShowProducts(botToken: string, chatId: number, clientId: st
   
   keyboard.push([{ text: '🔙 Voltar ao Menu', callback_data: 'menu' }]);
 
-  const msgText = '🛍️ <b>Nossos Produtos</b>\n\nEscolha um produto para ver mais detalhes:';
+  // Get personalized catalog message or use default
+  const catalogMessage = await getClientMessage(clientId, 'catalog');
+  const msgText = catalogMessage || '🛍️ <b>Nossos Produtos</b>\n\nEscolha um produto para ver mais detalhes:';
+  
   const sent = await sendTelegramMessage(
     botToken, 
     chatId, 
