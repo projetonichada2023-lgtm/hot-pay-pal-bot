@@ -399,19 +399,38 @@ async function logMessage(clientId: string, customerId: string, chatId: number, 
 // Handle /start command
 async function handleStart(ctx: ClientContext, chatId: number, telegramUser: any) {
   const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
-  const welcomeMsg = await getBotMessage(ctx.clientId, 'welcome', 'Olá! 👋 Bem-vindo à nossa loja! Use /produtos para ver nosso catálogo.');
+  const welcomeMsg = await getBotMessage(ctx.clientId, 'welcome', 'Olá! 👋 Bem-vindo à nossa loja!');
+  const products = await getProducts(ctx.clientId);
   
-  const keyboard = {
-    inline_keyboard: [
-      [{ text: '🛍️ Ver Produtos', callback_data: 'products' }],
-      [{ text: '📦 Meus Pedidos', callback_data: 'my_orders' }],
-      [{ text: '❓ Ajuda', callback_data: 'help' }],
-    ],
-  };
-  
-  const result = await sendTelegramMessage(ctx.botToken, chatId, welcomeMsg, keyboard);
+  // Send welcome message first
+  const welcomeResult = await sendTelegramMessage(ctx.botToken, chatId, welcomeMsg);
   if (customer) {
-    await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', welcomeMsg, result?.result?.message_id);
+    await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', welcomeMsg, welcomeResult?.result?.message_id);
+  }
+  
+  // Then send product catalog
+  if (products.length === 0) {
+    const noProductsMsg = await getBotMessage(ctx.clientId, 'no_products', '😕 Nenhum produto disponível no momento.');
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '📦 Meus Pedidos', callback_data: 'my_orders' }],
+        [{ text: '❓ Ajuda', callback_data: 'help' }],
+      ],
+    };
+    await sendTelegramMessage(ctx.botToken, chatId, noProductsMsg, keyboard);
+  } else {
+    const headerMsg = '🛍️ <b>Nossos Produtos</b>\n\nEscolha um produto para ver mais detalhes:';
+    const keyboard = {
+      inline_keyboard: [
+        ...products.map(p => [{ text: `📦 ${p.name} - R$ ${Number(p.price).toFixed(2)}`, callback_data: `view_${p.id}` }]),
+        [{ text: '📦 Meus Pedidos', callback_data: 'my_orders' }],
+        [{ text: '❓ Ajuda', callback_data: 'help' }],
+      ],
+    };
+    const catalogResult = await sendTelegramMessage(ctx.botToken, chatId, headerMsg, keyboard);
+    if (customer) {
+      await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', headerMsg, catalogResult?.result?.message_id);
+    }
   }
 }
 
