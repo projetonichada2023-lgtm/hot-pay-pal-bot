@@ -12,6 +12,8 @@ import TermsOfUse from "./pages/TermsOfUse";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CookiePolicy from "./pages/CookiePolicy";
 import LGPD from "./pages/LGPD";
+import { AdminRoute } from "./components/admin/AdminRoute";
+import { AdminLayout } from "./pages/admin/AdminLayout";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +28,14 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard/*" element={<Dashboard />} />
+            <Route
+              path="/admin/*"
+              element={
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              }
+            />
             <Route path="/termos-de-uso" element={<TermsOfUse />} />
             <Route path="/politica-de-privacidade" element={<PrivacyPolicy />} />
             <Route path="/politica-de-cookies" element={<CookiePolicy />} />

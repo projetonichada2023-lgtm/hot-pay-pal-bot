@@ -480,6 +480,56 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          billing_cycle: Database["public"]["Enums"]["billing_cycle"] | null
+          cancelled_at: string | null
+          client_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          plan_type: Database["public"]["Enums"]["subscription_plan"]
+          price: number | null
+          started_at: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle?: Database["public"]["Enums"]["billing_cycle"] | null
+          cancelled_at?: string | null
+          client_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          plan_type?: Database["public"]["Enums"]["subscription_plan"]
+          price?: number | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle?: Database["public"]["Enums"]["billing_cycle"] | null
+          cancelled_at?: string | null
+          client_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          plan_type?: Database["public"]["Enums"]["subscription_plan"]
+          price?: number | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       telegram_customers: {
         Row: {
           client_id: string
@@ -612,8 +662,16 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "client"
+      billing_cycle: "monthly" | "yearly"
       order_status: "pending" | "paid" | "delivered" | "cancelled" | "refunded"
       payment_method: "pix" | "card" | "boleto"
+      subscription_plan: "free" | "basic" | "pro" | "enterprise"
+      subscription_status:
+        | "active"
+        | "cancelled"
+        | "expired"
+        | "trial"
+        | "pending"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -742,8 +800,17 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "client"],
+      billing_cycle: ["monthly", "yearly"],
       order_status: ["pending", "paid", "delivered", "cancelled", "refunded"],
       payment_method: ["pix", "card", "boleto"],
+      subscription_plan: ["free", "basic", "pro", "enterprise"],
+      subscription_status: [
+        "active",
+        "cancelled",
+        "expired",
+        "trial",
+        "pending",
+      ],
     },
   },
 } as const
