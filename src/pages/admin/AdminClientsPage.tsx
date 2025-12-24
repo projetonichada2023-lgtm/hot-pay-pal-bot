@@ -60,8 +60,8 @@ export const AdminClientsPage = () => {
       }
 
       if (data?.url) {
-        toast.success(`Acessando conta de ${client.business_name}...`);
-        window.open(data.url, '_blank');
+        toast.success(`Redirecionando para conta de ${client.business_name}...`);
+        window.location.href = data.url;
       } else {
         toast.error('Não foi possível gerar o link de acesso');
       }
