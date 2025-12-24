@@ -357,79 +357,88 @@ const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', pay
 
         {isAdding ? (
           <div className="space-y-3 p-3 border rounded-md bg-muted/30">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs">Nome da taxa</Label>
-                <Input
-                  value={newFee.name}
-                  onChange={(e) => setNewFee({ ...newFee, name: e.target.value })}
-                  placeholder="Ex: Taxa de processamento"
-                  className="h-8 text-sm"
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Form fields */}
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Nome da taxa</Label>
+                    <Input
+                      value={newFee.name}
+                      onChange={(e) => setNewFee({ ...newFee, name: e.target.value })}
+                      placeholder="Ex: Taxa de processamento"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Valor (R$)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newFee.amount || ''}
+                      onChange={(e) => setNewFee({ ...newFee, amount: parseFloat(e.target.value) || 0 })}
+                      placeholder="0.00"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Descrição (opcional)</Label>
+                  <Input
+                    value={newFee.description}
+                    onChange={(e) => setNewFee({ ...newFee, description: e.target.value })}
+                    placeholder="Breve descrição da taxa"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Texto do botão de gerar PIX (opcional)</Label>
+                  <Input
+                    value={newFee.button_text}
+                    onChange={(e) => setNewFee({ ...newFee, button_text: e.target.value })}
+                    placeholder="💳 Gerar PIX para Pagar"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Mensagem de cobrança (opcional)</Label>
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {PLACEHOLDERS.map((p) => (
+                      <Button
+                        key={p.key}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => insertPlaceholder(p.key, true)}
+                      >
+                        {p.label}
+                      </Button>
+                    ))}
+                  </div>
+                  <Textarea
+                    value={newFee.payment_message}
+                    onChange={(e) => setNewFee({ ...newFee, payment_message: e.target.value })}
+                    placeholder="Deixe vazio para usar a mensagem padrão..."
+                    className="min-h-[120px] text-sm font-mono"
+                  />
+                </div>
+              </div>
+              
+              {/* Preview */}
+              <div className="lg:sticky lg:top-4">
+                <TelegramFeePreview
+                  message={newFee.payment_message}
+                  buttonText={newFee.button_text}
+                  feeName={newFee.name}
+                  feeAmount={newFee.amount}
+                  feeDescription={newFee.description}
                 />
               </div>
-              <div>
-                <Label className="text-xs">Valor (R$)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={newFee.amount || ''}
-                  onChange={(e) => setNewFee({ ...newFee, amount: parseFloat(e.target.value) || 0 })}
-                  placeholder="0.00"
-                  className="h-8 text-sm"
-                />
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs">Descrição (opcional)</Label>
-              <Input
-                value={newFee.description}
-                onChange={(e) => setNewFee({ ...newFee, description: e.target.value })}
-                placeholder="Breve descrição da taxa"
-                className="h-8 text-sm"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Texto do botão de gerar PIX (opcional)</Label>
-              <Input
-                value={newFee.button_text}
-                onChange={(e) => setNewFee({ ...newFee, button_text: e.target.value })}
-                placeholder="💳 Gerar PIX para Pagar"
-                className="h-8 text-sm"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Mensagem de cobrança (opcional)</Label>
-              <div className="flex flex-wrap gap-1 mb-2">
-                {PLACEHOLDERS.map((p) => (
-                  <Button
-                    key={p.key}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-6 text-xs"
-                    onClick={() => insertPlaceholder(p.key, true)}
-                  >
-                    {p.label}
-                  </Button>
-                ))}
-              </div>
-              <Textarea
-                value={newFee.payment_message}
-                onChange={(e) => setNewFee({ ...newFee, payment_message: e.target.value })}
-                placeholder="Deixe vazio para usar a mensagem padrão..."
-                className="min-h-[100px] text-sm font-mono"
-              />
             </div>
             
-            <TelegramFeePreview
-              message={newFee.payment_message}
-              buttonText={newFee.button_text}
-              feeName={newFee.name}
-              feeAmount={newFee.amount}
-              feeDescription={newFee.description}
-            />
-            <div className="flex gap-2 justify-end">
+            <div className="flex gap-2 justify-end pt-2 border-t">
               <Button
                 type="button"
                 variant="outline"
