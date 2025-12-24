@@ -20,6 +20,27 @@ export interface AdminClient {
   } | null;
 }
 
+const createAuditLog = async (
+  action: string,
+  entity_type: string,
+  entity_id?: string,
+  old_data?: Record<string, unknown>,
+  new_data?: Record<string, unknown>
+) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from('audit_logs').insert({
+    user_id: user.id,
+    action,
+    entity_type,
+    entity_id: entity_id || null,
+    old_data: old_data as unknown as null,
+    new_data: new_data as unknown as null,
+    user_agent: navigator.userAgent,
+  });
+};
+
 export const useAdminClients = () => {
   const queryClient = useQueryClient();
 
@@ -59,16 +80,33 @@ export const useAdminClients = () => {
   });
 
   const toggleClientActive = useMutation({
-    mutationFn: async ({ clientId, isActive }: { clientId: string; isActive: boolean }) => {
+    mutationFn: async ({ clientId, isActive, clientName }: { clientId: string; isActive: boolean; clientName?: string }) => {
+      // Get old data
+      const { data: oldData } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("id", clientId)
+        .single();
+
       const { error } = await supabase
         .from("clients")
         .update({ is_active: isActive })
         .eq("id", clientId);
 
       if (error) throw error;
+
+      // Create audit log
+      await createAuditLog(
+        isActive ? 'client_activated' : 'client_deactivated',
+        'client',
+        clientId,
+        { is_active: !isActive, business_name: clientName || oldData?.business_name },
+        { is_active: isActive, business_name: clientName || oldData?.business_name }
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-clients"] });
+      queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
       toast.success("Status do cliente atualizado");
     },
     onError: () => {
@@ -76,9 +114,51 @@ export const useAdminClients = () => {
     },
   });
 
+  const updateClient = useMutation({
+    mutationFn: async ({ 
+      clientId, 
+      data 
+    }: { 
+      clientId: string; 
+      data: Partial<{ business_name: string; business_email: string; business_phone: string }> 
+    }) => {
+      // Get old data
+      const { data: oldData } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("id", clientId)
+        .single();
+
+      const { error } = await supabase
+        .from("clients")
+        .update(data)
+        .eq("id", clientId);
+
+      if (error) throw error;
+
+      // Create audit log
+      await createAuditLog(
+        'update',
+        'client',
+        clientId,
+        oldData as Record<string, unknown>,
+        data as Record<string, unknown>
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-clients"] });
+      queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      toast.success("Cliente atualizado com sucesso");
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar cliente");
+    },
+  });
+
   return {
     clients: clientsQuery.data || [],
     isLoading: clientsQuery.isLoading,
     toggleClientActive,
+    updateClient,
   };
 };
