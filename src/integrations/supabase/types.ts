@@ -322,6 +322,7 @@ export type Database = {
           created_at: string | null
           customer_id: string | null
           delivered_at: string | null
+          fees_paid: Json | null
           id: string
           is_downsell: boolean | null
           is_upsell: boolean | null
@@ -344,6 +345,7 @@ export type Database = {
           created_at?: string | null
           customer_id?: string | null
           delivered_at?: string | null
+          fees_paid?: Json | null
           id?: string
           is_downsell?: boolean | null
           is_upsell?: boolean | null
@@ -366,6 +368,7 @@ export type Database = {
           created_at?: string | null
           customer_id?: string | null
           delivered_at?: string | null
+          fees_paid?: Json | null
           id?: string
           is_downsell?: boolean | null
           is_upsell?: boolean | null
@@ -455,6 +458,50 @@ export type Database = {
         }
         Relationships: []
       }
+      product_fees: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean | null
+          name: string
+          product_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean | null
+          name: string
+          product_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          product_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_fees_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_upsells: {
         Row: {
           created_at: string | null
@@ -517,6 +564,7 @@ export type Database = {
           is_hot: boolean | null
           name: string
           price: number
+          require_fees_before_delivery: boolean | null
           sales_count: number | null
           telegram_group_id: string | null
           updated_at: string | null
@@ -537,6 +585,7 @@ export type Database = {
           is_hot?: boolean | null
           name: string
           price: number
+          require_fees_before_delivery?: boolean | null
           sales_count?: number | null
           telegram_group_id?: string | null
           updated_at?: string | null
@@ -557,6 +606,7 @@ export type Database = {
           is_hot?: boolean | null
           name?: string
           price?: number
+          require_fees_before_delivery?: boolean | null
           sales_count?: number | null
           telegram_group_id?: string | null
           updated_at?: string | null
