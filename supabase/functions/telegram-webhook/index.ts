@@ -255,15 +255,8 @@ async function showNextFee(
     ],
   };
   
-  try {
-    if (pix.qrCodeUrl) {
-      await sendTelegramPhoto(botToken, chatId, pix.qrCodeUrl, fullMessage, keyboard);
-    } else {
-      await sendTelegramMessage(botToken, chatId, fullMessage, keyboard);
-    }
-  } catch {
-    await sendTelegramMessage(botToken, chatId, fullMessage, keyboard);
-  }
+  // Send as text to avoid Telegram failing to fetch external QR image URLs
+  await sendTelegramMessage(botToken, chatId, fullMessage, keyboard);
   
   if (customerId) {
     await saveMessage(clientId, chatId, customerId, 'outgoing', fullMessage);
