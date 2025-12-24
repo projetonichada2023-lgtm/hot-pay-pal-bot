@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_settings: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       bot_messages: {
         Row: {
           buttons: Json | null
@@ -346,6 +373,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      plan_limits: {
+        Row: {
+          cart_recovery_enabled: boolean
+          created_at: string | null
+          custom_messages_enabled: boolean
+          id: string
+          max_orders_per_month: number
+          max_products: number
+          max_recovery_messages: number
+          plan_type: Database["public"]["Enums"]["subscription_plan"]
+          priority_support: boolean
+          updated_at: string | null
+          upsell_enabled: boolean
+        }
+        Insert: {
+          cart_recovery_enabled?: boolean
+          created_at?: string | null
+          custom_messages_enabled?: boolean
+          id?: string
+          max_orders_per_month?: number
+          max_products?: number
+          max_recovery_messages?: number
+          plan_type: Database["public"]["Enums"]["subscription_plan"]
+          priority_support?: boolean
+          updated_at?: string | null
+          upsell_enabled?: boolean
+        }
+        Update: {
+          cart_recovery_enabled?: boolean
+          created_at?: string | null
+          custom_messages_enabled?: boolean
+          id?: string
+          max_orders_per_month?: number
+          max_products?: number
+          max_recovery_messages?: number
+          plan_type?: Database["public"]["Enums"]["subscription_plan"]
+          priority_support?: boolean
+          updated_at?: string | null
+          upsell_enabled?: boolean
+        }
+        Relationships: []
       }
       product_upsells: {
         Row: {
