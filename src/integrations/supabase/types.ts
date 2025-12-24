@@ -467,6 +467,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          payment_message: string | null
           product_id: string
           updated_at: string | null
         }
@@ -478,6 +479,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          payment_message?: string | null
           product_id: string
           updated_at?: string | null
         }
@@ -489,6 +491,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          payment_message?: string | null
           product_id?: string
           updated_at?: string | null
         }
