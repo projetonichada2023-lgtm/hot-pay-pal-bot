@@ -560,6 +560,8 @@ async function showNextFee(ctx: ClientContext, chatId: number, orderId: string, 
       status: 'pending',
       payment_method: 'pix',
       parent_order_id: orderId,
+      // store which fee this order refers to (keeps callback_data short)
+      fees_paid: [fee.id],
     })
     .select()
     .single();
@@ -585,7 +587,7 @@ async function showNextFee(ctx: ClientContext, chatId: number, orderId: string, 
   
   const keyboard = {
     inline_keyboard: [
-      [{ text: '✅ Paguei a Taxa', callback_data: `feepaid:${orderId}:${fee.id}:${feeOrder.id}` }],
+      [{ text: '✅ Paguei a Taxa', callback_data: `feepaid:${feeOrder.id}` }],
       [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
     ],
   };
@@ -599,57 +601,67 @@ async function showNextFee(ctx: ClientContext, chatId: number, orderId: string, 
 }
 
 // Handle fee payment confirmation
-async function handleFeePaid(ctx: ClientContext, chatId: number, parentOrderId: string, feeId: string, feeOrderId: string, telegramUser: any) {
+async function handleFeePaid(ctx: ClientContext, chatId: number, feeOrderId: string, telegramUser: any) {
   const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
-  
-  // Get parent order
+
+  const { data: feeOrder } = await supabase
+    .from('orders')
+    .select('id, parent_order_id, fees_paid')
+    .eq('id', feeOrderId)
+    .single();
+
+  if (!feeOrder?.parent_order_id) {
+    await sendTelegramMessage(ctx.botToken, chatId, '❌ Taxa não encontrada ou expirada.');
+    return;
+  }
+
+  const parentOrderId = feeOrder.parent_order_id as string;
+  const feeId = Array.isArray(feeOrder.fees_paid) ? (feeOrder.fees_paid[0] as string | undefined) : undefined;
+
+  if (!feeId) {
+    await sendTelegramMessage(ctx.botToken, chatId, '❌ Não consegui identificar a taxa desta cobrança.');
+    return;
+  }
+
   const { data: parentOrder } = await supabase
     .from('orders')
     .select('*, products(*)')
     .eq('id', parentOrderId)
     .single();
-  
+
   if (!parentOrder) {
     await sendTelegramMessage(ctx.botToken, chatId, '❌ Pedido não encontrado.');
     return;
   }
-  
+
   // Mark fee order as paid
   await supabase
     .from('orders')
-    .update({
-      status: 'paid',
-      paid_at: new Date().toISOString(),
-    })
+    .update({ status: 'paid', paid_at: new Date().toISOString() })
     .eq('id', feeOrderId);
-  
-  // Add fee to paid list
+
+  // Add fee to paid list (unique)
   const currentPaidFees: string[] = parentOrder.fees_paid || [];
-  const updatedPaidFees = [...currentPaidFees, feeId];
-  
+  const updatedPaidFees = Array.from(new Set([...currentPaidFees, feeId]));
+
   await supabase
     .from('orders')
     .update({ fees_paid: updatedPaidFees })
     .eq('id', parentOrderId);
-  
+
   await sendTelegramMessage(ctx.botToken, chatId, '✅ Taxa paga com sucesso!');
-  
+
   if (customer) {
     await logMessage(ctx.clientId, customer.id, chatId, 'incoming', '[Clicou: Paguei a Taxa]');
   }
-  
-  // Check for more pending fees
+
   const pendingFees = await getPendingFees(parentOrderId, parentOrder.product_id);
-  // Filter out the fee we just paid
-  const remainingFees = pendingFees.filter(f => f.id !== feeId);
-  
-  if (remainingFees.length > 0) {
-    // Show next fee
-    await showNextFee(ctx, chatId, parentOrderId, remainingFees[0], remainingFees.length, customer);
+
+  if (pendingFees.length > 0) {
+    await showNextFee(ctx, chatId, parentOrderId, pendingFees[0], pendingFees.length, customer);
   } else {
-    // All fees paid - deliver product
     const settings = await getClientSettings(ctx.clientId);
-    
+
     if (settings.auto_delivery && parentOrder.products?.file_url) {
       await deliverProduct(ctx, chatId, parentOrderId, parentOrder, customer);
     } else {
@@ -869,15 +881,10 @@ serve(async (req) => {
         const productId = data.replace('buy_', '');
         await handleBuy(ctx, chatId, productId, telegramUser);
       } else if (data.startsWith('feepaid:')) {
-        // Format: feepaid:{parentOrderId}:{feeId}:{feeOrderId}
-        const parts = data.replace('feepaid:', '').split(':');
-        if (parts.length === 3) {
-          const [parentOrderId, feeId, feeOrderId] = parts;
-          console.log('Fee paid callback:', { parentOrderId, feeId, feeOrderId });
-          await handleFeePaid(ctx, chatId, parentOrderId, feeId, feeOrderId, telegramUser);
-        } else {
-          console.error('Invalid feepaid callback format:', data);
-        }
+        // Format: feepaid:{feeOrderId}
+        const feeOrderId = data.replace('feepaid:', '');
+        console.log('Fee paid callback:', { feeOrderId });
+        await handleFeePaid(ctx, chatId, feeOrderId, telegramUser);
       } else if (data.startsWith('paid_')) {
         const orderId = data.replace('paid_', '');
         await handlePaidConfirmation(ctx, chatId, orderId, telegramUser);
