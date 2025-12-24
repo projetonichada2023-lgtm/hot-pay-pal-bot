@@ -60,16 +60,23 @@ async function getPendingFees(orderId: string, productId: string): Promise<any[]
   return allFees.filter(fee => !paidFeeIds.includes(fee.id));
 }
 
-// Build fee message
+// Build fee message - ensures proper line breaks for Telegram
 function buildFeeMessage(fee: any, remainingCount: number): string {
   const customMessage = fee.payment_message;
   
   if (customMessage) {
-    return customMessage
+    // Ensure line breaks are properly formatted for Telegram
+    // Replace literal \n strings with actual newlines, then normalize multiple newlines
+    let formatted = customMessage
+      .replace(/\\n/g, '\n')  // Convert escaped \n to actual newlines
+      .replace(/\r\n/g, '\n') // Normalize Windows line endings
+      .replace(/\r/g, '\n')   // Normalize old Mac line endings
       .replace(/{fee_name}/g, fee.name)
       .replace(/{fee_amount}/g, Number(fee.amount).toFixed(2))
       .replace(/{fee_description}/g, fee.description || '')
       .replace(/{remaining_count}/g, String(remainingCount));
+    
+    return formatted;
   }
   
   return `💳 <b>Taxa Obrigatória</b>\n\n` +
