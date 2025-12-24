@@ -10,6 +10,8 @@ import {
   ShoppingCart,
   DollarSign,
   Settings,
+  FileText,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,6 +24,8 @@ const navItems = [
   { icon: CreditCard, label: "Assinaturas", path: "/admin/subscriptions" },
   { icon: BarChart3, label: "Estatísticas", path: "/admin/stats" },
   { icon: Settings, label: "Configurações", path: "/admin/settings" },
+  { icon: FileText, label: "Auditoria", path: "/admin/audit" },
+  { icon: Shield, label: "Administradores", path: "/admin/users" },
 ];
 
 export const AdminSidebar = () => {

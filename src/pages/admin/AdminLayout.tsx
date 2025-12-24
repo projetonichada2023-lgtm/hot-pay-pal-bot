@@ -7,6 +7,8 @@ import { AdminStatsPage } from "./AdminStatsPage";
 import { AdminOrdersPage } from "./AdminOrdersPage";
 import { AdminFinancialsPage } from "./AdminFinancialsPage";
 import { AdminSettingsPage } from "./AdminSettingsPage";
+import { AdminAuditPage } from "./AdminAuditPage";
+import { AdminUsersPage } from "./AdminUsersPage";
 
 export const AdminLayout = () => {
   return (
@@ -21,6 +23,8 @@ export const AdminLayout = () => {
           <Route path="/orders" element={<AdminOrdersPage />} />
           <Route path="/financials" element={<AdminFinancialsPage />} />
           <Route path="/settings" element={<AdminSettingsPage />} />
+          <Route path="/audit" element={<AdminAuditPage />} />
+          <Route path="/users" element={<AdminUsersPage />} />
         </Routes>
       </main>
     </div>
