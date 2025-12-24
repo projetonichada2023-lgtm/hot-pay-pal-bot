@@ -13,6 +13,23 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface ProductFeesManagerProps {
   productId: string;
@@ -90,6 +107,189 @@ const TelegramFeePreview = ({
         </button>
       </div>
     </div>
+  );
+};
+
+// Sortable fee item component
+interface SortableFeeItemProps {
+  fee: ProductFee;
+  editingFeeId: string | null;
+  editingMessage: string;
+  editingButtonText: string;
+  onToggleActive: (fee: ProductFee) => void;
+  onDelete: (fee: ProductFee) => void;
+  onStartEdit: (fee: ProductFee) => void;
+  onSaveMessage: (feeId: string) => void;
+  onCancelEdit: () => void;
+  onEditingMessageChange: (value: string) => void;
+  onEditingButtonTextChange: (value: string) => void;
+  onInsertPlaceholder: (placeholder: string) => void;
+  isPending: boolean;
+}
+
+const SortableFeeItem = ({
+  fee,
+  editingFeeId,
+  editingMessage,
+  editingButtonText,
+  onToggleActive,
+  onDelete,
+  onStartEdit,
+  onSaveMessage,
+  onCancelEdit,
+  onEditingMessageChange,
+  onEditingButtonTextChange,
+  onInsertPlaceholder,
+  isPending,
+}: SortableFeeItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: fee.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Collapsible>
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`rounded-md border ${
+          fee.is_active ? 'bg-background' : 'bg-muted/50 opacity-60'
+        } ${isDragging ? 'shadow-lg z-50' : ''}`}
+      >
+        <div className="flex items-center gap-2 p-2">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing touch-none"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{fee.name}</p>
+            {fee.description && (
+              <p className="text-xs text-muted-foreground truncate">{fee.description}</p>
+            )}
+          </div>
+          <span className="text-sm font-medium tabular-nums">
+            R$ {Number(fee.amount).toFixed(2)}
+          </span>
+          <CollapsibleTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              title="Personalizar mensagem"
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+            </Button>
+          </CollapsibleTrigger>
+          <Switch
+            checked={fee.is_active}
+            onCheckedChange={() => onToggleActive(fee)}
+            className="scale-75"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-destructive hover:text-destructive"
+            onClick={() => onDelete(fee)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+        
+        <CollapsibleContent>
+          <div className="px-3 pb-3 pt-1 border-t space-y-2">
+            <Label className="text-xs font-medium">Mensagem de cobrança personalizada</Label>
+            
+            {editingFeeId === fee.id ? (
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs font-medium mb-1 block">Texto do botão de confirmação</Label>
+                  <Input
+                    value={editingButtonText}
+                    onChange={(e) => onEditingButtonTextChange(e.target.value)}
+                    placeholder="Paguei a Taxa ✅"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium mb-1 block">Mensagem de cobrança</Label>
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {PLACEHOLDERS.map((p) => (
+                      <Button
+                        key={p.key}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => onInsertPlaceholder(p.key)}
+                      >
+                        {p.label}
+                      </Button>
+                    ))}
+                  </div>
+                  <Textarea
+                    value={editingMessage}
+                    onChange={(e) => onEditingMessageChange(e.target.value)}
+                    placeholder="Mensagem personalizada para cobrança da taxa..."
+                    className="min-h-[150px] text-sm font-mono"
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={onCancelEdit}
+                  >
+                    <X className="h-3.5 w-3.5 mr-1" />
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => onSaveMessage(fee.id)}
+                    disabled={isPending}
+                  >
+                    <Check className="h-3.5 w-3.5 mr-1" />
+                    Salvar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-medium">Botão:</span> {(fee as any).button_text || 'Paguei a Taxa ✅'}
+                </div>
+                <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded max-h-24 overflow-y-auto whitespace-pre-wrap font-mono">
+                  {(fee as any).payment_message || '(Usando mensagem padrão)'}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onStartEdit(fee)}
+                >
+                  <Edit2 className="h-3.5 w-3.5 mr-1" />
+                  Personalizar
+                </Button>
+              </div>
+            )}
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 };
 
@@ -186,6 +386,41 @@ const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', pay
     }
   };
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = fees.findIndex((fee) => fee.id === active.id);
+      const newIndex = fees.findIndex((fee) => fee.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reorderedFees = arrayMove(fees, oldIndex, newIndex);
+        
+        // Update display_order for all affected fees
+        try {
+          await Promise.all(
+            reorderedFees.map((fee, index) =>
+              updateFee.mutateAsync({ id: fee.id, display_order: index + 1 })
+            )
+          );
+        } catch (error) {
+          toast.error('Erro ao reordenar taxas');
+        }
+      }
+    }
+  };
+
   const totalFees = fees.filter(f => f.is_active).reduce((sum, fee) => sum + Number(fee.amount), 0);
 
   if (isLoading) {
@@ -219,139 +454,43 @@ const [newFee, setNewFee] = useState({ name: '', amount: 0, description: '', pay
       </CardHeader>
       <CardContent className="space-y-3">
         {fees.length > 0 && (
-          <div className="space-y-2">
-            {fees.map((fee) => (
-              <Collapsible key={fee.id}>
-                <div
-                  className={`rounded-md border ${
-                    fee.is_active ? 'bg-background' : 'bg-muted/50 opacity-60'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 p-2">
-                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{fee.name}</p>
-                      {fee.description && (
-                        <p className="text-xs text-muted-foreground truncate">{fee.description}</p>
-                      )}
-                    </div>
-                    <span className="text-sm font-medium tabular-nums">
-                      R$ {Number(fee.amount).toFixed(2)}
-                    </span>
-                    <CollapsibleTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        title="Personalizar mensagem"
-                      >
-                        <MessageSquare className="h-3.5 w-3.5" />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <Switch
-                      checked={fee.is_active}
-                      onCheckedChange={() => handleToggleFeeActive(fee)}
-                      className="scale-75"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteFee(fee)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  
-                  <CollapsibleContent>
-                    <div className="px-3 pb-3 pt-1 border-t space-y-2">
-                      <Label className="text-xs font-medium">Mensagem de cobrança personalizada</Label>
-                      
-                        {editingFeeId === fee.id ? (
-                        <div className="space-y-3">
-                          <div>
-                            <Label className="text-xs font-medium mb-1 block">Texto do botão de confirmação</Label>
-                            <Input
-                              value={editingButtonText}
-                              onChange={(e) => setEditingButtonText(e.target.value)}
-                              placeholder="Paguei a Taxa ✅"
-                              className="h-8 text-sm"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs font-medium mb-1 block">Mensagem de cobrança</Label>
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {PLACEHOLDERS.map((p) => (
-                                <Button
-                                  key={p.key}
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-6 text-xs"
-                                  onClick={() => insertPlaceholder(p.key)}
-                                >
-                                  {p.label}
-                                </Button>
-                              ))}
-                            </div>
-                            <Textarea
-                              value={editingMessage}
-                              onChange={(e) => setEditingMessage(e.target.value)}
-                              placeholder="Mensagem personalizada para cobrança da taxa..."
-                              className="min-h-[150px] text-sm font-mono"
-                            />
-                          </div>
-                          <div className="flex gap-2 justify-end">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={handleCancelEditMessage}
-                            >
-                              <X className="h-3.5 w-3.5 mr-1" />
-                              Cancelar
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => handleSaveMessage(fee.id)}
-                              disabled={updateFee.isPending}
-                            >
-                              <Check className="h-3.5 w-3.5 mr-1" />
-                              Salvar
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="text-xs text-muted-foreground">
-                            <span className="font-medium">Botão:</span> {(fee as any).button_text || 'Paguei a Taxa ✅'}
-                          </div>
-                          <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded max-h-24 overflow-y-auto whitespace-pre-wrap font-mono">
-                            {(fee as any).payment_message || '(Usando mensagem padrão)'}
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleStartEditMessage(fee)}
-                          >
-                            <Edit2 className="h-3.5 w-3.5 mr-1" />
-                            Personalizar
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
-            ))}
-            {fees.length > 0 && requireFeesBeforeDelivery && (
-              <div className="flex justify-between pt-2 border-t text-sm">
-                <span className="text-muted-foreground">Total de taxas ativas:</span>
-                <span className="font-semibold">R$ {totalFees.toFixed(2)}</span>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={fees.map((fee) => fee.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-2">
+                {fees.map((fee) => (
+                  <SortableFeeItem
+                    key={fee.id}
+                    fee={fee}
+                    editingFeeId={editingFeeId}
+                    editingMessage={editingMessage}
+                    editingButtonText={editingButtonText}
+                    onToggleActive={handleToggleFeeActive}
+                    onDelete={handleDeleteFee}
+                    onStartEdit={handleStartEditMessage}
+                    onSaveMessage={handleSaveMessage}
+                    onCancelEdit={handleCancelEditMessage}
+                    onEditingMessageChange={setEditingMessage}
+                    onEditingButtonTextChange={setEditingButtonText}
+                    onInsertPlaceholder={(p) => insertPlaceholder(p)}
+                    isPending={updateFee.isPending}
+                  />
+                ))}
               </div>
-            )}
+            </SortableContext>
+          </DndContext>
+        )}
+        
+        {fees.length > 0 && requireFeesBeforeDelivery && (
+          <div className="flex justify-between pt-2 border-t text-sm">
+            <span className="text-muted-foreground">Total de taxas ativas:</span>
+            <span className="font-semibold">R$ {totalFees.toFixed(2)}</span>
           </div>
         )}
 
