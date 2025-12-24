@@ -7,6 +7,8 @@ import {
   BarChart3,
   ArrowLeft,
   LogOut,
+  ShoppingCart,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +16,8 @@ import { useAuth } from "@/hooks/useAuth";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
   { icon: Users, label: "Clientes", path: "/admin/clients" },
+  { icon: ShoppingCart, label: "Pedidos", path: "/admin/orders" },
+  { icon: DollarSign, label: "Financeiro", path: "/admin/financials" },
   { icon: CreditCard, label: "Assinaturas", path: "/admin/subscriptions" },
   { icon: BarChart3, label: "Estatísticas", path: "/admin/stats" },
 ];
