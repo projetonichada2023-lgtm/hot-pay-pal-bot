@@ -20,12 +20,23 @@ import { ptBR } from "date-fns/locale";
 import { ClientDetailsDialog } from "@/components/admin/ClientDetailsDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const AdminClientsPage = () => {
   const { clients, isLoading, toggleClientActive } = useAdminClients();
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<AdminClient | null>(null);
   const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
+  const [clientToImpersonate, setClientToImpersonate] = useState<AdminClient | null>(null);
 
   const filteredClients = clients.filter(
     (client) =>
@@ -34,6 +45,7 @@ export const AdminClientsPage = () => {
   );
 
   const handleImpersonate = async (client: AdminClient) => {
+    setClientToImpersonate(null);
     setImpersonatingId(client.user_id);
     try {
       const { data, error } = await supabase.functions.invoke('impersonate-user', {
@@ -183,7 +195,7 @@ export const AdminClientsPage = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleImpersonate(client)}
+                          onClick={() => setClientToImpersonate(client)}
                           disabled={impersonatingId === client.user_id}
                           title="Acessar conta"
                         >
@@ -215,6 +227,27 @@ export const AdminClientsPage = () => {
         open={!!selectedClient}
         onOpenChange={(open) => !open && setSelectedClient(null)}
       />
+
+      {/* Confirm Impersonation Dialog */}
+      <AlertDialog open={!!clientToImpersonate} onOpenChange={(open) => !open && setClientToImpersonate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Acessar conta do cliente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a acessar a conta de{' '}
+              <strong>{clientToImpersonate?.business_name}</strong>.
+              <br /><br />
+              Um link será gerado e abrirá em uma nova aba. Esta ação será registrada nos logs de auditoria.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => clientToImpersonate && handleImpersonate(clientToImpersonate)}>
+              Acessar Conta
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
