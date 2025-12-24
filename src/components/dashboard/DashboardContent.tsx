@@ -12,6 +12,7 @@ import { FunnelPage } from '@/pages/dashboard/FunnelPage';
 import { ReportsPage } from '@/pages/dashboard/ReportsPage';
 import { RecoveryPage } from '@/pages/dashboard/RecoveryPage';
 import { SimulatorPage } from '@/pages/dashboard/SimulatorPage';
+import { UpgradePage } from '@/pages/dashboard/UpgradePage';
 
 interface DashboardContentProps {
   client: Client;
@@ -34,6 +35,7 @@ export const DashboardContent = ({ client }: DashboardContentProps) => {
           <Route path="/bot-config" element={<BotConfigPage client={client} />} />
           <Route path="/simulator" element={<SimulatorPage client={client} />} />
           <Route path="/settings" element={<SettingsPage client={client} />} />
+          <Route path="/upgrade" element={<UpgradePage client={client} />} />
         </Routes>
       </div>
     </main>
