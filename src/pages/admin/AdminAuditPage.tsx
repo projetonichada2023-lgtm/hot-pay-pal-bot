@@ -19,6 +19,8 @@ const actionLabels: Record<string, string> = {
   settings_update: 'Config. Atualizada',
   admin_added: 'Admin Adicionado',
   admin_removed: 'Admin Removido',
+  client_activated: 'Cliente Ativado',
+  client_deactivated: 'Cliente Desativado',
 };
 
 const entityLabels: Record<string, string> = {
@@ -32,8 +34,8 @@ const entityLabels: Record<string, string> = {
 };
 
 const getActionBadgeVariant = (action: string): "default" | "secondary" | "destructive" | "outline" => {
-  if (action.includes('delete') || action.includes('removed')) return 'destructive';
-  if (action.includes('create') || action.includes('added')) return 'default';
+  if (action.includes('delete') || action.includes('removed') || action.includes('deactivated')) return 'destructive';
+  if (action.includes('create') || action.includes('added') || action.includes('activated')) return 'default';
   return 'secondary';
 };
 
