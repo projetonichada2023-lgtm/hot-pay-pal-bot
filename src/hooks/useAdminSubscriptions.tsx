@@ -19,6 +19,27 @@ export interface AdminSubscription {
   };
 }
 
+const createAuditLog = async (
+  action: string,
+  entity_type: string,
+  entity_id?: string,
+  old_data?: Record<string, unknown>,
+  new_data?: Record<string, unknown>
+) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from('audit_logs').insert({
+    user_id: user.id,
+    action,
+    entity_type,
+    entity_id: entity_id || null,
+    old_data: old_data as unknown as null,
+    new_data: new_data as unknown as null,
+    user_agent: navigator.userAgent,
+  });
+};
+
 export const useAdminSubscriptions = () => {
   const queryClient = useQueryClient();
 
@@ -55,12 +76,27 @@ export const useAdminSubscriptions = () => {
       billing_cycle?: "monthly" | "yearly";
       expires_at?: string;
     }) => {
-      const { error } = await supabase.from("subscriptions").insert([data]);
+      const { data: newSub, error } = await supabase
+        .from("subscriptions")
+        .insert([data])
+        .select()
+        .single();
+      
       if (error) throw error;
+
+      // Create audit log
+      await createAuditLog(
+        'create',
+        'subscription',
+        newSub?.id,
+        undefined,
+        data as Record<string, unknown>
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-subscriptions"] });
       queryClient.invalidateQueries({ queryKey: ["admin-clients"] });
+      queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
       toast.success("Assinatura criada com sucesso");
     },
     onError: () => {
@@ -81,15 +117,33 @@ export const useAdminSubscriptions = () => {
       expires_at?: string | null;
       cancelled_at?: string | null;
     }) => {
+      // Get old data first
+      const { data: oldData } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("id", id)
+        .single();
+
       const { error } = await supabase
         .from("subscriptions")
         .update(data)
         .eq("id", id);
+      
       if (error) throw error;
+
+      // Create audit log
+      await createAuditLog(
+        'update',
+        'subscription',
+        id,
+        oldData as Record<string, unknown>,
+        data as Record<string, unknown>
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-subscriptions"] });
       queryClient.invalidateQueries({ queryKey: ["admin-clients"] });
+      queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
       toast.success("Assinatura atualizada com sucesso");
     },
     onError: () => {
@@ -99,15 +153,33 @@ export const useAdminSubscriptions = () => {
 
   const deleteSubscription = useMutation({
     mutationFn: async (id: string) => {
+      // Get old data first
+      const { data: oldData } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("id", id)
+        .single();
+
       const { error } = await supabase
         .from("subscriptions")
         .delete()
         .eq("id", id);
+      
       if (error) throw error;
+
+      // Create audit log
+      await createAuditLog(
+        'delete',
+        'subscription',
+        id,
+        oldData as Record<string, unknown>,
+        undefined
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-subscriptions"] });
       queryClient.invalidateQueries({ queryKey: ["admin-clients"] });
+      queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
       toast.success("Assinatura removida com sucesso");
     },
     onError: () => {
