@@ -21,6 +21,7 @@ const actionLabels: Record<string, string> = {
   admin_removed: 'Admin Removido',
   client_activated: 'Cliente Ativado',
   client_deactivated: 'Cliente Desativado',
+  impersonate: 'Acesso como Cliente',
 };
 
 const entityLabels: Record<string, string> = {

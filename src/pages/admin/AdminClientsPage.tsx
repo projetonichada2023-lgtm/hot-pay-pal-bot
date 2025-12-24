@@ -14,21 +14,52 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Eye } from "lucide-react";
+import { Search, Eye, LogIn, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ClientDetailsDialog } from "@/components/admin/ClientDetailsDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const AdminClientsPage = () => {
   const { clients, isLoading, toggleClientActive } = useAdminClients();
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<AdminClient | null>(null);
+  const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
 
   const filteredClients = clients.filter(
     (client) =>
       client.business_name.toLowerCase().includes(search.toLowerCase()) ||
       client.business_email?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleImpersonate = async (client: AdminClient) => {
+    setImpersonatingId(client.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke('impersonate-user', {
+        body: { 
+          targetUserId: client.user_id,
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.url) {
+        toast.success(`Acessando conta de ${client.business_name}...`);
+        window.open(data.url, '_blank');
+      } else {
+        toast.error('Não foi possível gerar o link de acesso');
+      }
+    } catch (error: unknown) {
+      console.error('Impersonation error:', error);
+      toast.error('Erro ao acessar conta do cliente');
+    } finally {
+      setImpersonatingId(null);
+    }
+  };
 
   const getPlanBadge = (planType?: string) => {
     const variants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
@@ -131,6 +162,7 @@ export const AdminClientsPage = () => {
                           toggleClientActive.mutate({
                             clientId: client.id,
                             isActive: checked,
+                            clientName: client.business_name,
                           })
                         }
                       />
@@ -139,13 +171,29 @@ export const AdminClientsPage = () => {
                       {format(new Date(client.created_at), "dd/MM/yyyy", { locale: ptBR })}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedClient(client)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedClient(client)}
+                          title="Ver detalhes"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleImpersonate(client)}
+                          disabled={impersonatingId === client.user_id}
+                          title="Acessar conta"
+                        >
+                          {impersonatingId === client.user_id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <LogIn className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
