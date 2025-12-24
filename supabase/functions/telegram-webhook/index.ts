@@ -262,7 +262,6 @@ async function showNextFee(
   const keyboard = {
     inline_keyboard: [
       [{ text: buttonText, callback_data: `gf:${feeIdShort}:${orderIdShort}` }],
-      [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
     ],
   };
   
@@ -362,7 +361,6 @@ async function handleGenerateFeePixCallback(
   const keyboard = {
     inline_keyboard: [
       [{ text: '✅ Paguei a Taxa', callback_data: `fp:${feeOrderIdShort}` }],
-      [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
     ],
   };
   
