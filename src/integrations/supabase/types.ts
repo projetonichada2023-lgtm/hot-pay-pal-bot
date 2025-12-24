@@ -461,6 +461,7 @@ export type Database = {
       product_fees: {
         Row: {
           amount: number
+          button_text: string | null
           created_at: string | null
           description: string | null
           display_order: number
@@ -473,6 +474,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          button_text?: string | null
           created_at?: string | null
           description?: string | null
           display_order?: number
@@ -485,6 +487,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          button_text?: string | null
           created_at?: string | null
           description?: string | null
           display_order?: number

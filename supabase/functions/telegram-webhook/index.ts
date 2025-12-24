@@ -265,9 +265,11 @@ async function showNextFee(
   
   const fullMessage = `${message}\n\n<code>${pix.pixCode}</code>`;
   
+  const buttonText = fee.button_text || '✅ Paguei a Taxa';
+  
   const keyboard = {
     inline_keyboard: [
-      [{ text: '✅ Paguei a Taxa', callback_data: `feepaid:${feeOrder.id}` }],
+      [{ text: buttonText, callback_data: `feepaid:${feeOrder.id}` }],
       [{ text: '❌ Cancelar Pedido', callback_data: `cancel_${orderId}` }],
     ],
   };
