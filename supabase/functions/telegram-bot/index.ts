@@ -590,15 +590,8 @@ async function showNextFee(ctx: ClientContext, chatId: number, orderId: string, 
     ],
   };
   
-  try {
-    if (pix.qrCodeUrl) {
-      await sendTelegramPhoto(ctx.botToken, chatId, pix.qrCodeUrl, fullMessage, keyboard);
-    } else {
-      await sendTelegramMessage(ctx.botToken, chatId, fullMessage, keyboard);
-    }
-  } catch {
-    await sendTelegramMessage(ctx.botToken, chatId, fullMessage, keyboard);
-  }
+  // Send as text to avoid Telegram failing to fetch external QR image URLs
+  await sendTelegramMessage(ctx.botToken, chatId, fullMessage, keyboard);
   
   if (customer) {
     await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', fullMessage);
