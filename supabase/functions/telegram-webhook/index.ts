@@ -1099,10 +1099,11 @@ serve(async (req) => {
         await handleShowProducts(botToken, chatId, clientId, customer?.id || null);
       }
 
-      // Show single product details
+      // Click on product from catalog - go directly to buy (generate PIX)
       if (data.startsWith('product_')) {
         const productId = data.replace('product_', '');
-        await handleShowProduct(botToken, chatId, clientId, productId);
+        // Go directly to purchase flow instead of showing product details
+        await handleBuyProduct(botToken, chatId, clientId, customer.id, productId, {});
       }
 
       // Buy upsell/downsell using compact callback_data (Telegram limit is 64 bytes)
@@ -1307,6 +1308,9 @@ async function handleBuyProduct(botToken: string, chatId: number, clientId: stri
     await sendTelegramMessage(botToken, chatId, '❌ Produto não encontrado.');
     return;
   }
+
+  // Increment product views (since we skip product details page now)
+  await incrementProductViews(productId);
 
   // Get customer name for FastSoft
   const { data: customer } = await supabase
