@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, MessageCircle, User, ArrowLeft, Search, CheckCheck, Send, Bot, UserCircle, Image, FileText, Mic, Video, Paperclip, X } from 'lucide-react';
+import { Loader2, MessageCircle, User, ArrowLeft, Search, CheckCheck, Send, Bot, UserCircle, Image as ImageIcon, FileText, Mic, Video, Paperclip, X } from 'lucide-react';
+import { ChatMessageRenderer } from '@/components/messages/ChatMessageRenderer';
 import { format, isToday, isYesterday, isSameDay, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -67,7 +68,7 @@ function getInitials(name: string): string {
 function getMessageTypeIcon(type: string) {
   switch (type) {
     case 'photo':
-      return <Image className="w-3 h-3" />;
+      return <ImageIcon className="w-3 h-3" />;
     case 'document':
       return <FileText className="w-3 h-3" />;
     case 'voice':
@@ -604,7 +605,7 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-48">
                           <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
-                            <Image className="w-4 h-4 mr-2" />
+                            <ImageIcon className="w-4 h-4 mr-2" />
                             Enviar imagem
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
@@ -670,9 +671,21 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
   );
 };
 
-function MessageBubble({ message, isFirstFromSender }: { message: TelegramMessage; isFirstFromSender: boolean }) {
+interface MessageBubbleProps {
+  message: TelegramMessage & { buttons?: unknown };
+  isFirstFromSender: boolean;
+}
+
+function MessageBubble({ message, isFirstFromSender }: MessageBubbleProps) {
   const isOutgoing = message.direction === 'outgoing';
   const typeIcon = getMessageTypeIcon(message.message_type);
+  
+  // Parse buttons from message if available
+  const buttons = message.buttons ? (
+    typeof message.buttons === 'string' 
+      ? JSON.parse(message.buttons) 
+      : message.buttons
+  ) : null;
 
   return (
     <div className={cn(
@@ -698,12 +711,17 @@ function MessageBubble({ message, isFirstFromSender }: { message: TelegramMessag
           </div>
         )}
         
-        <p className={cn(
-          "text-sm whitespace-pre-wrap break-words leading-relaxed",
-          !message.message_content && "italic opacity-70"
-        )}>
-          {message.message_content || `[${message.message_type}]`}
-        </p>
+        {message.message_content ? (
+          <ChatMessageRenderer 
+            content={message.message_content}
+            buttons={buttons}
+            isOutgoing={isOutgoing}
+          />
+        ) : (
+          <p className="text-sm italic opacity-70">
+            [{message.message_type}]
+          </p>
+        )}
         
         <div className={cn(
           "flex items-center justify-end gap-1.5 mt-1.5 -mb-0.5",
