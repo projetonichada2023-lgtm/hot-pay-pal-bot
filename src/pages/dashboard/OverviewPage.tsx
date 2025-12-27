@@ -22,6 +22,70 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, subDays } from 'date-fns';
 import { LucideIcon } from 'lucide-react';
+import { motion, type Variants } from 'framer-motion';
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 24,
+    },
+  },
+};
+
+const headerVariants: Variants = {
+  hidden: { opacity: 0, y: -20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring',
+      stiffness: 200,
+      damping: 20,
+    },
+  },
+};
+
+const widgetContainerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.12,
+      delayChildren: 0.3,
+    },
+  },
+};
+
+const widgetVariants: Variants = {
+  hidden: { opacity: 0, y: 30, scale: 0.9 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 200,
+      damping: 20,
+    },
+  },
+};
 
 interface OverviewPageProps {
   client: Client;
@@ -200,16 +264,38 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="dashboard-header">
+      <motion.div 
+        className="dashboard-header"
+        variants={headerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         <div className="relative z-10 flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-              <p className="text-muted-foreground">
+              <motion.h1 
+                className="text-3xl font-bold tracking-tight"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
+              >
+                Dashboard
+              </motion.h1>
+              <motion.p 
+                className="text-muted-foreground"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
                 Bem-vindo de volta, <span className="text-foreground font-medium">{client.business_name}</span>
-              </p>
+              </motion.p>
             </div>
-            <div className="hidden sm:flex items-center gap-3 mr-14">
+            <motion.div 
+              className="hidden sm:flex items-center gap-3 mr-14"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3, type: 'spring' }}
+            >
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
                 <div className={cn(
                   "status-dot",
@@ -219,28 +305,39 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
                   Bot {client.webhook_configured ? 'Ativo' : 'Pendente'}
                 </span>
               </div>
-            </div>
+            </motion.div>
           </div>
           
           {/* Date filters + Customize */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
+          <motion.div 
+            className="flex items-center justify-between gap-3 flex-wrap"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex gap-1.5 p-1 rounded-xl bg-muted/50 border border-border/50">
-                {presetRanges.map((preset) => (
-                  <Button
+                {presetRanges.map((preset, index) => (
+                  <motion.div
                     key={preset.days}
-                    variant={activePreset === preset.days ? 'default' : 'ghost'}
-                    size="sm"
-                    className={cn(
-                      "text-xs sm:text-sm h-8 px-3 rounded-lg transition-all",
-                      activePreset === preset.days 
-                        ? 'shadow-sm' 
-                        : 'hover:bg-background/50'
-                    )}
-                    onClick={() => handlePresetClick(preset.days)}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 + index * 0.05 }}
                   >
-                    {preset.label}
-                  </Button>
+                    <Button
+                      variant={activePreset === preset.days ? 'default' : 'ghost'}
+                      size="sm"
+                      className={cn(
+                        "text-xs sm:text-sm h-8 px-3 rounded-lg transition-all",
+                        activePreset === preset.days 
+                          ? 'shadow-sm' 
+                          : 'hover:bg-background/50'
+                      )}
+                      onClick={() => handlePresetClick(preset.days)}
+                    >
+                      {preset.label}
+                    </Button>
+                  </motion.div>
                 ))}
               </div>
               
@@ -281,12 +378,12 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
               onReorderWidgets={reorderWidgets}
               onReset={resetToDefaults}
             />
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Stats Grid */}
-      <div 
+      <motion.div 
         className={cn(
           "grid gap-4",
           displayedCards.length <= 2 ? "grid-cols-1 sm:grid-cols-2" :
@@ -294,16 +391,25 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
           "grid-cols-2 lg:grid-cols-4"
         )}
         data-tour="stats-cards"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
       >
         {displayedCards.map((stat, index) => {
           if (!stat) return null;
           const isPositive = stat.invertColors ? stat.change <= 0 : stat.change >= 0;
           const IconComponent = stat.icon;
           return (
-            <div 
+            <motion.div 
               key={stat.id} 
-              className="metric-card animate-fade-in"
-              style={{ animationDelay: `${index * 50}ms` }}
+              className="metric-card"
+              variants={itemVariants}
+              whileHover={{ 
+                scale: 1.02, 
+                y: -4,
+                transition: { type: 'spring', stiffness: 400 } 
+              }}
+              whileTap={{ scale: 0.98 }}
             >
               <div className={cn(
                 "absolute inset-0 opacity-50 pointer-events-none",
@@ -311,71 +417,124 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
               )} />
               <div className="relative p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className={cn(
-                    "p-2.5 rounded-xl backdrop-blur-sm",
-                    stat.iconBg
-                  )}>
+                  <motion.div 
+                    className={cn(
+                      "p-2.5 rounded-xl backdrop-blur-sm",
+                      stat.iconBg
+                    )}
+                    initial={{ rotate: -10 }}
+                    animate={{ rotate: 0 }}
+                    transition={{ delay: 0.3 + index * 0.1 }}
+                  >
                     <IconComponent className={cn("w-5 h-5", stat.iconColor)} />
-                  </div>
-                  <div className={cn(
-                    "flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm",
-                    isPositive 
-                      ? "bg-success/15 text-success" 
-                      : "bg-destructive/15 text-destructive"
-                  )}>
+                  </motion.div>
+                  <motion.div 
+                    className={cn(
+                      "flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm",
+                      isPositive 
+                        ? "bg-success/15 text-success" 
+                        : "bg-destructive/15 text-destructive"
+                    )}
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 + index * 0.1 }}
+                  >
                     {isPositive ? (
                       <TrendingUp className="w-3 h-3" />
                     ) : (
                       <TrendingUp className="w-3 h-3 rotate-180" />
                     )}
                     {formatChange(stat.change)}
-                  </div>
+                  </motion.div>
                 </div>
                 <div>
                   {stat.value === null ? (
                     <Skeleton className="h-10 w-28 mb-1" />
                   ) : (
-                    <div className="text-3xl font-bold tracking-tight text-foreground">
+                    <motion.div 
+                      className="text-3xl font-bold tracking-tight text-foreground"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.35 + index * 0.1 }}
+                    >
                       {stat.value}
-                    </div>
+                    </motion.div>
                   )}
                   <p className="text-sm text-muted-foreground mt-1">
                     {stat.label}
                   </p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
-      </div>
+      </motion.div>
 
       {/* Widgets Grid - dynamically rendered based on preferences */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <motion.div 
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+        variants={widgetContainerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {visibleWidgets.map((widget) => {
-          switch (widget.id) {
-            case 'salesChart':
-              return (
-                <div key={widget.id} className="lg:col-span-2" data-tour="sales-chart">
-                  <SalesChart clientId={client.id} dateRange={dateRange} />
-                </div>
-              );
-            case 'recentOrders':
-              return <RecentOrdersCard key={widget.id} clientId={client.id} />;
-            case 'funnelInsights':
-              return <FunnelInsightsCard key={widget.id} clientId={client.id} />;
-            case 'topProducts':
-              return <TopProductsWidget key={widget.id} clientId={client.id} />;
-            case 'orderStatus':
-              return <OrderStatusWidget key={widget.id} clientId={client.id} />;
-            case 'recentCustomers':
-              return <RecentCustomersWidget key={widget.id} clientId={client.id} />;
-            case 'salesByHour':
-              return <SalesByHourWidget key={widget.id} clientId={client.id} />;
-            default:
-              return null;
-          }
+          const getWidgetComponent = () => {
+            switch (widget.id) {
+              case 'salesChart':
+                return (
+                  <motion.div 
+                    key={widget.id} 
+                    className="lg:col-span-2" 
+                    data-tour="sales-chart"
+                    variants={widgetVariants}
+                    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                  >
+                    <SalesChart clientId={client.id} dateRange={dateRange} />
+                  </motion.div>
+                );
+              case 'recentOrders':
+                return (
+                  <motion.div key={widget.id} variants={widgetVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+                    <RecentOrdersCard clientId={client.id} />
+                  </motion.div>
+                );
+              case 'funnelInsights':
+                return (
+                  <motion.div key={widget.id} variants={widgetVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+                    <FunnelInsightsCard clientId={client.id} />
+                  </motion.div>
+                );
+              case 'topProducts':
+                return (
+                  <motion.div key={widget.id} variants={widgetVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+                    <TopProductsWidget clientId={client.id} />
+                  </motion.div>
+                );
+              case 'orderStatus':
+                return (
+                  <motion.div key={widget.id} variants={widgetVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+                    <OrderStatusWidget clientId={client.id} />
+                  </motion.div>
+                );
+              case 'recentCustomers':
+                return (
+                  <motion.div key={widget.id} variants={widgetVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+                    <RecentCustomersWidget clientId={client.id} />
+                  </motion.div>
+                );
+              case 'salesByHour':
+                return (
+                  <motion.div key={widget.id} variants={widgetVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+                    <SalesByHourWidget clientId={client.id} />
+                  </motion.div>
+                );
+              default:
+                return null;
+            }
+          };
+          return getWidgetComponent();
         })}
-      </div>
+      </motion.div>
 
       {/* Quick Actions */}
       {!client.telegram_bot_token && (
