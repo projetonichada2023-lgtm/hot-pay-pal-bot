@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Client } from '@/hooks/useClient';
 import { useTelegramConversations, TelegramMessage } from '@/hooks/useTelegramMessages';
-import { useSendTelegramMessage } from '@/hooks/useSendTelegramMessage';
+import { useSendTelegramMessage, uploadChatMedia } from '@/hooks/useSendTelegramMessage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, MessageCircle, User, ArrowLeft, Search, CheckCheck, Send, Bot, UserCircle, Image, FileText, Mic, Video, Smile } from 'lucide-react';
+import { Loader2, MessageCircle, User, ArrowLeft, Search, CheckCheck, Send, Bot, UserCircle, Image, FileText, Mic, Video, Paperclip, X } from 'lucide-react';
 import { format, isToday, isYesterday, isSameDay, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -16,9 +16,16 @@ import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/hooks/use-toast';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface ChatsPageProps {
   client: Client;
+}
+
+interface PendingMedia {
+  file: File;
+  url: string;
+  type: 'photo' | 'video' | 'document';
 }
 
 function formatMessageTime(dateStr: string): string {
@@ -85,6 +92,12 @@ function getLastMessagePreview(conv: { last_message: string | null; messages: Te
   return lastMsg.message_content || conv.last_message || 'Sem mensagem';
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
 export const ChatsPage = ({ client }: ChatsPageProps) => {
   const { data: conversations, isLoading } = useTelegramConversations(client.id);
   const sendMessage = useSendTelegramMessage();
@@ -92,8 +105,12 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
   const selectedChat = conversations?.find((c) => c.customer_id === selectedChatId) || null;
   const [searchQuery, setSearchQuery] = useState('');
   const [messageInput, setMessageInput] = useState('');
+  const [pendingMedia, setPendingMedia] = useState<PendingMedia | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const filteredConversations = useMemo(() => {
     if (!conversations) return [];
@@ -107,7 +124,6 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
     );
   }, [conversations, searchQuery]);
 
-  // Stats
   const stats = useMemo(() => {
     if (!conversations) return { total: 0, today: 0, messages: 0 };
     
@@ -117,14 +133,12 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
     return { total: conversations.length, today: todayCount, messages: totalMessages };
   }, [conversations]);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     if (selectedChat && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [selectedChat?.messages]);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -132,32 +146,118 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
     }
   }, [messageInput]);
 
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (pendingMedia?.url) {
+        URL.revokeObjectURL(pendingMedia.url);
+      }
+    };
+  }, [pendingMedia]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, forceType?: 'photo' | 'document') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 20MB)
+    if (file.size > 20 * 1024 * 1024) {
+      toast({
+        variant: 'destructive',
+        title: 'Arquivo muito grande',
+        description: 'O tamanho máximo permitido é 20MB.',
+      });
+      return;
+    }
+
+    // Determine media type
+    let mediaType: 'photo' | 'video' | 'document' = forceType || 'document';
+    if (!forceType) {
+      if (file.type.startsWith('image/')) {
+        mediaType = 'photo';
+      } else if (file.type.startsWith('video/')) {
+        mediaType = 'video';
+      }
+    }
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    
+    // Revoke previous URL if exists
+    if (pendingMedia?.url) {
+      URL.revokeObjectURL(pendingMedia.url);
+    }
+
+    setPendingMedia({
+      file,
+      url: previewUrl,
+      type: mediaType,
+    });
+
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleRemoveMedia = () => {
+    if (pendingMedia?.url) {
+      URL.revokeObjectURL(pendingMedia.url);
+    }
+    setPendingMedia(null);
+  };
+
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !selectedChat) return;
+    if ((!messageInput.trim() && !pendingMedia) || !selectedChat) return;
 
     const message = messageInput.trim();
+    const media = pendingMedia;
+    
     setMessageInput('');
+    setPendingMedia(null);
 
     try {
+      let mediaUrl: string | undefined;
+      let mediaType: 'photo' | 'video' | 'document' | undefined;
+
+      // Upload media if present
+      if (media) {
+        setIsUploading(true);
+        try {
+          const uploaded = await uploadChatMedia(media.file, client.id);
+          mediaUrl = uploaded.url;
+          mediaType = uploaded.type;
+        } finally {
+          setIsUploading(false);
+        }
+      }
+
       await sendMessage.mutateAsync({
         clientId: client.id,
         chatId: selectedChat.telegram_chat_id,
         customerId: selectedChat.customer_id,
-        message,
+        message: message || undefined,
+        mediaUrl,
+        mediaType,
       });
 
       toast({
         title: 'Mensagem enviada',
-        description: 'A mensagem foi enviada com sucesso.',
+        description: media ? `${mediaType === 'photo' ? 'Imagem' : 'Arquivo'} enviado com sucesso.` : 'Mensagem enviada com sucesso.',
       });
+
+      // Cleanup
+      if (media?.url) {
+        URL.revokeObjectURL(media.url);
+      }
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Erro ao enviar',
         description: error instanceof Error ? error.message : 'Não foi possível enviar a mensagem.',
       });
-      // Restore the message if it failed
+      // Restore on error
       setMessageInput(message);
+      if (media) {
+        setPendingMedia(media);
+      }
     }
   };
 
@@ -181,6 +281,22 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Hidden file inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={(e) => handleFileSelect(e)}
+        accept="*/*"
+      />
+      <input
+        ref={imageInputRef}
+        type="file"
+        className="hidden"
+        onChange={(e) => handleFileSelect(e, 'photo')}
+        accept="image/*"
+      />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -388,7 +504,6 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
 
                   {/* Messages */}
                   <CardContent className="p-0 flex-1 overflow-hidden relative">
-                    {/* Background pattern */}
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,hsl(var(--secondary)/0.3)_1px,transparent_1px)] bg-[size:20px_20px] opacity-50" />
                     
                     <ScrollArea className="h-full relative">
@@ -426,39 +541,97 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
                     </ScrollArea>
                   </CardContent>
 
+                  {/* Media Preview */}
+                  <AnimatePresence>
+                    {pendingMedia && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="border-t bg-secondary/30 px-4 py-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="relative shrink-0">
+                            {pendingMedia.type === 'photo' ? (
+                              <img
+                                src={pendingMedia.url}
+                                alt="Preview"
+                                className="w-16 h-16 rounded-lg object-cover border"
+                              />
+                            ) : pendingMedia.type === 'video' ? (
+                              <div className="w-16 h-16 rounded-lg bg-secondary flex items-center justify-center border">
+                                <Video className="w-6 h-6 text-muted-foreground" />
+                              </div>
+                            ) : (
+                              <div className="w-16 h-16 rounded-lg bg-secondary flex items-center justify-center border">
+                                <FileText className="w-6 h-6 text-muted-foreground" />
+                              </div>
+                            )}
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="absolute -top-2 -right-2 h-5 w-5 rounded-full"
+                              onClick={handleRemoveMedia}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{pendingMedia.file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(pendingMedia.file.size)} • {pendingMedia.type === 'photo' ? 'Imagem' : pendingMedia.type === 'video' ? 'Vídeo' : 'Documento'}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   {/* Message Input */}
                   <div className="border-t p-3 bg-background/80 backdrop-blur-sm">
                     <div className="flex items-end gap-2">
+                      {/* Attachment Button */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-[44px] w-[44px] shrink-0"
+                            disabled={isUploading || sendMessage.isPending}
+                          >
+                            <Paperclip className="w-5 h-5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48">
+                          <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
+                            <Image className="w-4 h-4 mr-2" />
+                            Enviar imagem
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            Enviar arquivo
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
                       <div className="flex-1 relative">
                         <Textarea
                           ref={textareaRef}
-                          placeholder="Digite sua mensagem..."
+                          placeholder={pendingMedia ? "Adicione uma legenda (opcional)..." : "Digite sua mensagem..."}
                           value={messageInput}
                           onChange={(e) => setMessageInput(e.target.value)}
                           onKeyDown={handleKeyDown}
-                          className="min-h-[44px] max-h-[120px] resize-none pr-10 py-3"
+                          className="min-h-[44px] max-h-[120px] resize-none py-3"
                           rows={1}
                         />
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="absolute right-1 bottom-1 h-8 w-8 text-muted-foreground hover:text-foreground"
-                              disabled
-                            >
-                              <Smile className="w-5 h-5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Em breve</TooltipContent>
-                        </Tooltip>
                       </div>
+                      
                       <Button
                         onClick={handleSendMessage}
-                        disabled={!messageInput.trim() || sendMessage.isPending}
+                        disabled={(!messageInput.trim() && !pendingMedia) || sendMessage.isPending || isUploading}
                         className="h-[44px] px-4 gap-2"
                       >
-                        {sendMessage.isPending ? (
+                        {(sendMessage.isPending || isUploading) ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <Send className="w-4 h-4" />
@@ -467,7 +640,7 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
                       </Button>
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-2 text-center">
-                      Pressione Enter para enviar • Shift+Enter para nova linha
+                      Enter para enviar • Shift+Enter para nova linha • Máx. 20MB
                     </p>
                   </div>
                 </>
@@ -515,7 +688,6 @@ function MessageBubble({ message, isFirstFromSender }: { message: TelegramMessag
             : "bg-card border border-border/50 rounded-bl-sm"
         )}
       >
-        {/* Message type indicator */}
         {typeIcon && (
           <div className={cn(
             "flex items-center gap-1.5 mb-1.5 text-xs",
@@ -545,7 +717,6 @@ function MessageBubble({ message, isFirstFromSender }: { message: TelegramMessag
           )}
         </div>
 
-        {/* Sender indicator for first message */}
         {isFirstFromSender && (
           <div className={cn(
             "absolute -top-5 text-[10px] font-medium",
