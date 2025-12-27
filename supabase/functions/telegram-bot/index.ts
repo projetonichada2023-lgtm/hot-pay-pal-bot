@@ -478,7 +478,6 @@ async function handleViewProduct(ctx: ClientContext, chatId: number, productId: 
   const keyboard = {
     inline_keyboard: [
       [{ text: '🛒 Comprar Agora', callback_data: `buy_${product.id}` }],
-      [{ text: '⬅️ Voltar', callback_data: 'products' }],
     ],
   };
   
