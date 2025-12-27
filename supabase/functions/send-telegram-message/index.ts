@@ -12,7 +12,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 async function sendTelegramMessage(botToken: string, chatId: number, text: string) {
-  console.log(`Sending message to chat ${chatId}: ${text.substring(0, 50)}...`);
+  console.log(`Sending text message to chat ${chatId}`);
   
   const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: 'POST',
@@ -25,12 +25,87 @@ async function sendTelegramMessage(botToken: string, chatId: number, text: strin
   });
 
   const data = await res.json();
-  console.log('Telegram API response:', JSON.stringify(data));
-  
   if (!data?.ok) {
     throw new Error(`Telegram API error: ${data?.description || 'Unknown error'}`);
   }
+  return data;
+}
+
+async function sendTelegramPhoto(botToken: string, chatId: number, photoUrl: string, caption?: string) {
+  console.log(`Sending photo to chat ${chatId}: ${photoUrl}`);
   
+  const body: Record<string, unknown> = { 
+    chat_id: chatId, 
+    photo: photoUrl,
+  };
+  if (caption) {
+    body.caption = caption;
+    body.parse_mode = 'HTML';
+  }
+  
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json();
+  console.log('Telegram sendPhoto response:', JSON.stringify(data));
+  if (!data?.ok) {
+    throw new Error(`Telegram API error: ${data?.description || 'Unknown error'}`);
+  }
+  return data;
+}
+
+async function sendTelegramDocument(botToken: string, chatId: number, documentUrl: string, caption?: string) {
+  console.log(`Sending document to chat ${chatId}: ${documentUrl}`);
+  
+  const body: Record<string, unknown> = { 
+    chat_id: chatId, 
+    document: documentUrl,
+  };
+  if (caption) {
+    body.caption = caption;
+    body.parse_mode = 'HTML';
+  }
+  
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json();
+  console.log('Telegram sendDocument response:', JSON.stringify(data));
+  if (!data?.ok) {
+    throw new Error(`Telegram API error: ${data?.description || 'Unknown error'}`);
+  }
+  return data;
+}
+
+async function sendTelegramVideo(botToken: string, chatId: number, videoUrl: string, caption?: string) {
+  console.log(`Sending video to chat ${chatId}: ${videoUrl}`);
+  
+  const body: Record<string, unknown> = { 
+    chat_id: chatId, 
+    video: videoUrl,
+  };
+  if (caption) {
+    body.caption = caption;
+    body.parse_mode = 'HTML';
+  }
+  
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json();
+  console.log('Telegram sendVideo response:', JSON.stringify(data));
+  if (!data?.ok) {
+    throw new Error(`Telegram API error: ${data?.description || 'Unknown error'}`);
+  }
   return data;
 }
 
@@ -57,13 +132,17 @@ serve(async (req) => {
     }
 
     // Get request body
-    const { clientId, chatId, customerId, message } = await req.json();
+    const { clientId, chatId, customerId, message, mediaUrl, mediaType } = await req.json();
 
-    if (!clientId || !chatId || !message) {
-      throw new Error('Missing required fields: clientId, chatId, message');
+    if (!clientId || !chatId) {
+      throw new Error('Missing required fields: clientId, chatId');
     }
 
-    console.log(`User ${user.id} sending message to chat ${chatId} for client ${clientId}`);
+    if (!message && !mediaUrl) {
+      throw new Error('Either message or mediaUrl is required');
+    }
+
+    console.log(`User ${user.id} sending ${mediaType || 'text'} to chat ${chatId} for client ${clientId}`);
 
     // Verify the user owns this client
     const { data: client, error: clientError } = await supabase
@@ -84,8 +163,32 @@ serve(async (req) => {
       throw new Error('Bot token not configured for this client');
     }
 
-    // Send the message via Telegram
-    const result = await sendTelegramMessage(client.telegram_bot_token, chatId, message);
+    let result;
+    let savedMessageType = 'text';
+    let savedContent = message || '';
+
+    // Send based on media type
+    if (mediaUrl && mediaType) {
+      savedMessageType = mediaType;
+      savedContent = message || `[${mediaType}]`;
+      
+      switch (mediaType) {
+        case 'photo':
+          result = await sendTelegramPhoto(client.telegram_bot_token, chatId, mediaUrl, message);
+          break;
+        case 'video':
+          result = await sendTelegramVideo(client.telegram_bot_token, chatId, mediaUrl, message);
+          break;
+        case 'document':
+        default:
+          result = await sendTelegramDocument(client.telegram_bot_token, chatId, mediaUrl, message);
+          break;
+      }
+    } else if (message) {
+      result = await sendTelegramMessage(client.telegram_bot_token, chatId, message);
+    } else {
+      throw new Error('No content to send');
+    }
 
     // Save the message to the database
     const { error: insertError } = await supabase
@@ -96,13 +199,12 @@ serve(async (req) => {
         telegram_chat_id: chatId,
         telegram_message_id: result.result?.message_id || null,
         direction: 'outgoing',
-        message_type: 'text',
-        message_content: message,
+        message_type: savedMessageType,
+        message_content: savedContent,
       });
 
     if (insertError) {
       console.error('Error saving message to database:', insertError);
-      // Don't throw - message was sent successfully
     }
 
     console.log('Message sent successfully');
