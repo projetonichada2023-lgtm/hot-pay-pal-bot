@@ -1,18 +1,21 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Client } from '@/hooks/useClient';
 import { useTelegramConversations, TelegramMessage } from '@/hooks/useTelegramMessages';
+import { useSendTelegramMessage } from '@/hooks/useSendTelegramMessage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2, MessageCircle, User, ArrowLeft, Search, Clock, CheckCheck, Send, Bot, UserCircle, Image, FileText, Mic, Video } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, MessageCircle, User, ArrowLeft, Search, CheckCheck, Send, Bot, UserCircle, Image, FileText, Mic, Video, Smile } from 'lucide-react';
 import { format, isToday, isYesterday, isSameDay, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from '@/hooks/use-toast';
 
 interface ChatsPageProps {
   client: Client;
@@ -84,11 +87,13 @@ function getLastMessagePreview(conv: { last_message: string | null; messages: Te
 
 export const ChatsPage = ({ client }: ChatsPageProps) => {
   const { data: conversations, isLoading } = useTelegramConversations(client.id);
+  const sendMessage = useSendTelegramMessage();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const selectedChat = conversations?.find((c) => c.customer_id === selectedChatId) || null;
   const [searchQuery, setSearchQuery] = useState('');
+  const [messageInput, setMessageInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const filteredConversations = useMemo(() => {
     if (!conversations) return [];
@@ -119,6 +124,50 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
     }
   }, [selectedChat?.messages]);
 
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+    }
+  }, [messageInput]);
+
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !selectedChat) return;
+
+    const message = messageInput.trim();
+    setMessageInput('');
+
+    try {
+      await sendMessage.mutateAsync({
+        clientId: client.id,
+        chatId: selectedChat.telegram_chat_id,
+        customerId: selectedChat.customer_id,
+        message,
+      });
+
+      toast({
+        title: 'Mensagem enviada',
+        description: 'A mensagem foi enviada com sucesso.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao enviar',
+        description: error instanceof Error ? error.message : 'Não foi possível enviar a mensagem.',
+      });
+      // Restore the message if it failed
+      setMessageInput(message);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
@@ -142,7 +191,7 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
             Conversas
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Histórico de conversas do Telegram com seus clientes
+            Converse com seus clientes do Telegram
           </p>
         </div>
         
@@ -342,7 +391,7 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
                     {/* Background pattern */}
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,hsl(var(--secondary)/0.3)_1px,transparent_1px)] bg-[size:20px_20px] opacity-50" />
                     
-                    <ScrollArea className="h-full relative" ref={scrollAreaRef}>
+                    <ScrollArea className="h-full relative">
                       <div className="flex flex-col gap-0.5 p-4 pb-6">
                         <AnimatePresence>
                           {selectedChat.messages.map((msg, index) => {
@@ -377,10 +426,49 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
                     </ScrollArea>
                   </CardContent>
 
-                  {/* Footer info */}
-                  <div className="border-t px-4 py-2 bg-secondary/20 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <Bot className="w-3.5 h-3.5" />
-                    <span>Mensagens automáticas do bot • Somente visualização</span>
+                  {/* Message Input */}
+                  <div className="border-t p-3 bg-background/80 backdrop-blur-sm">
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1 relative">
+                        <Textarea
+                          ref={textareaRef}
+                          placeholder="Digite sua mensagem..."
+                          value={messageInput}
+                          onChange={(e) => setMessageInput(e.target.value)}
+                          onKeyDown={handleKeyDown}
+                          className="min-h-[44px] max-h-[120px] resize-none pr-10 py-3"
+                          rows={1}
+                        />
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-1 bottom-1 h-8 w-8 text-muted-foreground hover:text-foreground"
+                              disabled
+                            >
+                              <Smile className="w-5 h-5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Em breve</TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Button
+                        onClick={handleSendMessage}
+                        disabled={!messageInput.trim() || sendMessage.isPending}
+                        className="h-[44px] px-4 gap-2"
+                      >
+                        {sendMessage.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Send className="w-4 h-4" />
+                        )}
+                        <span className="hidden sm:inline">Enviar</span>
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-2 text-center">
+                      Pressione Enter para enviar • Shift+Enter para nova linha
+                    </p>
                   </div>
                 </>
               ) : (
@@ -396,7 +484,7 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
                     </div>
                     <h3 className="text-xl font-semibold mb-2">Selecione uma conversa</h3>
                     <p className="text-muted-foreground text-sm max-w-xs">
-                      Escolha uma conversa da lista para visualizar o histórico de mensagens
+                      Escolha uma conversa da lista para visualizar e responder mensagens
                     </p>
                   </motion.div>
                 </CardContent>

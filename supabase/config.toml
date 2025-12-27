@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.impersonate-user]
 verify_jwt = false
+
+[functions.send-telegram-message]
+verify_jwt = false
