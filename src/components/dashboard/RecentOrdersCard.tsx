@@ -34,44 +34,47 @@ export const RecentOrdersCard = ({ clientId }: RecentOrdersCardProps) => {
 
   if (isLoading) {
     return (
-      <Card className="glass-card">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Package className="w-5 h-5" />
-            Pedidos Recentes
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <div className="widget-card">
+        <div className="p-6 pb-4 flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-primary/10">
+            <Package className="w-4 h-4 text-primary" />
+          </div>
+          <h3 className="text-base font-semibold">Pedidos Recentes</h3>
+        </div>
+        <div className="px-6 pb-6 space-y-3">
           {[1, 2, 3].map(i => (
-            <Skeleton key={i} className="h-16 w-full" />
+            <Skeleton key={i} className="h-16 w-full rounded-xl" />
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="glass-card">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Package className="w-5 h-5" />
-          Pedidos Recentes
-        </CardTitle>
+    <div className="widget-card">
+      <div className="p-6 pb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-primary/10">
+            <Package className="w-4 h-4 text-primary" />
+          </div>
+          <h3 className="text-base font-semibold">Pedidos Recentes</h3>
+        </div>
         <button 
-          onClick={() => navigate('/orders')}
-          className="text-sm text-primary hover:underline"
+          onClick={() => navigate('/dashboard/orders')}
+          className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
         >
           Ver todos
         </button>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="px-6 pb-6">
         {recentOrders.length === 0 ? (
-          <p className="text-muted-foreground text-sm text-center py-4">
-            Nenhum pedido ainda
-          </p>
+          <div className="text-center py-8">
+            <Package className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
+            <p className="text-muted-foreground text-sm">Nenhum pedido ainda</p>
+          </div>
         ) : (
-          <div className="space-y-3">
-            {recentOrders.map(order => {
+          <div className="space-y-2">
+            {recentOrders.map((order, index) => {
               const status = order.status || 'pending';
               const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
               const StatusIcon = config.icon;
@@ -79,10 +82,11 @@ export const RecentOrdersCard = ({ clientId }: RecentOrdersCardProps) => {
               return (
                 <div 
                   key={order.id} 
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                  className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors animate-fade-in"
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <StatusIcon className="w-4 h-4 text-primary" />
                     </div>
                     <div className="min-w-0">
@@ -94,11 +98,11 @@ export const RecentOrdersCard = ({ clientId }: RecentOrdersCardProps) => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <span className="font-semibold text-sm">
+                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                    <span className="font-bold text-sm">
                       {formatPrice(Number(order.amount))}
                     </span>
-                    <Badge variant={config.variant} className="text-xs">
+                    <Badge variant={config.variant} className="text-[10px] px-2 py-0.5">
                       {config.label}
                     </Badge>
                   </div>
@@ -107,7 +111,7 @@ export const RecentOrdersCard = ({ clientId }: RecentOrdersCardProps) => {
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };

@@ -198,72 +198,90 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
   }, [visibleMetrics, stats, isLoading]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground text-sm">Bem-vindo, {client.business_name}</p>
-          </div>
-          <div className="hidden sm:flex items-center gap-2 text-sm mr-14">
-            <div className={`w-2 h-2 rounded-full ${client.webhook_configured ? 'bg-success' : 'bg-warning'}`} />
-            <span className="text-muted-foreground">
-              Bot {client.webhook_configured ? 'Ativo' : 'Pendente'}
-            </span>
-          </div>
-        </div>
-        
-        {/* Date filters + Customize */}
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex gap-1 flex-wrap">
-              {presetRanges.map((preset) => (
-                <Button
-                  key={preset.days}
-                  variant={activePreset === preset.days ? 'default' : 'outline'}
-                  size="sm"
-                  className="text-xs sm:text-sm"
-                  onClick={() => handlePresetClick(preset.days)}
-                >
-                  {preset.label}
-                </Button>
-              ))}
+      <div className="dashboard-header">
+        <div className="relative z-10 flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+              <p className="text-muted-foreground">
+                Bem-vindo de volta, <span className="text-foreground font-medium">{client.business_name}</span>
+              </p>
             </div>
-            
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm">
-                  <CalendarIcon className="w-3.5 h-3.5" />
-                  <span className="hidden xs:inline">
-                    {format(dateRange.from, "dd/MM")} - {format(dateRange.to, "dd/MM/yy")}
-                  </span>
-                  <span className="xs:hidden">Período</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  selected={{ from: dateRange.from, to: dateRange.to }}
-                  onSelect={(range) => handleDateRangeChange(range || {})}
-                  disabled={(date) => date > new Date()}
-                  numberOfMonths={1}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+            <div className="hidden sm:flex items-center gap-3 mr-14">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
+                <div className={cn(
+                  "status-dot",
+                  client.webhook_configured ? 'bg-success' : 'bg-warning'
+                )} />
+                <span className="text-sm font-medium">
+                  Bot {client.webhook_configured ? 'Ativo' : 'Pendente'}
+                </span>
+              </div>
+            </div>
           </div>
+          
+          {/* Date filters + Customize */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex gap-1.5 p-1 rounded-xl bg-muted/50 border border-border/50">
+                {presetRanges.map((preset) => (
+                  <Button
+                    key={preset.days}
+                    variant={activePreset === preset.days ? 'default' : 'ghost'}
+                    size="sm"
+                    className={cn(
+                      "text-xs sm:text-sm h-8 px-3 rounded-lg transition-all",
+                      activePreset === preset.days 
+                        ? 'shadow-sm' 
+                        : 'hover:bg-background/50'
+                    )}
+                    onClick={() => handlePresetClick(preset.days)}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-2 text-xs sm:text-sm h-8 px-3 rounded-lg border-border/50 hover:border-border hover:bg-muted/50"
+                  >
+                    <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="hidden xs:inline font-medium">
+                      {format(dateRange.from, "dd/MM")} - {format(dateRange.to, "dd/MM/yy")}
+                    </span>
+                    <span className="xs:hidden">Período</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={{ from: dateRange.from, to: dateRange.to }}
+                    onSelect={(range) => handleDateRangeChange(range || {})}
+                    disabled={(date) => date > new Date()}
+                    numberOfMonths={1}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
-          <CustomizeDashboardDialog
-            metrics={metrics}
-            widgets={widgets}
-            onToggleMetric={toggleMetric}
-            onReorderMetrics={reorderMetrics}
-            onToggleWidget={toggleWidget}
-            onReorderWidgets={reorderWidgets}
-            onReset={resetToDefaults}
-          />
+            <CustomizeDashboardDialog
+              metrics={metrics}
+              widgets={widgets}
+              onToggleMetric={toggleMetric}
+              onReorderMetrics={reorderMetrics}
+              onToggleWidget={toggleWidget}
+              onReorderWidgets={reorderWidgets}
+              onReset={resetToDefaults}
+            />
+          </div>
         </div>
       </div>
 
@@ -277,45 +295,56 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
         )}
         data-tour="stats-cards"
       >
-        {displayedCards.map((stat) => {
+        {displayedCards.map((stat, index) => {
           if (!stat) return null;
           const isPositive = stat.invertColors ? stat.change <= 0 : stat.change >= 0;
           const IconComponent = stat.icon;
           return (
-            <Card 
+            <div 
               key={stat.id} 
-              className={cn(
-                "relative overflow-hidden border-0 bg-gradient-to-br",
-                stat.gradient,
-                "hover:scale-[1.02] transition-transform duration-200"
-              )}
+              className="metric-card animate-fade-in"
+              style={{ animationDelay: `${index * 50}ms` }}
             >
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div className={cn("p-2.5 rounded-xl", stat.iconBg)}>
+              <div className={cn(
+                "absolute inset-0 opacity-50 pointer-events-none",
+                `bg-gradient-to-br ${stat.gradient}`
+              )} />
+              <div className="relative p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className={cn(
+                    "p-2.5 rounded-xl backdrop-blur-sm",
+                    stat.iconBg
+                  )}>
                     <IconComponent className={cn("w-5 h-5", stat.iconColor)} />
                   </div>
-                  <span className={cn(
-                    "text-xs font-medium px-2 py-0.5 rounded-full",
+                  <div className={cn(
+                    "flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm",
                     isPositive 
-                      ? "bg-success/20 text-success" 
-                      : "bg-destructive/20 text-destructive"
+                      ? "bg-success/15 text-success" 
+                      : "bg-destructive/15 text-destructive"
                   )}>
+                    {isPositive ? (
+                      <TrendingUp className="w-3 h-3" />
+                    ) : (
+                      <TrendingUp className="w-3 h-3 rotate-180" />
+                    )}
                     {formatChange(stat.change)}
-                  </span>
-                </div>
-                {stat.value === null ? (
-                  <Skeleton className="h-9 w-24 mb-1" />
-                ) : (
-                  <div className="text-2xl sm:text-3xl font-bold tracking-tight mb-1">
-                    {stat.value}
                   </div>
-                )}
-                <p className="text-xs text-muted-foreground font-medium">
-                  {stat.label}
-                </p>
-              </CardContent>
-            </Card>
+                </div>
+                <div>
+                  {stat.value === null ? (
+                    <Skeleton className="h-10 w-28 mb-1" />
+                  ) : (
+                    <div className="text-3xl font-bold tracking-tight text-foreground">
+                      {stat.value}
+                    </div>
+                  )}
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {stat.label}
+                  </p>
+                </div>
+              </div>
+            </div>
           );
         })}
       </div>

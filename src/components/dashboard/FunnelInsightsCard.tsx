@@ -23,17 +23,17 @@ export const FunnelInsightsCard = ({ clientId }: FunnelInsightsCardProps) => {
 
   if (isLoading) {
     return (
-      <Card className="glass-card">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" />
-            Performance do Funil
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-24 w-full" />
-        </CardContent>
-      </Card>
+      <div className="widget-card">
+        <div className="p-6 pb-4 flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-primary/10">
+            <TrendingUp className="w-4 h-4 text-primary" />
+          </div>
+          <h3 className="text-base font-semibold">Performance do Funil</h3>
+        </div>
+        <div className="px-6 pb-6">
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
+      </div>
     );
   }
 
@@ -62,34 +62,36 @@ export const FunnelInsightsCard = ({ clientId }: FunnelInsightsCardProps) => {
   ];
 
   return (
-    <Card className="glass-card">
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <TrendingUp className="w-5 h-5" />
-          Performance do Funil
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {insights.map((insight) => {
-            const Icon = insight.icon;
-            return (
-              <div key={insight.label} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg bg-muted flex items-center justify-center`}>
-                    <Icon className={`w-4 h-4 ${insight.color}`} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{insight.label}</p>
-                    <p className="text-xs text-muted-foreground">{insight.detail}</p>
-                  </div>
-                </div>
-                <span className={`font-bold ${insight.color}`}>{insight.value}</span>
-              </div>
-            );
-          })}
+    <div className="widget-card">
+      <div className="p-6 pb-4 flex items-center gap-3">
+        <div className="p-2 rounded-xl bg-primary/10">
+          <TrendingUp className="w-4 h-4 text-primary" />
         </div>
-      </CardContent>
-    </Card>
+        <h3 className="text-base font-semibold">Performance do Funil</h3>
+      </div>
+      <div className="px-6 pb-6 space-y-3">
+        {insights.map((insight, index) => {
+          const Icon = insight.icon;
+          return (
+            <div 
+              key={insight.label} 
+              className="flex items-center justify-between p-3 rounded-xl bg-muted/30 animate-fade-in"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-muted/50 flex items-center justify-center">
+                  <Icon className={`w-4 h-4 ${insight.color}`} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{insight.label}</p>
+                  <p className="text-xs text-muted-foreground">{insight.detail}</p>
+                </div>
+              </div>
+              <span className={`font-bold text-lg ${insight.color}`}>{insight.value}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 };
