@@ -135,8 +135,14 @@
 
 @layer components {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-xl;
+    @apply bg-card/90 backdrop-blur-xl border border-border/40 rounded-2xl;
     box-shadow: var(--shadow-card);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    border-color: hsl(var(--border) / 0.6);
+    box-shadow: var(--shadow-card), 0 0 0 1px hsl(var(--primary) / 0.05);
   }
 
   .gradient-hot {
@@ -156,6 +162,80 @@
 
   .hover-scale {
     @apply transition-transform duration-300 ease-out hover:scale-[1.02];
+  }
+
+  /* Dashboard specific styles */
+  .dashboard-header {
+    @apply relative overflow-hidden rounded-2xl p-6;
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.8) 100%);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  .dashboard-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, hsl(var(--primary) / 0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .metric-card {
+    @apply relative overflow-hidden rounded-2xl border-0 transition-all duration-300;
+    background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.95) 100%);
+    box-shadow: 0 4px 20px hsl(var(--foreground) / 0.03);
+  }
+
+  .metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px hsl(var(--foreground) / 0.06);
+  }
+
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, hsl(var(--border) / 0.5), transparent 50%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .widget-card {
+    @apply relative overflow-hidden rounded-2xl;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border) / 0.5);
+    box-shadow: 0 4px 24px hsl(var(--foreground) / 0.03);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .widget-card:hover {
+    border-color: hsl(var(--border) / 0.7);
+    box-shadow: 0 8px 32px hsl(var(--foreground) / 0.05);
+  }
+
+  .status-dot {
+    @apply relative w-2.5 h-2.5 rounded-full;
+  }
+
+  .status-dot::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: inherit;
+    opacity: 0.3;
+    animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-ring {
+    0%, 100% { transform: scale(1); opacity: 0.3; }
+    50% { transform: scale(1.5); opacity: 0; }
   }
 }
 
