@@ -347,16 +347,18 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
           </Card>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[calc(100vh-220px)] min-h-[500px]">
+        <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-220px)] min-h-[500px]">
           {/* Conversations List */}
           <AnimatePresence mode="wait">
+            {(!selectedChat || window.innerWidth >= 1024) && (
             <motion.div
               key="conversations-list"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
               className={cn(
-                "lg:col-span-4 xl:col-span-3",
-                selectedChat && "hidden lg:block"
+                "w-full lg:w-80 xl:w-96 shrink-0",
+                selectedChat && "hidden lg:flex lg:flex-col"
               )}
             >
               <Card className="glass-card h-full overflow-hidden flex flex-col">
@@ -441,8 +443,9 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
                     </div>
                   </ScrollArea>
                 </CardContent>
-              </Card>
+            </Card>
             </motion.div>
+            )}
           </AnimatePresence>
 
           {/* Chat Messages */}
@@ -450,11 +453,11 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className={cn(
-              "lg:col-span-8 xl:col-span-9",
-              !selectedChat && "hidden lg:block"
+              "flex-1 min-w-0",
+              !selectedChat && "hidden lg:flex lg:flex-col"
             )}
           >
-            <Card className="glass-card h-full flex flex-col overflow-hidden">
+            <Card className="glass-card h-full flex flex-col overflow-hidden w-full">
               {selectedChat ? (
                 <>
                   {/* Chat Header */}
@@ -618,11 +621,11 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
                       <div className="flex-1 relative">
                         <Textarea
                           ref={textareaRef}
-                          placeholder={pendingMedia ? "Adicione uma legenda (opcional)..." : "Digite sua mensagem..."}
+                          placeholder={pendingMedia ? "Legenda (opcional)..." : "Mensagem..."}
                           value={messageInput}
                           onChange={(e) => setMessageInput(e.target.value)}
                           onKeyDown={handleKeyDown}
-                          className="min-h-[44px] max-h-[120px] resize-none py-3"
+                          className="min-h-[44px] max-h-[100px] resize-none py-3 text-sm"
                           rows={1}
                         />
                       </div>
@@ -630,18 +633,18 @@ export const ChatsPage = ({ client }: ChatsPageProps) => {
                       <Button
                         onClick={handleSendMessage}
                         disabled={(!messageInput.trim() && !pendingMedia) || sendMessage.isPending || isUploading}
-                        className="h-[44px] px-4 gap-2"
+                        size="icon"
+                        className="h-[44px] w-[44px] shrink-0"
                       >
                         {(sendMessage.isPending || isUploading) ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <Send className="w-4 h-4" />
                         )}
-                        <span className="hidden sm:inline">Enviar</span>
                       </Button>
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-2 text-center">
-                      Enter para enviar • Shift+Enter para nova linha • Máx. 20MB
+                    <p className="text-[10px] text-muted-foreground mt-1.5 text-center hidden sm:block">
+                      Enter para enviar • Shift+Enter para nova linha
                     </p>
                   </div>
                 </>
