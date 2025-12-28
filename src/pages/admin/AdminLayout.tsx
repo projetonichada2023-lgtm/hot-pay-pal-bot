@@ -9,6 +9,7 @@ import { AdminFinancialsPage } from "./AdminFinancialsPage";
 import { AdminSettingsPage } from "./AdminSettingsPage";
 import { AdminAuditPage } from "./AdminAuditPage";
 import { AdminUsersPage } from "./AdminUsersPage";
+import AdminNotificationsPage from "./AdminNotificationsPage";
 
 export const AdminLayout = () => {
   return (
@@ -25,6 +26,7 @@ export const AdminLayout = () => {
           <Route path="/settings" element={<AdminSettingsPage />} />
           <Route path="/audit" element={<AdminAuditPage />} />
           <Route path="/users" element={<AdminUsersPage />} />
+          <Route path="/notifications" element={<AdminNotificationsPage />} />
         </Routes>
       </main>
     </div>
