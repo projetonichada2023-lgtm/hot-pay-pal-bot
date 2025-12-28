@@ -136,13 +136,31 @@ async function sendPushToSubscription(
   }
 }
 
+async function getTemplate(eventType: string): Promise<{ title: string; body: string; icon: string; is_active: boolean } | null> {
+  const { data } = await supabase
+    .from("notification_templates")
+    .select("title, body, icon, is_active")
+    .eq("event_type", eventType)
+    .maybeSingle();
+  
+  return data;
+}
+
+function replacePlaceholders(text: string, data: Record<string, string>): string {
+  let result = text;
+  for (const [key, value] of Object.entries(data)) {
+    result = result.replace(new RegExp(`\\{${key}\\}`, "g"), value);
+  }
+  return result;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const payload: PushPayload = await req.json();
+    const payload = await req.json();
     console.log("Push request:", { clientId: payload.clientId, type: payload.type });
 
     if (!appServer) {
@@ -152,11 +170,43 @@ serve(async (req) => {
       );
     }
 
-    const { clientId, title, body, url, orderId, type, icon, tag, requireInteraction } = payload;
+    const { clientId, type, orderId, url, amount, product, customer } = payload;
+    let { title, body, icon } = payload;
 
-    if (!clientId || !title || !body) {
+    if (!clientId) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: clientId, title, body" }),
+        JSON.stringify({ error: "Missing required field: clientId" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Fetch template from database if type is provided and no custom title/body
+    if (type && (!title || !body)) {
+      const template = await getTemplate(type);
+      if (template) {
+        if (!template.is_active) {
+          console.log(`Notification type '${type}' is disabled`);
+          return new Response(
+            JSON.stringify({ success: false, reason: `Notification type '${type}' is disabled` }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+        
+        const placeholders = {
+          amount: amount || "R$ 0,00",
+          product: product || "Produto",
+          customer: customer || "Cliente",
+        };
+        
+        title = title || replacePlaceholders(template.title, placeholders);
+        body = body || replacePlaceholders(template.body, placeholders);
+        icon = icon || template.icon;
+      }
+    }
+
+    if (!title || !body) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields: title, body (or valid type)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -195,8 +245,8 @@ serve(async (req) => {
       orderId,
       type: type || "general",
       icon: icon || "/pwa-192x192.png",
-      tag: tag || `telegateway-${type || "notification"}`,
-      requireInteraction: requireInteraction ?? (type === "sale"),
+      tag: `telegateway-${type || "notification"}`,
+      requireInteraction: type === "sale",
     };
 
     let sent = 0;

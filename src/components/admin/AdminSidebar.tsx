@@ -12,6 +12,7 @@ import {
   Settings,
   FileText,
   Shield,
+  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,6 +24,7 @@ const navItems = [
   { icon: DollarSign, label: "Financeiro", path: "/admin/financials" },
   { icon: CreditCard, label: "Assinaturas", path: "/admin/subscriptions" },
   { icon: BarChart3, label: "Estatísticas", path: "/admin/stats" },
+  { icon: Bell, label: "Notificações", path: "/admin/notifications" },
   { icon: Settings, label: "Configurações", path: "/admin/settings" },
   { icon: FileText, label: "Auditoria", path: "/admin/audit" },
   { icon: Shield, label: "Administradores", path: "/admin/users" },
