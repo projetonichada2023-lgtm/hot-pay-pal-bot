@@ -210,6 +210,7 @@ export type Database = {
           pix_key: string | null
           pix_key_type: string | null
           pix_receiver_name: string | null
+          push_notifications_enabled: boolean | null
           support_enabled: boolean | null
           updated_at: string | null
           upsell_enabled: boolean | null
@@ -231,6 +232,7 @@ export type Database = {
           pix_key?: string | null
           pix_key_type?: string | null
           pix_receiver_name?: string | null
+          push_notifications_enabled?: boolean | null
           support_enabled?: boolean | null
           updated_at?: string | null
           upsell_enabled?: boolean | null
@@ -252,6 +254,7 @@ export type Database = {
           pix_key?: string | null
           pix_key_type?: string | null
           pix_receiver_name?: string | null
+          push_notifications_enabled?: boolean | null
           support_enabled?: boolean | null
           updated_at?: string | null
           upsell_enabled?: boolean | null
@@ -640,6 +643,47 @@ export type Database = {
             columns: ["upsell_product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          client_id: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          auth: string
+          client_id: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          auth?: string
+          client_id?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]

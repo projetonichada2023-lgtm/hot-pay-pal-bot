@@ -251,6 +251,32 @@ async function processPaymentUpdate(order: any, status: string, transaction: any
       })
       .eq('id', orderId);
 
+    // Send push notification to client
+    try {
+      const productName = product?.name || 'Produto';
+      const amount = Number(order.amount).toFixed(2);
+      const customerName = order.telegram_customers?.first_name || 'Cliente';
+      
+      await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({
+          clientId: clientId,
+          title: '💰 Nova Venda Confirmada!',
+          body: `${productName} - R$ ${amount}\n${customerName}`,
+          url: '/dashboard/orders',
+          orderId: orderId,
+          type: 'sale',
+        }),
+      });
+      console.log('Push notification sent for sale');
+    } catch (pushError) {
+      console.error('Error sending push notification:', pushError);
+    }
+
     // Notify customer via Telegram
     if (botToken && customerTelegramId) {
       const successMsg = getMessageContent('payment_success', '✅ Pagamento confirmado! Seu produto será entregue em instantes.');
