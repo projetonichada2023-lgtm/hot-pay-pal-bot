@@ -113,8 +113,10 @@ async function sendPushToSubscription(
       },
     });
 
-    // Topic must be alphanumeric with hyphens only (no underscores)
-    const topic = String(payload.tag ?? "telegateway").replace(/_/g, "-");
+    // Topic must be max 32 chars from Base64url alphabet (A-Za-z0-9-_)
+    // Replace any non-compliant chars and truncate
+    const rawTopic = String(payload.tag ?? "tg-notif");
+    const topic = rawTopic.replace(/[^A-Za-z0-9\-_]/g, "").slice(0, 32);
     
     await subscriber.pushTextMessage(JSON.stringify(payload), {
       ttl: 60 * 60 * 24,
