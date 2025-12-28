@@ -387,11 +387,11 @@ async function handleFeePaidCallback(
 ) {
   // Convert shortened UUID back to full UUID
   const feeOrderId = b64ToUuid(feeOrderIdShort);
-  console.log('Handling fee paid by feeOrderId:', { feeOrderId });
+  console.log('Handling fee paid callback for feeOrderId:', { feeOrderId });
 
   const { data: feeOrder } = await supabase
     .from('orders')
-    .select('id, parent_order_id, fees_paid, customer_id')
+    .select('id, parent_order_id, fees_paid, customer_id, status, payment_id')
     .eq('id', feeOrderId)
     .single();
 
@@ -400,6 +400,25 @@ async function handleFeePaidCallback(
     return;
   }
 
+  // IMPORTANT: Check if fee order is already paid (confirmed by gateway webhook)
+  if (feeOrder.status !== 'paid') {
+    // Fee not confirmed by gateway yet - inform user to wait or check again
+    console.log('Fee order not yet paid in gateway. Current status:', feeOrder.status);
+    
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      '⏳ <b>Aguardando confirmação do pagamento...</b>\n\n' +
+      'Seu pagamento ainda não foi confirmado pelo sistema bancário.\n\n' +
+      '💡 <b>Se você já pagou:</b>\n' +
+      '• Aguarde alguns segundos e tente novamente\n' +
+      '• O PIX pode levar até 1 minuto para confirmar\n\n' +
+      '❓ Se o problema persistir, entre em contato com o suporte.'
+    );
+    return;
+  }
+
+  // Fee order IS paid - proceed with confirmation
   const parentOrderId = feeOrder.parent_order_id as string;
   const feeId = Array.isArray(feeOrder.fees_paid) ? (feeOrder.fees_paid[0] as string | undefined) : undefined;
 
@@ -421,12 +440,6 @@ async function handleFeePaidCallback(
 
   const customerId = parentOrder.customer_id as string | null;
 
-  // Mark fee order as paid
-  await supabase
-    .from('orders')
-    .update({ status: 'paid', paid_at: new Date().toISOString() })
-    .eq('id', feeOrderId);
-
   // Add fee to parent's paid list (unique)
   const currentPaidFees: string[] = parentOrder.fees_paid || [];
   const updatedPaidFees = Array.from(new Set([...currentPaidFees, feeId]));
@@ -439,7 +452,7 @@ async function handleFeePaidCallback(
   await sendTelegramMessage(botToken, chatId, '✅ Taxa paga com sucesso!');
 
   if (customerId) {
-    await saveMessage(clientId, chatId, customerId, 'incoming', '[Clicou: Paguei a Taxa]');
+    await saveMessage(clientId, chatId, customerId, 'incoming', '[Clicou: Paguei a Taxa - Confirmado]');
   }
 
   // Check for more pending fees
