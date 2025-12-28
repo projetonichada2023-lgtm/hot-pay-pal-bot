@@ -117,9 +117,9 @@ const METRIC_DEFINITIONS: MetricDefinition[] = [
     getValue: (stats) => String(stats?.ordersTotal || 0),
     getChange: (stats) => stats?.ordersChange || 0,
     icon: ShoppingCart,
-    gradient: 'from-primary/20 to-primary/5',
-    iconBg: 'bg-primary/20',
-    iconColor: 'text-primary'
+    gradient: 'from-[hsl(262,83%,58%)] to-[hsl(330,81%,60%)]',
+    iconBg: 'bg-[hsl(262,83%,58%)]/20',
+    iconColor: 'text-[hsl(262,83%,58%)]'
   },
   { 
     id: 'salesTotal',
@@ -127,7 +127,7 @@ const METRIC_DEFINITIONS: MetricDefinition[] = [
     getValue: (stats, formatPrice) => formatPrice(stats?.salesTotal || 0),
     getChange: (stats) => stats?.salesChange || 0,
     icon: DollarSign,
-    gradient: 'from-success/20 to-success/5',
+    gradient: 'from-[hsl(160,84%,39%)] to-[hsl(172,66%,50%)]',
     iconBg: 'bg-success/20',
     iconColor: 'text-success'
   },
@@ -137,7 +137,7 @@ const METRIC_DEFINITIONS: MetricDefinition[] = [
     getValue: (stats) => `${(stats?.conversionRate || 0).toFixed(1)}%`,
     getChange: (stats) => stats?.conversionChange || 0,
     icon: TrendingUp,
-    gradient: 'from-warning/20 to-warning/5',
+    gradient: 'from-[hsl(38,92%,50%)] to-[hsl(24,100%,55%)]',
     iconBg: 'bg-warning/20',
     iconColor: 'text-warning'
   },
@@ -147,7 +147,7 @@ const METRIC_DEFINITIONS: MetricDefinition[] = [
     getValue: (stats, formatPrice) => formatPrice(stats?.averageTicket || 0),
     getChange: (stats) => stats?.averageTicketChange || 0,
     icon: Receipt,
-    gradient: 'from-accent/20 to-accent/5',
+    gradient: 'from-[hsl(172,66%,50%)] to-[hsl(217,91%,60%)]',
     iconBg: 'bg-accent/20',
     iconColor: 'text-accent'
   },
@@ -157,7 +157,7 @@ const METRIC_DEFINITIONS: MetricDefinition[] = [
     getValue: (stats) => String(stats?.paidOrdersCount || 0),
     getChange: (stats) => stats?.paidOrdersChange || 0,
     icon: CheckCircle,
-    gradient: 'from-success/20 to-success/5',
+    gradient: 'from-[hsl(160,84%,39%)] to-[hsl(145,65%,45%)]',
     iconBg: 'bg-success/20',
     iconColor: 'text-success'
   },
@@ -167,7 +167,7 @@ const METRIC_DEFINITIONS: MetricDefinition[] = [
     getValue: (stats, formatPrice) => formatPrice(stats?.ordersValueTotal || 0),
     getChange: (stats) => stats?.ordersValueChange || 0,
     icon: DollarSign,
-    gradient: 'from-primary/20 to-primary/5',
+    gradient: 'from-[hsl(262,83%,58%)] to-[hsl(217,91%,60%)]',
     iconBg: 'bg-primary/20',
     iconColor: 'text-primary'
   },
@@ -177,7 +177,7 @@ const METRIC_DEFINITIONS: MetricDefinition[] = [
     getValue: (stats) => `${(stats?.abandonmentRate || 0).toFixed(1)}%`,
     getChange: (stats) => stats?.abandonmentRateChange || 0,
     icon: AlertCircle,
-    gradient: 'from-destructive/20 to-destructive/5',
+    gradient: 'from-[hsl(0,72%,51%)] to-[hsl(330,81%,60%)]',
     iconBg: 'bg-destructive/20',
     iconColor: 'text-destructive',
     invertColors: true
@@ -188,7 +188,7 @@ const METRIC_DEFINITIONS: MetricDefinition[] = [
     getValue: (stats) => String(stats?.customersTotal || 0),
     getChange: (stats) => stats?.customersNew || 0,
     icon: Users,
-    gradient: 'from-telegram/20 to-telegram/5',
+    gradient: 'from-[hsl(200,100%,50%)] to-[hsl(217,91%,60%)]',
     iconBg: 'bg-telegram/20',
     iconColor: 'text-telegram'
   },
@@ -198,7 +198,7 @@ const METRIC_DEFINITIONS: MetricDefinition[] = [
     getValue: (stats) => String(stats?.recurringCustomers || 0),
     getChange: (stats) => stats?.recurringCustomersChange || 0,
     icon: UserCheck,
-    gradient: 'from-success/20 to-success/5',
+    gradient: 'from-[hsl(160,84%,39%)] to-[hsl(172,66%,50%)]',
     iconBg: 'bg-success/20',
     iconColor: 'text-success'
   },
@@ -262,7 +262,7 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
   }, [visibleMetrics, stats, isLoading]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-8">
       {/* Header */}
       <motion.div 
         className="dashboard-header"
@@ -270,39 +270,53 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
         initial="hidden"
         animate="visible"
       >
-        <div className="relative z-10 flex flex-col gap-6">
+        <div className="relative z-10 flex flex-col gap-8">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
+            <div className="space-y-2">
+              <motion.div
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-medium text-primary mb-2"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.05 }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                Dashboard
+              </motion.div>
               <motion.h1 
-                className="text-3xl font-bold tracking-tight"
+                className="text-4xl font-bold tracking-tight"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
               >
-                Dashboard
+                Olá, <span className="gradient-text">{client.business_name}</span>
               </motion.h1>
               <motion.p 
-                className="text-muted-foreground"
+                className="text-muted-foreground text-lg"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
               >
-                Bem-vindo de volta, <span className="text-foreground font-medium">{client.business_name}</span>
+                Acompanhe suas métricas em tempo real
               </motion.p>
             </div>
             <motion.div 
-              className="hidden sm:flex items-center gap-3 mr-14"
+              className="hidden sm:flex items-center gap-4 mr-14"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3, type: 'spring' }}
             >
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
+              <div className={cn(
+                "flex items-center gap-3 px-4 py-2.5 rounded-2xl border transition-all",
+                client.webhook_configured 
+                  ? 'bg-success/10 border-success/30' 
+                  : 'bg-warning/10 border-warning/30'
+              )}>
                 <div className={cn(
                   "status-dot",
-                  client.webhook_configured ? 'bg-success' : 'bg-warning'
+                  client.webhook_configured ? 'bg-success text-success' : 'bg-warning text-warning'
                 )} />
-                <span className="text-sm font-medium">
-                  Bot {client.webhook_configured ? 'Ativo' : 'Pendente'}
+                <span className="text-sm font-semibold">
+                  Bot {client.webhook_configured ? 'Online' : 'Offline'}
                 </span>
               </div>
             </motion.div>
@@ -310,13 +324,13 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
           
           {/* Date filters + Customize */}
           <motion.div 
-            className="flex items-center justify-between gap-3 flex-wrap"
+            className="flex items-center justify-between gap-4 flex-wrap"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
           >
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex gap-1.5 p-1 rounded-xl bg-muted/50 border border-border/50">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex gap-1 p-1.5 rounded-2xl bg-secondary/50 border border-border/50 backdrop-blur-sm">
                 {presetRanges.map((preset, index) => (
                   <motion.div
                     key={preset.days}
@@ -328,10 +342,10 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
                       variant={activePreset === preset.days ? 'default' : 'ghost'}
                       size="sm"
                       className={cn(
-                        "text-xs sm:text-sm h-8 px-3 rounded-lg transition-all",
+                        "text-sm h-9 px-4 rounded-xl transition-all font-medium",
                         activePreset === preset.days 
-                          ? 'shadow-sm' 
-                          : 'hover:bg-background/50'
+                          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25' 
+                          : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground'
                       )}
                       onClick={() => handlePresetClick(preset.days)}
                     >
@@ -346,9 +360,9 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="gap-2 text-xs sm:text-sm h-8 px-3 rounded-lg border-border/50 hover:border-border hover:bg-muted/50"
+                    className="gap-2 text-sm h-9 px-4 rounded-xl border-border/60 hover:border-primary/50 hover:bg-primary/5 transition-all"
                   >
-                    <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                    <CalendarIcon className="w-4 h-4 text-primary" />
                     <span className="hidden xs:inline font-medium">
                       {format(dateRange.from, "dd/MM")} - {format(dateRange.to, "dd/MM/yy")}
                     </span>
@@ -385,10 +399,10 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       {/* Stats Grid */}
       <motion.div 
         className={cn(
-          "grid gap-4",
+          "grid gap-5",
           displayedCards.length <= 2 ? "grid-cols-1 sm:grid-cols-2" :
           displayedCards.length === 3 ? "grid-cols-1 sm:grid-cols-3" :
-          "grid-cols-2 lg:grid-cols-4"
+          "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
         )}
         data-tour="stats-cards"
         variants={containerVariants}
@@ -402,65 +416,67 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
           return (
             <motion.div 
               key={stat.id} 
-              className="metric-card"
+              className="metric-card group cursor-pointer"
               variants={itemVariants}
               whileHover={{ 
-                scale: 1.02, 
-                y: -4,
-                transition: { type: 'spring', stiffness: 400 } 
+                scale: 1.03,
+                transition: { type: 'spring', stiffness: 400, damping: 25 } 
               }}
               whileTap={{ scale: 0.98 }}
             >
+              {/* Gradient overlay on hover */}
               <div className={cn(
-                "absolute inset-0 opacity-50 pointer-events-none",
+                "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none",
                 `bg-gradient-to-br ${stat.gradient}`
-              )} />
-              <div className="relative p-5 space-y-4">
+              )} style={{ opacity: 0.08 }} />
+              
+              {/* Glow effect */}
+              <div className="absolute -inset-0.5 bg-gradient-to-r opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500 pointer-events-none"
+                style={{ background: `linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-cyan) 100%)` }} 
+              />
+              
+              <div className="relative p-6 space-y-5">
                 <div className="flex items-center justify-between">
                   <motion.div 
                     className={cn(
-                      "p-2.5 rounded-xl backdrop-blur-sm",
+                      "p-3 rounded-2xl transition-all duration-300 group-hover:scale-110",
                       stat.iconBg
                     )}
-                    initial={{ rotate: -10 }}
-                    animate={{ rotate: 0 }}
-                    transition={{ delay: 0.3 + index * 0.1 }}
+                    initial={{ rotate: -10, scale: 0.8 }}
+                    animate={{ rotate: 0, scale: 1 }}
+                    transition={{ delay: 0.3 + index * 0.08 }}
                   >
                     <IconComponent className={cn("w-5 h-5", stat.iconColor)} />
                   </motion.div>
                   <motion.div 
                     className={cn(
-                      "flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm",
+                      "flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-all",
                       isPositive 
                         ? "bg-success/15 text-success" 
                         : "bg-destructive/15 text-destructive"
                     )}
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 + index * 0.1 }}
+                    transition={{ delay: 0.4 + index * 0.08 }}
                   >
-                    {isPositive ? (
-                      <TrendingUp className="w-3 h-3" />
-                    ) : (
-                      <TrendingUp className="w-3 h-3 rotate-180" />
-                    )}
+                    <TrendingUp className={cn("w-3.5 h-3.5", !isPositive && "rotate-180")} />
                     {formatChange(stat.change)}
                   </motion.div>
                 </div>
-                <div>
+                <div className="space-y-1">
                   {stat.value === null ? (
-                    <Skeleton className="h-10 w-28 mb-1" />
+                    <Skeleton className="h-11 w-32" />
                   ) : (
                     <motion.div 
-                      className="text-3xl font-bold tracking-tight text-foreground"
+                      className="text-4xl font-bold tracking-tight"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.35 + index * 0.1 }}
+                      transition={{ delay: 0.35 + index * 0.08 }}
                     >
                       {stat.value}
                     </motion.div>
                   )}
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-sm text-muted-foreground font-medium">
                     {stat.label}
                   </p>
                 </div>
