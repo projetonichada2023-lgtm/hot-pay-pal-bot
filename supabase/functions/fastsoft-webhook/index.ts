@@ -239,7 +239,9 @@ async function processPaymentUpdate(order: any, status: string, transaction: any
   const customerTelegramId = order.telegram_customers?.telegram_id;
   const product = order.products;
 
-  const isPaid = status === 'PAID' || status === 'AUTHORIZED' || Boolean(transaction?.paidAt);
+  // IMPORTANT: Only consider paid if status explicitly indicates payment
+  // Do NOT rely on paidAt field as it may be set before actual payment confirmation
+  const isPaid = status === 'PAID' || status === 'AUTHORIZED' || status === 'paid' || status === 'authorized';
 
   if (isPaid) {
     console.log(`Payment confirmed for order ${orderId} (status=${status}, paidAt=${transaction?.paidAt ?? 'null'})`);
