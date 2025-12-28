@@ -90,7 +90,7 @@ export const Sidebar = ({ client }: SidebarProps) => {
       <Button
         variant="ghost"
         size="icon"
-        className="fixed top-4 left-4 z-50 md:hidden"
+        className="fixed top-4 left-4 z-50 md:hidden bg-card/80 backdrop-blur-sm border border-border/50 shadow-lg"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
       >
         {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -100,25 +100,34 @@ export const Sidebar = ({ client }: SidebarProps) => {
       <aside
         className={cn(
           'fixed md:relative z-40 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300',
-          isMobileOpen ? 'w-64 translate-x-0' : '-translate-x-full md:translate-x-0 md:w-64'
+          isMobileOpen ? 'w-72 translate-x-0' : '-translate-x-full md:translate-x-0 md:w-72'
         )}
       >
-        <div className="flex flex-col h-full p-4">
+        {/* Decorative gradient */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-20 left-0 w-24 h-24 bg-gradient-to-tr from-accent/10 to-transparent rounded-full blur-2xl pointer-events-none" />
+        
+        <div className="relative flex flex-col h-full p-5">
           {/* Logo */}
-          <div className="flex items-center gap-3 px-2 py-4 mb-6" data-tour="sidebar-logo">
-            <div className="w-10 h-10 rounded-xl gradient-hot flex items-center justify-center glow-hot">
-              <Bot className="w-5 h-5 text-primary-foreground" />
+          <div className="flex items-center gap-4 px-3 py-5 mb-6" data-tour="sidebar-logo">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                <Bot className="w-6 h-6 text-white" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-success border-2 border-sidebar flex items-center justify-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-white" />
+              </div>
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="font-bold text-foreground truncate">{client.business_name}</h2>
-              <p className="text-xs text-muted-foreground truncate">
-                {client.telegram_bot_username ? `@${client.telegram_bot_username}` : 'Bot não configurado'}
+              <h2 className="font-bold text-lg text-foreground truncate">{client.business_name}</h2>
+              <p className="text-xs text-muted-foreground truncate font-medium">
+                {client.telegram_bot_username ? `@${client.telegram_bot_username}` : 'Configurar bot'}
               </p>
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-1 overflow-auto">
+          <nav className="flex-1 space-y-1.5 overflow-auto pr-1">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.path;
               const getTourAttribute = () => {
@@ -135,47 +144,63 @@ export const Sidebar = ({ client }: SidebarProps) => {
                   key={item.path}
                   variant="ghost"
                   className={cn(
-                    'w-full justify-start gap-3 h-11',
+                    'w-full justify-start gap-3 h-12 rounded-xl font-medium transition-all duration-200',
                     isActive 
-                      ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50'
+                      ? 'bg-primary/10 text-primary border-l-[3px] border-primary hover:bg-primary/15' 
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                   )}
                   onClick={() => handleNavigate(item.path)}
                   {...(tourAttr ? { 'data-tour': tourAttr } : {})}
                 >
-                  <item.icon className={cn('w-5 h-5', isActive && 'text-primary')} />
+                  <item.icon className={cn(
+                    'w-5 h-5 transition-colors',
+                    isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                  )} />
                   {item.label}
+                  {isActive && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
+                  )}
                 </Button>
               );
             })}
           </nav>
 
-          {/* Theme Toggle */}
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 h-11 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 mb-2"
-            onClick={toggleTheme}
-          >
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            {isDark ? 'Modo Claro' : 'Modo Escuro'}
-          </Button>
+          {/* Footer Actions */}
+          <div className="space-y-2 pt-4 border-t border-border/50">
+            {/* Theme Toggle */}
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 h-12 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium"
+              onClick={toggleTheme}
+            >
+              <div className={cn(
+                "p-1.5 rounded-lg transition-colors",
+                isDark ? 'bg-warning/20' : 'bg-primary/20'
+              )}>
+                {isDark ? <Sun className="w-4 h-4 text-warning" /> : <Moon className="w-4 h-4 text-primary" />}
+              </div>
+              {isDark ? 'Modo Claro' : 'Modo Escuro'}
+            </Button>
 
-          {/* Logout */}
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 h-11 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-            onClick={handleLogout}
-          >
-            <LogOut className="w-5 h-5" />
-            Sair
-          </Button>
+            {/* Logout */}
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 h-12 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 font-medium transition-all"
+              onClick={handleLogout}
+            >
+              <div className="p-1.5 rounded-lg bg-destructive/10">
+                <LogOut className="w-4 h-4 text-destructive" />
+              </div>
+              Sair da conta
+            </Button>
+          </div>
         </div>
       </aside>
 
       {/* Overlay for mobile */}
       {isMobileOpen && (
         <div 
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 md:hidden"
+          className="fixed inset-0 bg-background/80 backdrop-blur-md z-30 md:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
