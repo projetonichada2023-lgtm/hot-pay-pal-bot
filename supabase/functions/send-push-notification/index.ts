@@ -113,21 +113,36 @@ async function sendPushToSubscription(
       },
     });
 
-    // Topic must be max 32 chars from Base64url alphabet (A-Za-z0-9-_)
-    // Replace any non-compliant chars and truncate
-    const rawTopic = String(payload.tag ?? "tg-notif");
-    const topic = rawTopic.replace(/[^A-Za-z0-9\-_]/g, "").slice(0, 32);
-    
+    // NOTE: Some push services are strict about the optional `Topic` header.
+    // We rely on the payload's `tag` (handled client-side) and do NOT set `topic`.
     await subscriber.pushTextMessage(JSON.stringify(payload), {
       ttl: 60 * 60 * 24,
       urgency: webpush.Urgency.High,
-      topic,
     });
 
     return { ok: true, status: 201 };
   } catch (e) {
     if (e instanceof webpush.PushMessageError) {
-      console.error("PushMessageError:", e.toString());
+      let responseText: string | undefined;
+      try {
+        responseText = await e.response.text();
+      } catch {
+        // ignore
+      }
+
+      console.error(
+        "PushMessageError:",
+        JSON.stringify(
+          {
+            status: e.response?.status,
+            message: e.toString(),
+            response: responseText,
+          },
+          null,
+          2,
+        ),
+      );
+
       return {
         ok: false,
         status: e.response.status,
