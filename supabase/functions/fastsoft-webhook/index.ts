@@ -239,8 +239,10 @@ async function processPaymentUpdate(order: any, status: string, transaction: any
   const customerTelegramId = order.telegram_customers?.telegram_id;
   const product = order.products;
 
-  if (status === 'PAID' || status === 'AUTHORIZED') {
-    console.log(`Payment confirmed for order ${orderId}`);
+  const isPaid = status === 'PAID' || status === 'AUTHORIZED' || Boolean(transaction?.paidAt);
+
+  if (isPaid) {
+    console.log(`Payment confirmed for order ${orderId} (status=${status}, paidAt=${transaction?.paidAt ?? 'null'})`);
     
     // Update order status
     await supabase
@@ -257,7 +259,7 @@ async function processPaymentUpdate(order: any, status: string, transaction: any
       const amount = Number(order.amount).toFixed(2);
       const customerName = order.telegram_customers?.first_name || 'Cliente';
       
-      await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
+      const pushRes = await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -272,7 +274,9 @@ async function processPaymentUpdate(order: any, status: string, transaction: any
           type: 'sale',
         }),
       });
-      console.log('Push notification sent for sale');
+
+      const pushText = await pushRes.text();
+      console.log('Push function response:', pushRes.status, pushText);
     } catch (pushError) {
       console.error('Error sending push notification:', pushError);
     }
