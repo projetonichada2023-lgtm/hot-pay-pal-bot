@@ -113,10 +113,13 @@ async function sendPushToSubscription(
       },
     });
 
+    // Topic must be alphanumeric with hyphens only (no underscores)
+    const topic = String(payload.tag ?? "telegateway").replace(/_/g, "-");
+    
     await subscriber.pushTextMessage(JSON.stringify(payload), {
       ttl: 60 * 60 * 24,
       urgency: webpush.Urgency.High,
-      topic: String(payload.tag ?? "telegateway"),
+      topic,
     });
 
     return { ok: true, status: 201 };
@@ -245,7 +248,7 @@ serve(async (req) => {
       orderId,
       type: type || "general",
       icon: icon || "/pwa-192x192.png",
-      tag: `telegateway-${type || "notification"}`,
+      tag: `telegateway-${(type || "notification").replace(/_/g, "-")}`,
       requireInteraction: type === "sale",
     };
 
