@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Save, Power, PowerOff, Info } from 'lucide-react';
+import { Bell, Save, Power, PowerOff, Info, Send, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNotificationTemplates, NotificationTemplate } from '@/hooks/useNotificationTemplates';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const eventTypeLabels: Record<string, string> = {
   sale: 'Venda Confirmada',
@@ -37,6 +40,68 @@ const placeholderInfo: Record<string, string[]> = {
 export default function AdminNotificationsPage() {
   const { templates, isLoading, updateTemplate, toggleAllNotifications } = useNotificationTemplates();
   const [editingTemplates, setEditingTemplates] = useState<Record<string, NotificationTemplate>>({});
+  const [testClientId, setTestClientId] = useState('');
+  const [testType, setTestType] = useState('sale');
+  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [clients, setClients] = useState<{ id: string; business_name: string }[]>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+  const { toast } = useToast();
+
+  // Load clients for test dropdown
+  const loadClients = async () => {
+    if (clients.length > 0) return;
+    setLoadingClients(true);
+    const { data } = await supabase
+      .from('clients')
+      .select('id, business_name')
+      .eq('is_active', true)
+      .order('business_name');
+    if (data) setClients(data);
+    setLoadingClients(false);
+  };
+
+  const handleSendTest = async () => {
+    if (!testClientId) {
+      toast({ title: 'Selecione um cliente', variant: 'destructive' });
+      return;
+    }
+
+    setIsSendingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          clientId: testClientId,
+          type: testType,
+          amount: 'R$ 99,90',
+          product: 'Produto Teste',
+          customer: 'Cliente Teste',
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast({
+          title: 'Notificação enviada!',
+          description: `Enviado para ${data.sent} dispositivo(s)`,
+        });
+      } else {
+        toast({
+          title: 'Não foi possível enviar',
+          description: data?.reason || 'Erro desconhecido',
+          variant: 'destructive',
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao enviar',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
 
   const handleEdit = (template: NotificationTemplate) => {
     setEditingTemplates(prev => ({
@@ -121,6 +186,61 @@ export default function AdminNotificationsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Test Push Card */}
+      <Card className="border-dashed">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Send className="h-5 w-5" />
+            Enviar Notificação de Teste
+          </CardTitle>
+          <CardDescription>
+            Teste o envio de notificações para um cliente específico
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="space-y-2 flex-1 min-w-[200px]">
+              <Label>Cliente</Label>
+              <Select 
+                value={testClientId} 
+                onValueChange={setTestClientId}
+                onOpenChange={(open) => open && loadClients()}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingClients ? "Carregando..." : "Selecione um cliente"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.business_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 w-[180px]">
+              <Label>Tipo de Evento</Label>
+              <Select value={testType} onValueChange={setTestType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(eventTypeLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={handleSendTest} disabled={isSendingTest || !testClientId}>
+              {isSendingTest ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Enviar Teste
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Alert>
         <Info className="h-4 w-4" />
