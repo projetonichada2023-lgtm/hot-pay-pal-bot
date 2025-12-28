@@ -17,13 +17,23 @@ import {
   RotateCcw,
   Crown,
   Zap,
-  Building2
+  Building2,
+  Bell,
+  BellOff,
+  Smartphone,
+  AlertCircle
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SubscriptionCard } from '@/components/subscription/SubscriptionCard';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { 
+  subscribeToPush, 
+  unsubscribeFromPush, 
+  checkPushSupport, 
+  sendTestNotification 
+} from '@/lib/push-notifications';
 
 interface SettingsPageProps {
   client: Client;
@@ -39,6 +49,18 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   const [apiKey, setApiKey] = useState('');
   const { resetOnboarding, isResetting } = useOnboarding(client.id, client.onboarding_completed);
   const { usage } = usePlanLimits();
+  
+  // Push notification state
+  const [pushSupport, setPushSupport] = useState<{
+    supported: boolean;
+    permission: NotificationPermission | 'unsupported';
+    subscribed: boolean;
+  }>({ supported: false, permission: 'unsupported', subscribed: false });
+  const [isPushLoading, setIsPushLoading] = useState(false);
+
+  useEffect(() => {
+    checkPushSupport().then(setPushSupport);
+  }, []);
 
   const activeTab = searchParams.get('tab') || 'plano';
 
@@ -102,6 +124,40 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
       toast({ title: 'UniPay desconectado!' });
     } catch (error) {
       toast({ title: 'Erro ao desconectar', variant: 'destructive' });
+    }
+  };
+
+  const handleTogglePush = async () => {
+    setIsPushLoading(true);
+    try {
+      if (pushSupport.subscribed) {
+        const success = await unsubscribeFromPush(client.id);
+        if (success) {
+          setPushSupport(prev => ({ ...prev, subscribed: false }));
+          toast({ title: 'Notificações desativadas' });
+        }
+      } else {
+        const subscription = await subscribeToPush(client.id);
+        if (subscription) {
+          setPushSupport(prev => ({ ...prev, subscribed: true, permission: 'granted' }));
+          await sendTestNotification();
+          toast({ title: 'Notificações ativadas!', description: 'Você receberá uma notificação de teste.' });
+        } else {
+          toast({ 
+            title: 'Não foi possível ativar', 
+            description: 'Verifique as permissões do navegador.',
+            variant: 'destructive' 
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Push toggle error:', error);
+      toast({ title: 'Erro ao alterar notificações', variant: 'destructive' });
+    } finally {
+      setIsPushLoading(false);
+      // Re-check status
+      const status = await checkPushSupport();
+      setPushSupport(status);
     }
   };
 
@@ -286,6 +342,119 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
 
         {/* Tab: Automações */}
         <TabsContent value="automacoes" className="space-y-6">
+          {/* Push Notifications Card */}
+          <Card className="glass-card border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-primary" />
+                Notificações de Venda
+              </CardTitle>
+              <CardDescription>
+                Receba notificações no celular quando uma venda for confirmada
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!pushSupport.supported ? (
+                <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-yellow-600 dark:text-yellow-400">
+                        Navegador não suportado
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Seu navegador não suporta notificações push. Use Chrome, Edge ou Firefox para ativar.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : pushSupport.permission === 'denied' ? (
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <BellOff className="w-5 h-5 text-red-500 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-red-600 dark:text-red-400">
+                        Notificações bloqueadas
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        As notificações foram bloqueadas. Para ativar, clique no ícone de cadeado na barra de endereços e permita notificações.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : pushSupport.subscribed ? (
+                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    <div className="flex-1">
+                      <p className="font-medium text-green-600 dark:text-green-400">
+                        Notificações ativas
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Você receberá notificações no celular quando uma venda for confirmada
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                  <div className="flex items-start gap-3">
+                    <Smartphone className="w-5 h-5 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="font-medium">Ative as notificações push</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Receba alertas instantâneos no seu celular sempre que uma venda for confirmada, mesmo com o app fechado.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                <div className="space-y-0.5">
+                  <Label className="text-base flex items-center gap-2">
+                    {pushSupport.subscribed ? (
+                      <Bell className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <BellOff className="w-4 h-4 text-muted-foreground" />
+                    )}
+                    Notificações Push
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receber alertas de venda no dispositivo
+                  </p>
+                </div>
+                <Button
+                  variant={pushSupport.subscribed ? "outline" : "default"}
+                  size="sm"
+                  onClick={handleTogglePush}
+                  disabled={!pushSupport.supported || pushSupport.permission === 'denied' || isPushLoading}
+                >
+                  {isPushLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : pushSupport.subscribed ? (
+                    'Desativar'
+                  ) : (
+                    'Ativar'
+                  )}
+                </Button>
+              </div>
+
+              {pushSupport.subscribed && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={sendTestNotification}
+                  className="w-full"
+                >
+                  <Bell className="w-4 h-4 mr-2" />
+                  Enviar notificação de teste
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Bot Automations Card */}
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
