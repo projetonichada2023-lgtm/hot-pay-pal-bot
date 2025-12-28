@@ -1,18 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as webpush from "jsr:@negrel/webpush@0.3.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// VAPID keys for Web Push
-const VAPID_PUBLIC_KEY = 'BPUPilrcKHoRiAcJ_dkNExn92GpWOSGAcGWLczltlPG5nfcZ9MkT9jh5HWUg-MtTjMwKVFY8vnuEO1YDKN-m160';
-const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') || '';
-const VAPID_SUBJECT = 'mailto:contato@telegateway.com';
+// VAPID keys (public is safe, private is stored as secret)
+const VAPID_PUBLIC_KEY =
+  "BPUPilrcKHoRiAcJ_dkNExn92GpWOSGAcGWLczltlPG5nfcZ9MkT9jh5HWUg-MtTjMwKVFY8vnuEO1YDKN-m160";
+const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") || "";
+const VAPID_SUBJECT = "mailto:contato@telegateway.com";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -22,270 +24,206 @@ interface PushPayload {
   body: string;
   url?: string;
   orderId?: string;
-  type?: 'sale' | 'order' | 'delivery' | 'general';
+  type?: "sale" | "order" | "delivery" | "general";
   icon?: string;
   tag?: string;
   requireInteraction?: boolean;
 }
 
-// Simple base64url encode
-function base64UrlEncode(buffer: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < buffer.length; i++) {
-    binary += String.fromCharCode(buffer[i]);
-  }
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-// Simple base64url decode
-function base64UrlDecode(str: string): Uint8Array {
-  const padding = '='.repeat((4 - (str.length % 4)) % 4);
-  const base64 = (str + padding).replace(/-/g, '+').replace(/_/g, '/');
+function decodeBase64Url(str: string): Uint8Array {
+  const padding = "=".repeat((4 - (str.length % 4)) % 4);
+  const base64 = (str + padding).replace(/-/g, "+").replace(/_/g, "/");
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes;
 }
 
-// Create unsigned JWT token
-function createUnsignedJwt(audience: string): { headerPayload: string; headerB64: string; payloadB64: string } {
-  const header = { alg: 'ES256', typ: 'JWT' };
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    aud: audience,
-    exp: now + 12 * 60 * 60,
-    sub: VAPID_SUBJECT,
-  };
-
-  const encoder = new TextEncoder();
-  const headerB64 = base64UrlEncode(encoder.encode(JSON.stringify(header)));
-  const payloadB64 = base64UrlEncode(encoder.encode(JSON.stringify(payload)));
-  
-  return {
-    headerPayload: `${headerB64}.${payloadB64}`,
-    headerB64,
-    payloadB64
-  };
+function encodeBase64Url(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-// Sign JWT with VAPID private key
-async function signJwt(data: string, privateKeyBase64: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const dataBuffer = encoder.encode(data);
-  
-  // Decode the private key (it's a raw 32-byte key in base64url format)
-  const privateKeyBytes = base64UrlDecode(privateKeyBase64);
-  
-  // For ES256, we need to convert the raw private key to JWK format
-  // The private key is just the "d" parameter (32 bytes)
-  const privateKeyJwk = {
-    kty: 'EC',
-    crv: 'P-256',
-    d: base64UrlEncode(privateKeyBytes),
-    // We need x and y coordinates - derive from private key or use placeholder
-    // For VAPID, we can compute the public key from private
-    x: VAPID_PUBLIC_KEY.slice(0, 43), // First part of public key
-    y: VAPID_PUBLIC_KEY.slice(43), // Second part of public key
-  };
+function buildVapidJwks(): webpush.ExportedVapidKeys {
+  if (!VAPID_PRIVATE_KEY) throw new Error("VAPID_PRIVATE_KEY missing");
 
-  try {
-    const cryptoKey = await crypto.subtle.importKey(
-      'jwk',
-      privateKeyJwk,
-      { name: 'ECDSA', namedCurve: 'P-256' },
-      false,
-      ['sign']
+  const pubRaw = decodeBase64Url(VAPID_PUBLIC_KEY);
+  if (pubRaw.length !== 65 || pubRaw[0] !== 4) {
+    throw new Error(
+      `Unexpected VAPID public key raw format (len=${pubRaw.length}, first=${pubRaw[0]})`,
     );
-
-    const signature = await crypto.subtle.sign(
-      { name: 'ECDSA', hash: 'SHA-256' },
-      cryptoKey,
-      dataBuffer
-    );
-
-    return base64UrlEncode(new Uint8Array(signature));
-  } catch (error) {
-    console.error('Error signing JWT:', error);
-    throw error;
   }
+
+  const x = encodeBase64Url(pubRaw.slice(1, 33));
+  const y = encodeBase64Url(pubRaw.slice(33, 65));
+
+  const dBytes = decodeBase64Url(VAPID_PRIVATE_KEY);
+  const d = encodeBase64Url(dBytes);
+
+  return {
+    publicKey: {
+      kty: "EC",
+      crv: "P-256",
+      x,
+      y,
+      ext: true,
+    },
+    privateKey: {
+      kty: "EC",
+      crv: "P-256",
+      x,
+      y,
+      d,
+      ext: false,
+    },
+  };
 }
 
-// Send push notification using simple POST (for testing)
+let appServer: webpush.ApplicationServer | null = null;
+try {
+  const vapidKeys = await webpush.importVapidKeys(buildVapidJwks(), {
+    extractable: false,
+  });
+
+  appServer = await webpush.ApplicationServer.new({
+    contactInformation: VAPID_SUBJECT,
+    vapidKeys,
+  });
+
+  console.log("Web Push server ready");
+} catch (e) {
+  console.error("Web Push init failed:", e);
+}
+
 async function sendPushToSubscription(
   subscription: { endpoint: string; p256dh: string; auth: string },
-  payload: object
-): Promise<boolean> {
-  try {
-    console.log('Attempting to send push to:', subscription.endpoint);
-    
-    // Web Push requires encryption - for now, let's try a simple approach
-    // that works with some push services
-    
-    const payloadString = JSON.stringify(payload);
-    const url = new URL(subscription.endpoint);
-    const audience = `${url.protocol}//${url.host}`;
-    
-    // Create VAPID JWT
-    const { headerPayload } = createUnsignedJwt(audience);
-    
-    let vapidAuth = '';
-    try {
-      const signature = await signJwt(headerPayload, VAPID_PRIVATE_KEY);
-      vapidAuth = `vapid t=${headerPayload}.${signature}, k=${VAPID_PUBLIC_KEY}`;
-    } catch (signError) {
-      console.error('Failed to sign VAPID JWT:', signError);
-      // Try without proper signature for debugging
-      vapidAuth = `vapid t=${headerPayload}., k=${VAPID_PUBLIC_KEY}`;
-    }
+  payload: Record<string, unknown>,
+): Promise<{ ok: boolean; status?: number; error?: string; gone?: boolean }> {
+  if (!appServer) {
+    return { ok: false, error: "Push server not initialized" };
+  }
 
-    // For a proper implementation, we'd need to:
-    // 1. Generate ECDH keys for encryption
-    // 2. Derive shared secret with p256dh
-    // 3. Encrypt payload using AES-GCM
-    // 4. Add proper headers (Crypto-Key, Encryption, etc.)
-    
-    // Simple test without encryption (won't work for real subscriptions)
-    console.log('Push payload:', payloadString);
-    console.log('VAPID auth header:', vapidAuth.substring(0, 50) + '...');
-    
-    const response = await fetch(subscription.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/octet-stream',
-        'Content-Encoding': 'aes128gcm',
-        'TTL': '86400',
-        'Urgency': 'high',
-        'Authorization': vapidAuth,
+  try {
+    const subscriber = appServer.subscribe({
+      endpoint: subscription.endpoint,
+      keys: {
+        p256dh: subscription.p256dh,
+        auth: subscription.auth,
       },
-      // Empty body for now - proper implementation needs encrypted payload
-      body: new Uint8Array(0),
     });
 
-    const responseText = await response.text();
-    console.log('Push response status:', response.status, 'body:', responseText);
+    await subscriber.pushTextMessage(JSON.stringify(payload), {
+      ttl: 60 * 60 * 24,
+      urgency: webpush.Urgency.High,
+      topic: String(payload.tag ?? "telegateway"),
+    });
 
-    if (!response.ok) {
-      console.error('Push failed with status:', response.status);
-      
-      // If endpoint is gone (410), remove from database
-      if (response.status === 410 || response.status === 404) {
-        await supabase
-          .from('push_subscriptions')
-          .delete()
-          .eq('endpoint', subscription.endpoint);
-        console.log('Removed stale subscription');
-      }
-      
-      return false;
+    return { ok: true, status: 201 };
+  } catch (e) {
+    if (e instanceof webpush.PushMessageError) {
+      console.error("PushMessageError:", e.toString());
+      return {
+        ok: false,
+        status: e.response.status,
+        error: e.toString(),
+        gone: e.isGone(),
+      };
     }
 
-    console.log('Push sent successfully');
-    return true;
-  } catch (error) {
-    console.error('Error sending push:', error);
-    return false;
+    console.error("Push send error:", e);
+    return { ok: false, error: String(e) };
   }
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const payload: PushPayload = await req.json();
-    console.log('Push notification request received:', JSON.stringify(payload));
+    console.log("Push request:", { clientId: payload.clientId, type: payload.type });
+
+    if (!appServer) {
+      return new Response(
+        JSON.stringify({ success: false, reason: "Push server not initialized" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     const { clientId, title, body, url, orderId, type, icon, tag, requireInteraction } = payload;
 
     if (!clientId || !title || !body) {
-      console.error('Missing required fields');
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: clientId, title, body' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Missing required fields: clientId, title, body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Check VAPID private key
-    if (!VAPID_PRIVATE_KEY) {
-      console.error('VAPID_PRIVATE_KEY not configured');
-      return new Response(
-        JSON.stringify({ success: false, reason: 'VAPID_PRIVATE_KEY not configured' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('VAPID private key length:', VAPID_PRIVATE_KEY.length);
-
-    // Check if push notifications are enabled for this client
-    const { data: settings, error: settingsError } = await supabase
-      .from('client_settings')
-      .select('push_notifications_enabled')
-      .eq('client_id', clientId)
+    const { data: settings } = await supabase
+      .from("client_settings")
+      .select("push_notifications_enabled")
+      .eq("client_id", clientId)
       .single();
 
-    console.log('Client settings:', settings, 'error:', settingsError);
-
     if (!settings?.push_notifications_enabled) {
-      console.log('Push notifications not enabled for client:', clientId);
+      console.log("Push disabled for client:", clientId);
       return new Response(
-        JSON.stringify({ success: false, reason: 'Push notifications not enabled' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, reason: "Push notifications not enabled" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Get all subscriptions for this client
-    const { data: subscriptions, error: subsError } = await supabase
-      .from('push_subscriptions')
-      .select('endpoint, p256dh, auth')
-      .eq('client_id', clientId);
+    const { data: subscriptions, error } = await supabase
+      .from("push_subscriptions")
+      .select("endpoint, p256dh, auth")
+      .eq("client_id", clientId);
 
-    console.log('Subscriptions found:', subscriptions?.length, 'error:', subsError);
-
-    if (subsError || !subscriptions || subscriptions.length === 0) {
-      console.log('No subscriptions found for client:', clientId);
+    if (error || !subscriptions?.length) {
+      console.log("No subscriptions for client:", clientId);
       return new Response(
-        JSON.stringify({ success: false, reason: 'No subscriptions found' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, reason: "No subscriptions found" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-
-    console.log(`Found ${subscriptions.length} subscriptions for client ${clientId}`);
 
     const pushPayload = {
       title,
       body,
-      url: url || '/dashboard/orders',
+      url: url || "/dashboard/orders",
       orderId,
-      type: type || 'general',
-      icon: icon || '/pwa-192x192.png',
-      tag: tag || `telegateway-${type || 'notification'}`,
-      requireInteraction: requireInteraction ?? (type === 'sale'),
+      type: type || "general",
+      icon: icon || "/pwa-192x192.png",
+      tag: tag || `telegateway-${type || "notification"}`,
+      requireInteraction: requireInteraction ?? (type === "sale"),
     };
 
-    // Send to all subscriptions
-    const results = await Promise.all(
-      subscriptions.map(sub => sendPushToSubscription(sub, pushPayload))
-    );
+    let sent = 0;
+    let failed = 0;
 
-    const successCount = results.filter(Boolean).length;
-    console.log(`Push results: ${successCount}/${subscriptions.length} succeeded`);
+    for (const sub of subscriptions) {
+      const res = await sendPushToSubscription(sub, pushPayload);
+      if (res.ok) {
+        sent++;
+      } else {
+        failed++;
+        if (res.gone || res.status === 404) {
+          await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+          console.log("Removed stale subscription");
+        }
+      }
+    }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        sent: successCount, 
-        total: subscriptions.length 
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: true, sent, failed, total: subscriptions.length }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-  } catch (error) {
-    console.error('Error processing push request:', error);
+  } catch (e) {
+    console.error("send-push-notification error:", e);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: String(error) }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: String(e) }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
