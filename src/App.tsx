@@ -12,6 +12,7 @@ import TermsOfUse from "./pages/TermsOfUse";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CookiePolicy from "./pages/CookiePolicy";
 import LGPD from "./pages/LGPD";
+import InstallApp from "./pages/InstallApp";
 import { AdminRoute } from "./components/admin/AdminRoute";
 import { AdminLayout } from "./pages/admin/AdminLayout";
 
@@ -40,6 +41,8 @@ const App = () => (
             <Route path="/politica-de-privacidade" element={<PrivacyPolicy />} />
             <Route path="/politica-de-cookies" element={<CookiePolicy />} />
             <Route path="/lgpd" element={<LGPD />} />
+            <Route path="/install" element={<InstallApp />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
