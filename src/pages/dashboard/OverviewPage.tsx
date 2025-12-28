@@ -15,7 +15,6 @@ import { OrderStatusWidget } from '@/components/dashboard/OrderStatusWidget';
 import { RecentCustomersWidget } from '@/components/dashboard/RecentCustomersWidget';
 import { SalesByHourWidget } from '@/components/dashboard/SalesByHourWidget';
 import { CustomizeDashboardDialog } from '@/components/dashboard/CustomizeDashboardDialog';
-import { BentoCard, BentoSize } from '@/components/dashboard/BentoCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -24,6 +23,31 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format, subDays } from 'date-fns';
 import { LucideIcon } from 'lucide-react';
 import { motion, type Variants } from 'framer-motion';
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 24,
+    },
+  },
+};
 
 const headerVariants: Variants = {
   hidden: { opacity: 0, y: -20 },
@@ -86,7 +110,7 @@ const presetRanges = [
   { label: '90 dias', days: 90 },
 ];
 
-const METRIC_DEFINITIONS: (MetricDefinition & { size: BentoSize; glowColor: string })[] = [
+const METRIC_DEFINITIONS: MetricDefinition[] = [
   { 
     id: 'ordersTotal',
     label: 'Total Pedidos', 
@@ -95,9 +119,7 @@ const METRIC_DEFINITIONS: (MetricDefinition & { size: BentoSize; glowColor: stri
     icon: ShoppingCart,
     gradient: 'from-primary/20 to-primary/5',
     iconBg: 'bg-primary/20',
-    iconColor: 'text-primary',
-    size: 'medium',
-    glowColor: 'primary'
+    iconColor: 'text-primary'
   },
   { 
     id: 'salesTotal',
@@ -107,9 +129,7 @@ const METRIC_DEFINITIONS: (MetricDefinition & { size: BentoSize; glowColor: stri
     icon: DollarSign,
     gradient: 'from-success/20 to-success/5',
     iconBg: 'bg-success/20',
-    iconColor: 'text-success',
-    size: 'medium',
-    glowColor: 'success'
+    iconColor: 'text-success'
   },
   { 
     id: 'conversionRate',
@@ -119,9 +139,7 @@ const METRIC_DEFINITIONS: (MetricDefinition & { size: BentoSize; glowColor: stri
     icon: TrendingUp,
     gradient: 'from-warning/20 to-warning/5',
     iconBg: 'bg-warning/20',
-    iconColor: 'text-warning',
-    size: 'small',
-    glowColor: 'warning'
+    iconColor: 'text-warning'
   },
   { 
     id: 'averageTicket',
@@ -131,9 +149,7 @@ const METRIC_DEFINITIONS: (MetricDefinition & { size: BentoSize; glowColor: stri
     icon: Receipt,
     gradient: 'from-accent/20 to-accent/5',
     iconBg: 'bg-accent/20',
-    iconColor: 'text-accent',
-    size: 'small',
-    glowColor: 'accent'
+    iconColor: 'text-accent'
   },
   { 
     id: 'paidOrdersCount',
@@ -143,9 +159,7 @@ const METRIC_DEFINITIONS: (MetricDefinition & { size: BentoSize; glowColor: stri
     icon: CheckCircle,
     gradient: 'from-success/20 to-success/5',
     iconBg: 'bg-success/20',
-    iconColor: 'text-success',
-    size: 'small',
-    glowColor: 'success'
+    iconColor: 'text-success'
   },
   { 
     id: 'ordersValueTotal',
@@ -155,9 +169,7 @@ const METRIC_DEFINITIONS: (MetricDefinition & { size: BentoSize; glowColor: stri
     icon: DollarSign,
     gradient: 'from-primary/20 to-primary/5',
     iconBg: 'bg-primary/20',
-    iconColor: 'text-primary',
-    size: 'small',
-    glowColor: 'primary'
+    iconColor: 'text-primary'
   },
   { 
     id: 'abandonmentRate',
@@ -168,9 +180,7 @@ const METRIC_DEFINITIONS: (MetricDefinition & { size: BentoSize; glowColor: stri
     gradient: 'from-destructive/20 to-destructive/5',
     iconBg: 'bg-destructive/20',
     iconColor: 'text-destructive',
-    invertColors: true,
-    size: 'small',
-    glowColor: 'destructive'
+    invertColors: true
   },
   { 
     id: 'customersTotal',
@@ -180,9 +190,7 @@ const METRIC_DEFINITIONS: (MetricDefinition & { size: BentoSize; glowColor: stri
     icon: Users,
     gradient: 'from-telegram/20 to-telegram/5',
     iconBg: 'bg-telegram/20',
-    iconColor: 'text-telegram',
-    size: 'medium',
-    glowColor: 'telegram'
+    iconColor: 'text-telegram'
   },
   { 
     id: 'recurringCustomers',
@@ -192,9 +200,7 @@ const METRIC_DEFINITIONS: (MetricDefinition & { size: BentoSize; glowColor: stri
     icon: UserCheck,
     gradient: 'from-success/20 to-success/5',
     iconBg: 'bg-success/20',
-    iconColor: 'text-success',
-    size: 'small',
-    glowColor: 'success'
+    iconColor: 'text-success'
   },
 ];
 
@@ -376,32 +382,49 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
         </div>
       </motion.div>
 
-      {/* Bento Grid Stats */}
-      <div className="bento-grid" data-tour="stats-cards">
+      {/* Stats Grid */}
+      <motion.div 
+        className={cn(
+          "grid gap-4",
+          displayedCards.length <= 2 ? "grid-cols-1 sm:grid-cols-2" :
+          displayedCards.length === 3 ? "grid-cols-1 sm:grid-cols-3" :
+          "grid-cols-2 lg:grid-cols-4"
+        )}
+        data-tour="stats-cards"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {displayedCards.map((stat, index) => {
           if (!stat) return null;
           const isPositive = stat.invertColors ? stat.change <= 0 : stat.change >= 0;
           const IconComponent = stat.icon;
-          
           return (
-            <BentoCard
-              key={stat.id}
-              size={stat.size}
-              gradient={stat.gradient}
-              glowColor={stat.glowColor}
-              delay={index}
+            <motion.div 
+              key={stat.id} 
+              className="metric-card"
+              variants={itemVariants}
+              whileHover={{ 
+                scale: 1.02, 
+                y: -4,
+                transition: { type: 'spring', stiffness: 400 } 
+              }}
+              whileTap={{ scale: 0.98 }}
             >
-              <div className="relative p-5 h-full flex flex-col justify-between">
-                {/* Header row */}
+              <div className={cn(
+                "absolute inset-0 opacity-50 pointer-events-none",
+                `bg-gradient-to-br ${stat.gradient}`
+              )} />
+              <div className="relative p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <motion.div 
                     className={cn(
-                      "p-2.5 rounded-xl backdrop-blur-sm icon-pulse",
+                      "p-2.5 rounded-xl backdrop-blur-sm",
                       stat.iconBg
                     )}
-                    initial={{ rotate: -10, scale: 0.8 }}
-                    animate={{ rotate: 0, scale: 1 }}
-                    transition={{ delay: 0.3 + index * 0.08, type: 'spring' }}
+                    initial={{ rotate: -10 }}
+                    animate={{ rotate: 0 }}
+                    transition={{ delay: 0.3 + index * 0.1 }}
                   >
                     <IconComponent className={cn("w-5 h-5", stat.iconColor)} />
                   </motion.div>
@@ -414,7 +437,7 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
                     )}
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 + index * 0.08 }}
+                    transition={{ delay: 0.4 + index * 0.1 }}
                   >
                     {isPositive ? (
                       <TrendingUp className="w-3 h-3" />
@@ -424,32 +447,28 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
                     {formatChange(stat.change)}
                   </motion.div>
                 </div>
-
-                {/* Value and label */}
-                <div className="mt-auto pt-4">
+                <div>
                   {stat.value === null ? (
-                    <div className="shimmer">
-                      <Skeleton className="h-10 w-28 mb-1" />
-                    </div>
+                    <Skeleton className="h-10 w-28 mb-1" />
                   ) : (
                     <motion.div 
-                      className="text-3xl md:text-4xl font-bold tracking-tight text-foreground counter-value"
+                      className="text-3xl font-bold tracking-tight text-foreground"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.35 + index * 0.08 }}
+                      transition={{ delay: 0.35 + index * 0.1 }}
                     >
                       {stat.value}
                     </motion.div>
                   )}
-                  <p className="text-sm text-muted-foreground mt-1 font-medium">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {stat.label}
                   </p>
                 </div>
               </div>
-            </BentoCard>
+            </motion.div>
           );
         })}
-      </div>
+      </motion.div>
 
       {/* Widgets Grid - dynamically rendered based on preferences */}
       <motion.div 
