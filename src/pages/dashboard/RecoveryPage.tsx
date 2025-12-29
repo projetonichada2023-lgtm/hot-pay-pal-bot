@@ -401,9 +401,10 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+      // Get recovered orders (paid after receiving recovery messages)
       const { data: recovered, error: recoveredError } = await supabase
         .from("orders")
-        .select("amount")
+        .select("amount, recovery_messages_sent")
         .eq("client_id", client.id)
         .eq("status", "paid")
         .gt("recovery_messages_sent", 0)
@@ -411,10 +412,54 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
 
       if (recoveredError) throw recoveredError;
 
+      // Get total messages sent (from orders)
+      const { data: ordersWithMessages, error: messagesError } = await supabase
+        .from("orders")
+        .select("recovery_messages_sent")
+        .eq("client_id", client.id)
+        .gt("recovery_messages_sent", 0)
+        .gte("created_at", thirtyDaysAgo.toISOString());
+
+      if (messagesError) throw messagesError;
+
+      // Get messages sent to customers without orders
+      const { data: customersWithMessages, error: customersError } = await supabase
+        .from("telegram_customers")
+        .select("recovery_messages_sent")
+        .eq("client_id", client.id)
+        .gt("recovery_messages_sent", 0)
+        .gte("updated_at", thirtyDaysAgo.toISOString());
+
+      if (customersError) throw customersError;
+
       const totalRecovered = recovered?.reduce((sum, o) => sum + Number(o.amount), 0) || 0;
       const ordersRecovered = recovered?.length || 0;
+      
+      // Calculate total messages sent
+      const orderMessages = ordersWithMessages?.reduce((sum, o) => sum + (o.recovery_messages_sent || 0), 0) || 0;
+      const customerMessages = customersWithMessages?.reduce((sum, c) => sum + (c.recovery_messages_sent || 0), 0) || 0;
+      const totalMessagesSent = orderMessages + customerMessages;
+      
+      // Get orders that received messages but didn't convert
+      const { data: ordersNotConverted } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("client_id", client.id)
+        .in("status", ["pending", "cancelled"])
+        .gt("recovery_messages_sent", 0)
+        .gte("created_at", thirtyDaysAgo.toISOString());
+      
+      const totalOrdersWithMessages = (ordersNotConverted?.length || 0) + ordersRecovered;
+      const conversionRate = totalOrdersWithMessages > 0 
+        ? Math.round((ordersRecovered / totalOrdersWithMessages) * 100) 
+        : 0;
 
-      return { totalRecovered, ordersRecovered };
+      return { 
+        totalRecovered, 
+        ordersRecovered, 
+        totalMessagesSent,
+        conversionRate
+      };
     },
   });
 
@@ -539,7 +584,7 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="glass-card">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -547,8 +592,22 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
                 <ShoppingCart className="w-6 h-6 text-warning" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Pedidos Pendentes</p>
+                <p className="text-xs text-muted-foreground">Pedidos Pendentes</p>
                 <p className="text-2xl font-bold">{pendingOrders.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-blue-500/10">
+                <MessageSquare className="w-6 h-6 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Mensagens Enviadas (30d)</p>
+                <p className="text-2xl font-bold">{recoveryStats?.totalMessagesSent || 0}</p>
               </div>
             </div>
           </CardContent>
@@ -561,7 +620,7 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
                 <TrendingUp className="w-6 h-6 text-green-500" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Vendas Recuperadas (30d)</p>
+                <p className="text-xs text-muted-foreground">Vendas Recuperadas (30d)</p>
                 <p className="text-2xl font-bold">{recoveryStats?.ordersRecovered || 0}</p>
               </div>
             </div>
@@ -575,10 +634,24 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
                 <RefreshCw className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Valor Recuperado (30d)</p>
+                <p className="text-xs text-muted-foreground">Valor Recuperado (30d)</p>
                 <p className="text-2xl font-bold">
                   R$ {(recoveryStats?.totalRecovered || 0).toFixed(2).replace(".", ",")}
                 </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-purple-500/10">
+                <TrendingUp className="w-6 h-6 text-purple-500" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Taxa de Conversão</p>
+                <p className="text-2xl font-bold">{recoveryStats?.conversionRate || 0}%</p>
               </div>
             </div>
           </CardContent>
