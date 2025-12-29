@@ -64,7 +64,7 @@ serve(async (req) => {
 
       console.log(`Client ${clientId} has ${recoveryMessages.length} recovery messages`);
 
-      // Get pending orders that need recovery messages
+      // Get orders that need recovery messages (pending or cancelled - not paid)
       const { data: pendingOrders, error: ordersError } = await supabase
         .from("orders")
         .select(`
@@ -73,15 +73,15 @@ serve(async (req) => {
           products(name)
         `)
         .eq("client_id", clientId)
-        .eq("status", "pending")
+        .in("status", ["pending", "cancelled"])
         .lt("recovery_messages_sent", recoveryMessages.length);
 
       if (ordersError) {
-        console.error(`Error fetching pending orders for client ${clientId}:`, ordersError);
+        console.error(`Error fetching orders for client ${clientId}:`, ordersError);
         continue;
       }
 
-      console.log(`Found ${pendingOrders?.length || 0} pending orders for client ${clientId}`);
+      console.log(`Found ${pendingOrders?.length || 0} pending/cancelled orders for client ${clientId}`);
 
       for (const order of pendingOrders || []) {
         const messagesSent = order.recovery_messages_sent || 0;
