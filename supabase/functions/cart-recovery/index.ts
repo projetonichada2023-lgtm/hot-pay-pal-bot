@@ -256,6 +256,185 @@ serve(async (req) => {
           console.error(`Error sending Telegram message for order ${order.id}:`, telegramError);
         }
       }
+
+      // ========== RECOVERY FOR CUSTOMERS WITHOUT ORDERS ==========
+      // Get customers who interacted but never ordered (or have no pending/paid orders)
+      const { data: customersWithoutOrders, error: customersError } = await supabase
+        .from("telegram_customers")
+        .select("id, telegram_id, first_name, created_at, recovery_messages_sent, last_recovery_sent_at")
+        .eq("client_id", clientId)
+        .lt("recovery_messages_sent", recoveryMessages.length);
+
+      if (customersError) {
+        console.error(`Error fetching customers without orders for client ${clientId}:`, customersError);
+        continue;
+      }
+
+      // Filter customers who have no orders at all
+      for (const customer of customersWithoutOrders || []) {
+        // Check if this customer has any orders
+        const { count: orderCount } = await supabase
+          .from("orders")
+          .select("id", { count: 'exact', head: true })
+          .eq("customer_id", customer.id);
+
+        if (orderCount && orderCount > 0) {
+          // Customer has orders, skip (they're handled in the order recovery loop above)
+          continue;
+        }
+
+        const messagesSent = customer.recovery_messages_sent || 0;
+        const nextMessage = recoveryMessages[messagesSent];
+        
+        if (!nextMessage) continue;
+
+        // Calculate if it's time to send this message
+        const customerCreatedAt = new Date(customer.created_at);
+        const now = new Date();
+        
+        // Convert delay to minutes based on time_unit
+        const timeUnit = nextMessage.time_unit || 'minutes';
+        let delayInMinutes = nextMessage.delay_minutes;
+        if (timeUnit === 'hours') {
+          delayInMinutes = nextMessage.delay_minutes * 60;
+        } else if (timeUnit === 'days') {
+          delayInMinutes = nextMessage.delay_minutes * 60 * 24;
+        }
+        
+        const minutesSinceCreation = (now.getTime() - customerCreatedAt.getTime()) / (1000 * 60);
+        
+        const lastRecoverySentAt = customer.last_recovery_sent_at 
+          ? new Date(customer.last_recovery_sent_at) 
+          : customerCreatedAt;
+        const minutesSinceLastRecovery = (now.getTime() - lastRecoverySentAt.getTime()) / (1000 * 60);
+
+        const shouldSend = messagesSent === 0 
+          ? minutesSinceCreation >= delayInMinutes
+          : minutesSinceLastRecovery >= delayInMinutes;
+
+        if (!shouldSend) {
+          console.log(`Customer ${customer.id}: Not time yet for message ${messagesSent + 1} (${minutesSinceCreation.toFixed(1)} min elapsed, need ${delayInMinutes} min)`);
+          continue;
+        }
+
+        console.log(`Sending recovery message ${messagesSent + 1} to customer without order ${customer.id}`);
+
+        // Personalize message (no product info since no order)
+        let messageContent = nextMessage.message_content;
+        messageContent = messageContent.replace("{nome}", customer?.first_name || "Cliente");
+        messageContent = messageContent.replace("{produto}", "nossos produtos");
+        messageContent = messageContent.replace("{valor}", "");
+
+        try {
+          const mediaUrl = nextMessage.media_url;
+          const mediaType = nextMessage.media_type;
+          
+          if (mediaUrl && mediaType) {
+            if (mediaType === 'image') {
+              const photoResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: customer.telegram_id,
+                  photo: mediaUrl,
+                  caption: messageContent,
+                  parse_mode: "HTML",
+                }),
+              });
+              
+              if (!photoResponse.ok) {
+                console.error(`Failed to send photo for customer ${customer.id}:`, await photoResponse.text());
+              }
+            } else if (mediaType === 'audio') {
+              const audioResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendAudio`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: customer.telegram_id,
+                  audio: mediaUrl,
+                  caption: messageContent,
+                  parse_mode: "HTML",
+                }),
+              });
+              
+              if (!audioResponse.ok) {
+                console.error(`Failed to send audio for customer ${customer.id}:`, await audioResponse.text());
+              }
+            }
+          } else {
+            const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+            const telegramResponse = await fetch(telegramUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: customer.telegram_id,
+                text: messageContent,
+                parse_mode: "HTML",
+              }),
+            });
+
+            if (!telegramResponse.ok) {
+              const errorText = await telegramResponse.text();
+              console.error(`Failed to send Telegram message for customer ${customer.id}:`, errorText);
+            }
+          }
+
+          console.log(`Recovery message sent successfully for customer without order ${customer.id}`);
+
+          // Send offer product if configured
+          const offerProduct = nextMessage.offer_product as any;
+          if (offerProduct && nextMessage.offer_product_id) {
+            console.log(`Sending offer product ${offerProduct.name} for customer ${customer.id}`);
+            
+            const offerMessage = nextMessage.offer_message || "🔥 Confira esta oferta especial:";
+            const productText = `${offerMessage}\n\n📦 *${offerProduct.name}*\n💰 R$ ${Number(offerProduct.price).toFixed(2).replace(".", ",")}`;
+            
+            if (offerProduct.image_url) {
+              await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: customer.telegram_id,
+                  photo: offerProduct.image_url,
+                  caption: productText,
+                  parse_mode: "Markdown",
+                  reply_markup: {
+                    inline_keyboard: [[
+                      { text: "🛒 Comprar agora", callback_data: `buy_${offerProduct.id}` }
+                    ]]
+                  }
+                }),
+              });
+            } else {
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: customer.telegram_id,
+                  text: productText,
+                  parse_mode: "Markdown",
+                  reply_markup: {
+                    inline_keyboard: [[
+                      { text: "🛒 Comprar agora", callback_data: `buy_${offerProduct.id}` }
+                    ]]
+                  }
+                }),
+              });
+            }
+          }
+          
+          // Update customer with recovery message count
+          await supabase
+            .from("telegram_customers")
+            .update({
+              recovery_messages_sent: messagesSent + 1,
+              last_recovery_sent_at: now.toISOString(),
+            })
+            .eq("id", customer.id);
+        } catch (telegramError) {
+          console.error(`Error sending Telegram message for customer ${customer.id}:`, telegramError);
+        }
+      }
     }
 
     return new Response(

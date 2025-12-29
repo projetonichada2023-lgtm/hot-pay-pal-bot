@@ -779,7 +779,9 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          last_recovery_sent_at: string | null
           phone: string | null
+          recovery_messages_sent: number | null
           telegram_id: number
           telegram_username: string | null
           updated_at: string | null
@@ -791,7 +793,9 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          last_recovery_sent_at?: string | null
           phone?: string | null
+          recovery_messages_sent?: number | null
           telegram_id: number
           telegram_username?: string | null
           updated_at?: string | null
@@ -803,7 +807,9 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          last_recovery_sent_at?: string | null
           phone?: string | null
+          recovery_messages_sent?: number | null
           telegram_id?: number
           telegram_username?: string | null
           updated_at?: string | null
