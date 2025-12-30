@@ -214,6 +214,7 @@ export type Database = {
           support_enabled: boolean | null
           tiktok_access_token: string | null
           tiktok_pixel_code: string | null
+          tiktok_test_event_code: string | null
           tiktok_tracking_enabled: boolean | null
           updated_at: string | null
           upsell_enabled: boolean | null
@@ -239,6 +240,7 @@ export type Database = {
           support_enabled?: boolean | null
           tiktok_access_token?: string | null
           tiktok_pixel_code?: string | null
+          tiktok_test_event_code?: string | null
           tiktok_tracking_enabled?: boolean | null
           updated_at?: string | null
           upsell_enabled?: boolean | null
@@ -264,6 +266,7 @@ export type Database = {
           support_enabled?: boolean | null
           tiktok_access_token?: string | null
           tiktok_pixel_code?: string | null
+          tiktok_test_event_code?: string | null
           tiktok_tracking_enabled?: boolean | null
           updated_at?: string | null
           upsell_enabled?: boolean | null

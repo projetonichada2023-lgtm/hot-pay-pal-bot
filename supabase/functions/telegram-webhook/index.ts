@@ -686,7 +686,8 @@ async function sendTikTokEvent(
   eventType: string,
   customer: any,
   clientId: string,
-  eventProperties?: { value?: number; currency?: string; content_id?: string; content_name?: string; product_id?: string; order_id?: string }
+  eventProperties?: { value?: number; currency?: string; content_id?: string; content_name?: string; product_id?: string; order_id?: string },
+  testEventCode?: string | null
 ) {
   const eventId = crypto.randomUUID();
   let apiStatus = 'pending';
@@ -723,7 +724,20 @@ async function sendTikTokEvent(
       };
     }
     
-    console.log('Sending TikTok event:', eventType, JSON.stringify(eventData));
+    // Build request body
+    const requestBody: any = {
+      event_source: 'web',
+      event_source_id: pixelCode,
+      data: [eventData],
+    };
+    
+    // Add test_event_code if provided (for TikTok Test Events mode)
+    if (testEventCode) {
+      requestBody.test_event_code = testEventCode;
+      console.log('Sending TikTok event with TEST MODE:', testEventCode);
+    }
+    
+    console.log('Sending TikTok event:', eventType, JSON.stringify(requestBody));
     
     const response = await fetch('https://business-api.tiktok.com/open_api/v1.3/event/track/', {
       method: 'POST',
@@ -731,11 +745,7 @@ async function sendTikTokEvent(
         'Content-Type': 'application/json',
         'Access-Token': accessToken,
       },
-      body: JSON.stringify({
-        event_source: 'web',
-        event_source_id: pixelCode,
-        data: [eventData],
-      }),
+      body: JSON.stringify(requestBody),
     });
     
     const result = await response.text();
@@ -805,7 +815,7 @@ async function getProducts(clientId: string) {
 async function getClientSettings(clientId: string) {
   const { data } = await supabase
     .from('client_settings')
-    .select('*, fastsoft_api_key, fastsoft_public_key, fastsoft_enabled, tiktok_pixel_code, tiktok_access_token, tiktok_tracking_enabled')
+    .select('*, fastsoft_api_key, fastsoft_public_key, fastsoft_enabled, tiktok_pixel_code, tiktok_access_token, tiktok_tracking_enabled, tiktok_test_event_code')
     .eq('client_id', clientId)
     .maybeSingle();
   
@@ -1239,7 +1249,8 @@ serve(async (req) => {
               'ClickButton',
               customer,
               clientId,
-              { content_name: utmParams.utm_campaign || 'bot_start' }
+              { content_name: utmParams.utm_campaign || 'bot_start' },
+              settings.tiktok_test_event_code
             );
           }
         }
@@ -1332,7 +1343,8 @@ serve(async (req) => {
                   value: Number(product.price),
                   currency: 'BRL',
                   product_id: productId
-                }
+                },
+                settings.tiktok_test_event_code
               );
             }
           }
@@ -1583,7 +1595,8 @@ async function handleBuyProduct(botToken: string, chatId: number, clientId: stri
           currency: 'BRL',
           product_id: productId,
           order_id: order.id
-        }
+        },
+        settings.tiktok_test_event_code
       );
     }
   }
@@ -1721,7 +1734,8 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
             currency: 'BRL',
             product_id: product?.id,
             order_id: orderId
-          }
+          },
+          settings.tiktok_test_event_code
         );
       }
     }
