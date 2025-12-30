@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, BarChart3, Package, GitBranch, Download } from 'lucide-react';
+import { CalendarIcon, BarChart3, Package, GitBranch, Download, TrendingUp } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from '@/hooks/useDashboardStats';
@@ -13,6 +13,7 @@ import { useReportsData, exportToCSV } from '@/hooks/useReportsData';
 import { SalesReportChart } from '@/components/reports/SalesReportChart';
 import { TopProductsChart } from '@/components/reports/TopProductsChart';
 import { FunnelPerformanceChart } from '@/components/reports/FunnelPerformanceChart';
+import { TikTokStatsCard } from '@/components/reports/TikTokStatsCard';
 import { cn } from '@/lib/utils';
 
 interface ReportsPageProps {
@@ -139,7 +140,7 @@ export const ReportsPage = ({ client }: ReportsPageProps) => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="sales" className="gap-2">
             <BarChart3 className="w-4 h-4 hidden sm:inline" />
             Vendas
@@ -151,6 +152,10 @@ export const ReportsPage = ({ client }: ReportsPageProps) => {
           <TabsTrigger value="funnel" className="gap-2">
             <GitBranch className="w-4 h-4 hidden sm:inline" />
             Funil
+          </TabsTrigger>
+          <TabsTrigger value="tiktok" className="gap-2">
+            <TrendingUp className="w-4 h-4 hidden sm:inline" />
+            TikTok
           </TabsTrigger>
         </TabsList>
 
@@ -211,6 +216,10 @@ export const ReportsPage = ({ client }: ReportsPageProps) => {
 
         <TabsContent value="funnel">
           <FunnelPerformanceChart data={funnelData} isLoading={isLoading} />
+        </TabsContent>
+
+        <TabsContent value="tiktok">
+          <TikTokStatsCard clientId={client.id} />
         </TabsContent>
       </Tabs>
     </div>
