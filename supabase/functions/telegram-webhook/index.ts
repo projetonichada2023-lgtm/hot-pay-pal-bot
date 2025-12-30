@@ -1501,10 +1501,10 @@ async function handleBuyProduct(botToken: string, chatId: number, clientId: stri
   // Increment product views (since we skip product details page now)
   await incrementProductViews(productId);
 
-  // Get customer name for FastSoft
+  // Get customer data for FastSoft and TikTok tracking
   const { data: customer } = await supabase
     .from('telegram_customers')
-    .select('first_name, last_name')
+    .select('first_name, last_name, utm_source, ttclid')
     .eq('id', customerId)
     .maybeSingle();
   
@@ -1516,6 +1516,26 @@ async function handleBuyProduct(botToken: string, chatId: number, clientId: stri
   if (!order) {
     await sendTelegramMessage(botToken, chatId, '❌ Erro ao criar pedido. Tente novamente.');
     return;
+  }
+
+  // Send TikTok InitiateCheckout event if tracking is enabled
+  if (customer?.utm_source === 'tiktok' || customer?.ttclid) {
+    const settings = await getClientSettings(clientId);
+    if (settings?.tiktok_tracking_enabled && settings?.tiktok_pixel_code && settings?.tiktok_access_token) {
+      console.log('Sending TikTok InitiateCheckout event for order:', order.id);
+      await sendTikTokEvent(
+        settings.tiktok_pixel_code,
+        settings.tiktok_access_token,
+        'InitiateCheckout',
+        { ...customer, id: customerId },
+        { 
+          content_id: productId, 
+          content_name: product.name,
+          value: Number(product.price),
+          currency: 'BRL'
+        }
+      );
+    }
   }
 
   const orderCreatedMessage = await getClientMessage(clientId, 'order_created');
