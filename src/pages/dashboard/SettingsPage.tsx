@@ -1,4 +1,5 @@
 import { Client, useClientSettings, useUpdateClientSettings } from '@/hooks/useClient';
+import { TikTokEventsHistory } from '@/components/settings/TikTokEventsHistory';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -618,6 +619,11 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
               )}
             </CardContent>
           </Card>
+
+          {/* TikTok Events History */}
+          {hasTikTokConfig && (
+            <TikTokEventsHistory clientId={client.id} />
+          )}
         </TabsContent>
 
         {/* Tab: Automações */}
