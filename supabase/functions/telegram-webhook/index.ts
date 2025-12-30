@@ -1646,6 +1646,34 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
     }
   }
 
+  // Send TikTok Purchase event if tracking is enabled
+  if (customerId) {
+    const { data: customer } = await supabase
+      .from('telegram_customers')
+      .select('utm_source, ttclid')
+      .eq('id', customerId)
+      .maybeSingle();
+    
+    if (customer?.utm_source === 'tiktok' || customer?.ttclid) {
+      if (settings?.tiktok_tracking_enabled && settings?.tiktok_pixel_code && settings?.tiktok_access_token) {
+        const product = order.products as any;
+        console.log('Sending TikTok Purchase event for order:', orderId);
+        await sendTikTokEvent(
+          settings.tiktok_pixel_code,
+          settings.tiktok_access_token,
+          'CompletePayment',
+          { ...customer, id: customerId },
+          { 
+            content_id: product?.id, 
+            content_name: product?.name || 'Produto',
+            value: Number(order.amount),
+            currency: 'BRL'
+          }
+        );
+      }
+    }
+  }
+
   const paymentSuccessMessage = await getClientMessage(clientId, 'payment_success');
   const paymentText = paymentSuccessMessage || '✅ Pagamento confirmado!';
   const paymentSent = await sendTelegramMessage(botToken, chatId, paymentText);
