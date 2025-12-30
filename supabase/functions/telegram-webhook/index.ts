@@ -1563,7 +1563,7 @@ async function handleBuyProduct(botToken: string, chatId: number, clientId: stri
   // Get customer data for FastSoft and TikTok tracking
   const { data: customer } = await supabase
     .from('telegram_customers')
-    .select('first_name, last_name, utm_source, ttclid')
+    .select('first_name, last_name, utm_source, ttclid, utm_campaign')
     .eq('id', customerId)
     .maybeSingle();
   
@@ -1713,7 +1713,7 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
   if (customerId) {
     const { data: customer } = await supabase
       .from('telegram_customers')
-      .select('utm_source, ttclid')
+      .select('utm_source, ttclid, utm_campaign')
       .eq('id', customerId)
       .maybeSingle();
     
