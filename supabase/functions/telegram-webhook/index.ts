@@ -688,8 +688,12 @@ async function sendTikTokEvent(
   clientId: string,
   eventProperties?: { value?: number; currency?: string; content_id?: string; content_name?: string; product_id?: string; order_id?: string }
 ) {
+  const eventId = crypto.randomUUID();
+  let apiStatus = 'pending';
+  let apiResponseCode: number | null = null;
+  let apiErrorMessage: string | null = null;
+  
   try {
-    const eventId = crypto.randomUUID();
     const timestamp = Math.floor(Date.now() / 1000);
     
     const eventData: any = {
@@ -721,20 +725,6 @@ async function sendTikTokEvent(
     
     console.log('Sending TikTok event:', eventType, JSON.stringify(eventData));
     
-    // Save event locally for dashboard stats
-    await supabase.from('tiktok_events').insert({
-      client_id: clientId,
-      customer_id: customer.id,
-      event_type: eventType,
-      event_id: eventId,
-      product_id: eventProperties?.product_id || null,
-      order_id: eventProperties?.order_id || null,
-      utm_campaign: customer.utm_campaign || null,
-      value: eventProperties?.value || null,
-      currency: eventProperties?.currency || 'BRL',
-      ttclid: customer.ttclid || null,
-    });
-    
     const response = await fetch('https://business-api.tiktok.com/open_api/v1.3/event/track/', {
       method: 'POST',
       headers: {
@@ -751,11 +741,53 @@ async function sendTikTokEvent(
     const result = await response.text();
     console.log('TikTok API response:', response.status, result);
     
-    return response.ok;
+    apiResponseCode = response.status;
+    
+    if (response.ok) {
+      try {
+        const parsed = JSON.parse(result);
+        if (parsed.code === 0) {
+          apiStatus = 'success';
+        } else {
+          apiStatus = 'error';
+          apiErrorMessage = parsed.message || 'Unknown TikTok error';
+        }
+      } catch {
+        apiStatus = 'success'; // 2xx but couldn't parse response
+      }
+    } else {
+      apiStatus = 'error';
+      try {
+        const parsed = JSON.parse(result);
+        apiErrorMessage = parsed.message || `HTTP ${response.status}`;
+      } catch {
+        apiErrorMessage = `HTTP ${response.status}`;
+      }
+    }
   } catch (error) {
     console.error('Error sending TikTok event:', error);
-    return false;
+    apiStatus = 'error';
+    apiErrorMessage = error instanceof Error ? error.message : 'Network error';
   }
+  
+  // Save event with API status
+  await supabase.from('tiktok_events').insert({
+    client_id: clientId,
+    customer_id: customer.id,
+    event_type: eventType,
+    event_id: eventId,
+    product_id: eventProperties?.product_id || null,
+    order_id: eventProperties?.order_id || null,
+    utm_campaign: customer.utm_campaign || null,
+    value: eventProperties?.value || null,
+    currency: eventProperties?.currency || 'BRL',
+    ttclid: customer.ttclid || null,
+    api_status: apiStatus,
+    api_response_code: apiResponseCode,
+    api_error_message: apiErrorMessage,
+  });
+  
+  return apiStatus === 'success';
 }
 
 async function getProducts(clientId: string) {

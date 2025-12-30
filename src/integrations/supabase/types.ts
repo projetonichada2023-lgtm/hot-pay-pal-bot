@@ -898,6 +898,9 @@ export type Database = {
       }
       tiktok_events: {
         Row: {
+          api_error_message: string | null
+          api_response_code: number | null
+          api_status: string | null
           client_id: string
           created_at: string
           currency: string | null
@@ -912,6 +915,9 @@ export type Database = {
           value: number | null
         }
         Insert: {
+          api_error_message?: string | null
+          api_response_code?: number | null
+          api_status?: string | null
           client_id: string
           created_at?: string
           currency?: string | null
@@ -926,6 +932,9 @@ export type Database = {
           value?: number | null
         }
         Update: {
+          api_error_message?: string | null
+          api_response_code?: number | null
+          api_status?: string | null
           client_id?: string
           created_at?: string
           currency?: string | null
