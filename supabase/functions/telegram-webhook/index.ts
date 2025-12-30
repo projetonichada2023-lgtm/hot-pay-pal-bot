@@ -692,23 +692,20 @@ async function sendTikTokEvent(
     const timestamp = Math.floor(Date.now() / 1000);
     
     const eventData: any = {
-      pixel_code: pixelCode,
       event: eventType,
       event_id: eventId,
-      timestamp: timestamp,
-      context: {
-        user: {
-          external_id: customer.id,
-        },
-        page: {
-          url: `https://t.me/${customer.telegram_username || customer.telegram_id}`,
-        },
+      event_time: timestamp,
+      user: {
+        external_id: customer.id,
+      },
+      page: {
+        url: `https://t.me/${customer.telegram_username || customer.telegram_id}`,
       },
     };
     
     // Add ttclid if available for better attribution
     if (customer.ttclid) {
-      eventData.context.user.ttclid = customer.ttclid;
+      eventData.user.ttclid = customer.ttclid;
     }
     
     if (eventProperties) {
