@@ -685,7 +685,8 @@ async function sendTikTokEvent(
   accessToken: string,
   eventType: string,
   customer: any,
-  eventProperties?: { value?: number; currency?: string; content_id?: string; content_name?: string }
+  clientId: string,
+  eventProperties?: { value?: number; currency?: string; content_id?: string; content_name?: string; product_id?: string; order_id?: string }
 ) {
   try {
     const eventId = crypto.randomUUID();
@@ -719,6 +720,20 @@ async function sendTikTokEvent(
     }
     
     console.log('Sending TikTok event:', eventType, JSON.stringify(eventData));
+    
+    // Save event locally for dashboard stats
+    await supabase.from('tiktok_events').insert({
+      client_id: clientId,
+      customer_id: customer.id,
+      event_type: eventType,
+      event_id: eventId,
+      product_id: eventProperties?.product_id || null,
+      order_id: eventProperties?.order_id || null,
+      utm_campaign: customer.utm_campaign || null,
+      value: eventProperties?.value || null,
+      currency: eventProperties?.currency || 'BRL',
+      ttclid: customer.ttclid || null,
+    });
     
     const response = await fetch('https://business-api.tiktok.com/open_api/v1.3/event/track/', {
       method: 'POST',
@@ -1191,6 +1206,7 @@ serve(async (req) => {
               settings.tiktok_access_token,
               'ClickButton',
               customer,
+              clientId,
               { content_name: utmParams.utm_campaign || 'bot_start' }
             );
           }
@@ -1277,11 +1293,13 @@ serve(async (req) => {
                 settings.tiktok_access_token,
                 'ViewContent',
                 customer,
+                clientId,
                 { 
                   content_id: productId, 
                   content_name: product.name,
                   value: Number(product.price),
-                  currency: 'BRL'
+                  currency: 'BRL',
+                  product_id: productId
                 }
               );
             }
@@ -1525,11 +1543,14 @@ async function handleBuyProduct(botToken: string, chatId: number, clientId: stri
         settings.tiktok_access_token,
         'InitiateCheckout',
         { ...customer, id: customerId },
+        clientId,
         { 
           content_id: productId, 
           content_name: product.name,
           value: Number(product.price),
-          currency: 'BRL'
+          currency: 'BRL',
+          product_id: productId,
+          order_id: order.id
         }
       );
     }
@@ -1660,11 +1681,14 @@ async function handlePaymentConfirmed(botToken: string, chatId: number, clientId
           settings.tiktok_access_token,
           'CompletePayment',
           { ...customer, id: customerId },
+          clientId,
           { 
             content_id: product?.id, 
             content_name: product?.name || 'Produto',
             value: Number(order.amount),
-            currency: 'BRL'
+            currency: 'BRL',
+            product_id: product?.id,
+            order_id: orderId
           }
         );
       }

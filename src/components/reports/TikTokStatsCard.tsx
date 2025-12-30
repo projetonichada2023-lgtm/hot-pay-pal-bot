@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTikTokStats } from '@/hooks/useTikTokStats';
-import { BarChart3, MousePointerClick, ShoppingCart, DollarSign, TrendingUp } from 'lucide-react';
+import { BarChart3, MousePointerClick, ShoppingCart, DollarSign, TrendingUp, Eye, CreditCard } from 'lucide-react';
 
 interface TikTokStatsCardProps {
   clientId: string | undefined;
@@ -23,13 +23,13 @@ export const TikTokStatsCard = ({ clientId }: TikTokStatsCardProps) => {
     return (
       <Card className="glass-card">
         <CardHeader>
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-4 w-64" />
+          <div className="h-6 w-48 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-64 bg-muted rounded animate-pulse" />
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
-            {[1, 2, 3, 4].map(i => (
-              <Skeleton key={i} className="h-24 w-full" />
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="h-24 w-full bg-muted rounded animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -37,7 +37,9 @@ export const TikTokStatsCard = ({ clientId }: TikTokStatsCardProps) => {
     );
   }
 
-  if (!stats || stats.totalClicks === 0) {
+  const hasData = stats && (stats.totalClicks > 0 || stats.totalViewContent > 0 || stats.totalConversions > 0);
+
+  if (!hasData) {
     return (
       <Card className="glass-card">
         <CardHeader>
@@ -70,26 +72,42 @@ export const TikTokStatsCard = ({ clientId }: TikTokStatsCardProps) => {
           TikTok Ads
         </CardTitle>
         <CardDescription>
-          Estatísticas de conversão do TikTok Ads
+          Estatísticas de conversão do TikTok Ads - Funil Completo
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Summary Stats */}
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
           <div className="p-4 bg-muted/30 rounded-lg border border-border">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <MousePointerClick className="w-4 h-4" />
               <span className="text-sm">Cliques</span>
             </div>
-            <p className="text-2xl font-bold">{stats.totalClicks}</p>
+            <p className="text-2xl font-bold">{stats?.totalClicks || 0}</p>
+          </div>
+          
+          <div className="p-4 bg-muted/30 rounded-lg border border-border">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Eye className="w-4 h-4" />
+              <span className="text-sm">Visualizações</span>
+            </div>
+            <p className="text-2xl font-bold text-blue-500">{stats?.totalViewContent || 0}</p>
+          </div>
+          
+          <div className="p-4 bg-muted/30 rounded-lg border border-border">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <CreditCard className="w-4 h-4" />
+              <span className="text-sm">Checkout</span>
+            </div>
+            <p className="text-2xl font-bold text-yellow-500">{stats?.totalInitiateCheckout || 0}</p>
           </div>
           
           <div className="p-4 bg-muted/30 rounded-lg border border-border">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <ShoppingCart className="w-4 h-4" />
-              <span className="text-sm">Conversões</span>
+              <span className="text-sm">Vendas</span>
             </div>
-            <p className="text-2xl font-bold text-green-500">{stats.totalConversions}</p>
+            <p className="text-2xl font-bold text-green-500">{stats?.totalConversions || 0}</p>
           </div>
           
           <div className="p-4 bg-muted/30 rounded-lg border border-border">
@@ -97,20 +115,20 @@ export const TikTokStatsCard = ({ clientId }: TikTokStatsCardProps) => {
               <DollarSign className="w-4 h-4" />
               <span className="text-sm">Receita</span>
             </div>
-            <p className="text-2xl font-bold text-primary">{formatCurrency(stats.totalRevenue)}</p>
+            <p className="text-2xl font-bold text-primary">{formatCurrency(stats?.totalRevenue || 0)}</p>
           </div>
           
           <div className="p-4 bg-muted/30 rounded-lg border border-border">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <TrendingUp className="w-4 h-4" />
-              <span className="text-sm">Taxa de Conversão</span>
+              <span className="text-sm">Taxa Conv.</span>
             </div>
-            <p className="text-2xl font-bold">{stats.conversionRate.toFixed(1)}%</p>
+            <p className="text-2xl font-bold">{(stats?.conversionRate || 0).toFixed(1)}%</p>
           </div>
         </div>
 
         {/* Campaign Table */}
-        {stats.campaigns.length > 0 && (
+        {stats?.campaigns && stats.campaigns.length > 0 && (
           <div>
             <h4 className="font-medium mb-3">Por Campanha</h4>
             <div className="rounded-lg border overflow-hidden">
@@ -119,7 +137,9 @@ export const TikTokStatsCard = ({ clientId }: TikTokStatsCardProps) => {
                   <TableRow>
                     <TableHead>Campanha</TableHead>
                     <TableHead className="text-right">Cliques</TableHead>
-                    <TableHead className="text-right">Conversões</TableHead>
+                    <TableHead className="text-right">Views</TableHead>
+                    <TableHead className="text-right">Checkout</TableHead>
+                    <TableHead className="text-right">Vendas</TableHead>
                     <TableHead className="text-right">Taxa</TableHead>
                     <TableHead className="text-right">Receita</TableHead>
                   </TableRow>
@@ -133,6 +153,8 @@ export const TikTokStatsCard = ({ clientId }: TikTokStatsCardProps) => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">{campaign.clicks}</TableCell>
+                      <TableCell className="text-right text-blue-500">{campaign.viewContent}</TableCell>
+                      <TableCell className="text-right text-yellow-500">{campaign.initiateCheckout}</TableCell>
                       <TableCell className="text-right text-green-500 font-medium">
                         {campaign.conversions}
                       </TableCell>

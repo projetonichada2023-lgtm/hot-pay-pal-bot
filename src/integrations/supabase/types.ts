@@ -896,6 +896,80 @@ export type Database = {
           },
         ]
       }
+      tiktok_events: {
+        Row: {
+          client_id: string
+          created_at: string
+          currency: string | null
+          customer_id: string | null
+          event_id: string
+          event_type: string
+          id: string
+          order_id: string | null
+          product_id: string | null
+          ttclid: string | null
+          utm_campaign: string | null
+          value: number | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          currency?: string | null
+          customer_id?: string | null
+          event_id: string
+          event_type: string
+          id?: string
+          order_id?: string | null
+          product_id?: string | null
+          ttclid?: string | null
+          utm_campaign?: string | null
+          value?: number | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          currency?: string | null
+          customer_id?: string | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          order_id?: string | null
+          product_id?: string | null
+          ttclid?: string | null
+          utm_campaign?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tiktok_events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tiktok_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tiktok_events_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
