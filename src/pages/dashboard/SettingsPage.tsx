@@ -55,6 +55,8 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   const [tiktokPixelCode, setTiktokPixelCode] = useState('');
   const [tiktokAccessToken, setTiktokAccessToken] = useState('');
   const [showTiktokToken, setShowTiktokToken] = useState(false);
+  const [isTiktokTesting, setIsTiktokTesting] = useState(false);
+  const [tiktokTestResult, setTiktokTestResult] = useState<any>(null);
   
   // Push notification state
   const [pushSupport, setPushSupport] = useState<{
@@ -175,6 +177,35 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
     }
   };
 
+  const handleTestTikTokEvent = async () => {
+    setIsTiktokTesting(true);
+    setTiktokTestResult(null);
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('test-tiktok-event');
+      
+      if (error) {
+        setTiktokTestResult({ success: false, error: error.message });
+        toast({ title: 'Erro ao testar', description: error.message, variant: 'destructive' });
+      } else {
+        setTiktokTestResult(data);
+        if (data.success) {
+          toast({ title: 'Evento de teste enviado!', description: 'Verifique no TikTok Events Manager' });
+        } else {
+          toast({ 
+            title: 'TikTok retornou erro', 
+            description: data.tiktok_response?.message || 'Verifique as credenciais',
+            variant: 'destructive' 
+          });
+        }
+      }
+    } catch (error: any) {
+      setTiktokTestResult({ success: false, error: error.message });
+      toast({ title: 'Erro ao testar', variant: 'destructive' });
+    } finally {
+      setIsTiktokTesting(false);
+    }
+  };
   const handleTogglePush = async () => {
     setIsPushLoading(true);
     try {
@@ -459,6 +490,43 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
                         t.me/{client.telegram_bot_username}?start=ttclid_{'{{ttclid}}'}
                       </code>
                     </p>
+                  </div>
+
+                  {/* Test Event Button */}
+                  <div className="space-y-3">
+                    <Button 
+                      variant="secondary" 
+                      className="w-full"
+                      onClick={handleTestTikTokEvent}
+                      disabled={isTiktokTesting}
+                    >
+                      {isTiktokTesting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Enviando evento de teste...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-4 h-4 mr-2" />
+                          Enviar Evento de Teste
+                        </>
+                      )}
+                    </Button>
+
+                    {tiktokTestResult && (
+                      <div className={`p-4 rounded-lg border text-sm font-mono overflow-auto max-h-64 ${
+                        tiktokTestResult.success 
+                          ? 'bg-green-500/10 border-green-500/20' 
+                          : 'bg-destructive/10 border-destructive/20'
+                      }`}>
+                        <p className={`font-bold mb-2 ${tiktokTestResult.success ? 'text-green-600' : 'text-destructive'}`}>
+                          {tiktokTestResult.success ? '✅ Evento enviado com sucesso!' : '❌ Erro ao enviar evento'}
+                        </p>
+                        <pre className="text-xs whitespace-pre-wrap">
+                          {JSON.stringify(tiktokTestResult, null, 2)}
+                        </pre>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2">
