@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     // Get TikTok settings
     const { data: settings, error: settingsError } = await supabase
       .from('client_settings')
-      .select('tiktok_pixel_code, tiktok_access_token, tiktok_tracking_enabled')
+      .select('tiktok_pixel_code, tiktok_access_token, tiktok_tracking_enabled, tiktok_test_event_code')
       .eq('client_id', client.id)
       .single();
 
@@ -92,11 +92,17 @@ Deno.serve(async (req) => {
       },
     };
 
-    const requestBody = {
+    const requestBody: any = {
       event_source: 'web',
       event_source_id: settings.tiktok_pixel_code,
       data: [eventData],
     };
+
+    // Add test_event_code if configured
+    if (settings.tiktok_test_event_code) {
+      requestBody.test_event_code = settings.tiktok_test_event_code;
+      console.log('Using Test Event Code:', settings.tiktok_test_event_code);
+    }
 
     console.log('Sending test event to TikTok:', JSON.stringify(requestBody));
 
@@ -118,6 +124,7 @@ Deno.serve(async (req) => {
       tiktok_response: result,
       event_sent: eventData,
       pixel_code: settings.tiktok_pixel_code,
+      test_event_code: settings.tiktok_test_event_code || null,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -55,6 +55,7 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   // TikTok tracking state
   const [tiktokPixelCode, setTiktokPixelCode] = useState('');
   const [tiktokAccessToken, setTiktokAccessToken] = useState('');
+  const [tiktokTestEventCode, setTiktokTestEventCode] = useState('');
   const [showTiktokToken, setShowTiktokToken] = useState(false);
   const [isTiktokTesting, setIsTiktokTesting] = useState(false);
   const [tiktokTestResult, setTiktokTestResult] = useState<any>(null);
@@ -493,6 +494,50 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
                     </p>
                   </div>
 
+                  {/* Test Event Code */}
+                  <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20 space-y-3">
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-blue-500" />
+                        Test Event Code (Modo Teste)
+                      </Label>
+                      <Input
+                        type="text"
+                        placeholder="Ex: TEST12345"
+                        value={tiktokTestEventCode || (settings as any).tiktok_test_event_code || ''}
+                        onChange={(e) => setTiktokTestEventCode(e.target.value)}
+                        className="font-mono"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Para ver eventos no <b>Teste de Eventos</b> do TikTok, copie o código de teste do TikTok Events Manager → Test Events.
+                        <br />
+                        <span className="text-blue-500">⚠️ Deixe vazio para enviar eventos em produção.</span>
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={async () => {
+                          if (!settings) return;
+                          try {
+                            await updateSettings.mutateAsync({ 
+                              id: settings.id, 
+                              tiktok_test_event_code: tiktokTestEventCode.trim() || null
+                            } as any);
+                            toast({ 
+                              title: tiktokTestEventCode.trim() 
+                                ? 'Modo teste ativado!' 
+                                : 'Modo produção ativado!' 
+                            });
+                          } catch (error) {
+                            toast({ title: 'Erro ao salvar', variant: 'destructive' });
+                          }
+                        }}
+                      >
+                        {(settings as any).tiktok_test_event_code ? 'Atualizar Código' : 'Salvar Código de Teste'}
+                      </Button>
+                    </div>
+                  </div>
+
                   {/* Test Event Button */}
                   <div className="space-y-3">
                     <Button 
@@ -523,6 +568,11 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
                         <p className={`font-bold mb-2 ${tiktokTestResult.success ? 'text-green-600' : 'text-destructive'}`}>
                           {tiktokTestResult.success ? '✅ Evento enviado com sucesso!' : '❌ Erro ao enviar evento'}
                         </p>
+                        {(settings as any).tiktok_test_event_code && (
+                          <p className="text-xs text-blue-500 mb-2">
+                            📍 Enviado com Test Event Code: {(settings as any).tiktok_test_event_code}
+                          </p>
+                        )}
                         <pre className="text-xs whitespace-pre-wrap">
                           {JSON.stringify(tiktokTestResult, null, 2)}
                         </pre>
