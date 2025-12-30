@@ -591,7 +591,14 @@ function buildInlineKeyboard(buttons: MessageButton[] | null, defaultButtons?: o
   return { inline_keyboard: inlineKeyboard };
 }
 
-async function getOrCreateCustomer(clientId: string, telegramUser: any) {
+interface UtmParams {
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  ttclid?: string;
+}
+
+async function getOrCreateCustomer(clientId: string, telegramUser: any, utmParams?: UtmParams) {
   const { data: existing } = await supabase
     .from('telegram_customers')
     .select('*')
@@ -599,7 +606,21 @@ async function getOrCreateCustomer(clientId: string, telegramUser: any) {
     .eq('telegram_id', telegramUser.id)
     .maybeSingle();
 
-  if (existing) return existing;
+  if (existing) {
+    // Update UTM params if provided and not already set
+    if (utmParams && (utmParams.utm_source || utmParams.ttclid) && !existing.utm_source) {
+      await supabase
+        .from('telegram_customers')
+        .update({
+          utm_source: utmParams.utm_source || null,
+          utm_medium: utmParams.utm_medium || null,
+          utm_campaign: utmParams.utm_campaign || null,
+          ttclid: utmParams.ttclid || null,
+        })
+        .eq('id', existing.id);
+    }
+    return existing;
+  }
 
   const { data: newCustomer } = await supabase
     .from('telegram_customers')
@@ -609,11 +630,120 @@ async function getOrCreateCustomer(clientId: string, telegramUser: any) {
       telegram_username: telegramUser.username || null,
       first_name: telegramUser.first_name || null,
       last_name: telegramUser.last_name || null,
+      utm_source: utmParams?.utm_source || null,
+      utm_medium: utmParams?.utm_medium || null,
+      utm_campaign: utmParams?.utm_campaign || null,
+      ttclid: utmParams?.ttclid || null,
     })
     .select()
     .single();
 
   return newCustomer;
+}
+
+// Parse deep link parameters from /start command
+function parseDeepLinkParams(text: string): UtmParams {
+  const params: UtmParams = {};
+  const parts = text.split(' ');
+  
+  if (parts.length < 2) return params;
+  
+  const payload = parts[1];
+  
+  // Parse different formats:
+  // 1. tiktok_campaignName - Simple format for TikTok
+  // 2. ttclid_XXXXXX - TikTok Click ID
+  // 3. source_medium_campaign - Full UTM format
+  
+  if (payload.startsWith('ttclid_')) {
+    params.ttclid = payload.replace('ttclid_', '');
+    params.utm_source = 'tiktok';
+    params.utm_medium = 'cpc';
+  } else if (payload.startsWith('tiktok_')) {
+    params.utm_source = 'tiktok';
+    params.utm_medium = 'cpc';
+    params.utm_campaign = payload.replace('tiktok_', '');
+  } else if (payload.startsWith('fb_')) {
+    params.utm_source = 'facebook';
+    params.utm_medium = 'cpc';
+    params.utm_campaign = payload.replace('fb_', '');
+  } else if (payload.includes('_')) {
+    const [source, medium, campaign] = payload.split('_');
+    params.utm_source = source || undefined;
+    params.utm_medium = medium || undefined;
+    params.utm_campaign = campaign || undefined;
+  } else {
+    params.utm_source = payload;
+  }
+  
+  return params;
+}
+
+// TikTok Events API helper
+async function sendTikTokEvent(
+  pixelCode: string,
+  accessToken: string,
+  eventType: string,
+  customer: any,
+  eventProperties?: { value?: number; currency?: string; content_id?: string; content_name?: string }
+) {
+  try {
+    const eventId = crypto.randomUUID();
+    const timestamp = Math.floor(Date.now() / 1000);
+    
+    const eventData: any = {
+      pixel_code: pixelCode,
+      event: eventType,
+      event_id: eventId,
+      timestamp: timestamp,
+      context: {
+        user: {
+          external_id: customer.id,
+        },
+        page: {
+          url: `https://t.me/${customer.telegram_username || customer.telegram_id}`,
+        },
+      },
+    };
+    
+    // Add ttclid if available for better attribution
+    if (customer.ttclid) {
+      eventData.context.user.ttclid = customer.ttclid;
+    }
+    
+    if (eventProperties) {
+      eventData.properties = {
+        value: eventProperties.value,
+        currency: eventProperties.currency || 'BRL',
+        content_id: eventProperties.content_id,
+        content_name: eventProperties.content_name,
+        content_type: 'product',
+      };
+    }
+    
+    console.log('Sending TikTok event:', eventType, JSON.stringify(eventData));
+    
+    const response = await fetch('https://business-api.tiktok.com/open_api/v1.3/event/track/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Token': accessToken,
+      },
+      body: JSON.stringify({
+        event_source: 'web',
+        event_source_id: pixelCode,
+        data: [eventData],
+      }),
+    });
+    
+    const result = await response.text();
+    console.log('TikTok API response:', response.status, result);
+    
+    return response.ok;
+  } catch (error) {
+    console.error('Error sending TikTok event:', error);
+    return false;
+  }
 }
 
 async function getProducts(clientId: string) {
@@ -631,7 +761,7 @@ async function getProducts(clientId: string) {
 async function getClientSettings(clientId: string) {
   const { data } = await supabase
     .from('client_settings')
-    .select('*, fastsoft_api_key, fastsoft_public_key, fastsoft_enabled')
+    .select('*, fastsoft_api_key, fastsoft_public_key, fastsoft_enabled, tiktok_pixel_code, tiktok_access_token, tiktok_tracking_enabled')
     .eq('client_id', clientId)
     .maybeSingle();
   
@@ -1039,14 +1169,36 @@ serve(async (req) => {
       const telegramUser = update.message.from;
       const messageId = update.message.message_id;
 
-      // Ensure customer exists
-      const customer = await getOrCreateCustomer(clientId, telegramUser);
+      // Parse UTM params from deep link if /start command
+      let utmParams: UtmParams = {};
+      if (text.startsWith('/start')) {
+        utmParams = parseDeepLinkParams(text);
+        console.log('Parsed UTM params:', JSON.stringify(utmParams));
+      }
+
+      // Ensure customer exists (with UTM params if available)
+      const customer = await getOrCreateCustomer(clientId, telegramUser, utmParams);
 
       // Save incoming message
       await saveMessage(clientId, chatId, customer?.id || null, 'incoming', text, messageId);
 
       // Handle /start command
       if (text.startsWith('/start')) {
+        // Send TikTok ClickButton event if tracking is enabled and source is TikTok
+        if (utmParams.utm_source === 'tiktok') {
+          const settings = await getClientSettings(clientId);
+          if (settings?.tiktok_tracking_enabled && settings?.tiktok_pixel_code && settings?.tiktok_access_token) {
+            console.log('Sending TikTok ClickButton event for new user');
+            await sendTikTokEvent(
+              settings.tiktok_pixel_code,
+              settings.tiktok_access_token,
+              'ClickButton',
+              customer,
+              { content_name: utmParams.utm_campaign || 'bot_start' }
+            );
+          }
+        }
+
         const welcomeMessages = await getClientMessagesWithMedia(clientId, 'welcome');
         
         if (welcomeMessages.length > 0) {

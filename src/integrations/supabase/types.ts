@@ -212,6 +212,9 @@ export type Database = {
           pix_receiver_name: string | null
           push_notifications_enabled: boolean | null
           support_enabled: boolean | null
+          tiktok_access_token: string | null
+          tiktok_pixel_code: string | null
+          tiktok_tracking_enabled: boolean | null
           updated_at: string | null
           upsell_enabled: boolean | null
           working_days: string[] | null
@@ -234,6 +237,9 @@ export type Database = {
           pix_receiver_name?: string | null
           push_notifications_enabled?: boolean | null
           support_enabled?: boolean | null
+          tiktok_access_token?: string | null
+          tiktok_pixel_code?: string | null
+          tiktok_tracking_enabled?: boolean | null
           updated_at?: string | null
           upsell_enabled?: boolean | null
           working_days?: string[] | null
@@ -256,6 +262,9 @@ export type Database = {
           pix_receiver_name?: string | null
           push_notifications_enabled?: boolean | null
           support_enabled?: boolean | null
+          tiktok_access_token?: string | null
+          tiktok_pixel_code?: string | null
+          tiktok_tracking_enabled?: boolean | null
           updated_at?: string | null
           upsell_enabled?: boolean | null
           working_days?: string[] | null
@@ -784,7 +793,11 @@ export type Database = {
           recovery_messages_sent: number | null
           telegram_id: number
           telegram_username: string | null
+          ttclid: string | null
           updated_at: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
         }
         Insert: {
           client_id: string
@@ -798,7 +811,11 @@ export type Database = {
           recovery_messages_sent?: number | null
           telegram_id: number
           telegram_username?: string | null
+          ttclid?: string | null
           updated_at?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Update: {
           client_id?: string
@@ -812,7 +829,11 @@ export type Database = {
           recovery_messages_sent?: number | null
           telegram_id?: number
           telegram_username?: string | null
+          ttclid?: string | null
           updated_at?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Relationships: [
           {
