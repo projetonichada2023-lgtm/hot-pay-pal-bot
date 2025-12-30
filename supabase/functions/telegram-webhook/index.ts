@@ -1267,6 +1267,30 @@ serve(async (req) => {
       // Click on product from catalog - go directly to buy (generate PIX)
       if (data.startsWith('product_')) {
         const productId = data.replace('product_', '');
+        
+        // Send TikTok ViewContent event if tracking is enabled
+        if (customer?.utm_source === 'tiktok' || customer?.ttclid) {
+          const settings = await getClientSettings(clientId);
+          if (settings?.tiktok_tracking_enabled && settings?.tiktok_pixel_code && settings?.tiktok_access_token) {
+            const product = await getProduct(productId);
+            if (product) {
+              console.log('Sending TikTok ViewContent event for product:', product.name);
+              await sendTikTokEvent(
+                settings.tiktok_pixel_code,
+                settings.tiktok_access_token,
+                'ViewContent',
+                customer,
+                { 
+                  content_id: productId, 
+                  content_name: product.name,
+                  value: Number(product.price),
+                  currency: 'BRL'
+                }
+              );
+            }
+          }
+        }
+        
         // Go directly to purchase flow instead of showing product details
         await handleBuyProduct(botToken, chatId, clientId, customer.id, productId, {});
       }
