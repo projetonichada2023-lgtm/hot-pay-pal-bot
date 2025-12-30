@@ -21,7 +21,8 @@ import {
   Bell,
   BellOff,
   Smartphone,
-  AlertCircle
+  AlertCircle,
+  BarChart3
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useOnboarding } from '@/hooks/useOnboarding';
@@ -49,6 +50,11 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   const [apiKey, setApiKey] = useState('');
   const { resetOnboarding, isResetting } = useOnboarding(client.id, client.onboarding_completed);
   const { usage } = usePlanLimits();
+  
+  // TikTok tracking state
+  const [tiktokPixelCode, setTiktokPixelCode] = useState('');
+  const [tiktokAccessToken, setTiktokAccessToken] = useState('');
+  const [showTiktokToken, setShowTiktokToken] = useState(false);
   
   // Push notification state
   const [pushSupport, setPushSupport] = useState<{
@@ -127,6 +133,48 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
     }
   };
 
+  const handleSaveTikTokConfig = async () => {
+    if (!settings || (!tiktokPixelCode.trim() && !tiktokAccessToken.trim())) return;
+    try {
+      await updateSettings.mutateAsync({ 
+        id: settings.id, 
+        tiktok_pixel_code: tiktokPixelCode.trim() || (settings as any).tiktok_pixel_code,
+        tiktok_access_token: tiktokAccessToken.trim() || (settings as any).tiktok_access_token,
+        tiktok_tracking_enabled: true
+      } as any);
+      toast({ title: 'Configurações TikTok salvas!' });
+      setTiktokPixelCode('');
+      setTiktokAccessToken('');
+    } catch (error) {
+      toast({ title: 'Erro ao salvar', variant: 'destructive' });
+    }
+  };
+
+  const handleToggleTikTokTracking = async (enabled: boolean) => {
+    if (!settings) return;
+    try {
+      await updateSettings.mutateAsync({ id: settings.id, tiktok_tracking_enabled: enabled } as any);
+      toast({ title: enabled ? 'Tracking TikTok ativado!' : 'Tracking TikTok desativado!' });
+    } catch (error) {
+      toast({ title: 'Erro ao atualizar', variant: 'destructive' });
+    }
+  };
+
+  const handleDisconnectTikTok = async () => {
+    if (!settings) return;
+    try {
+      await updateSettings.mutateAsync({ 
+        id: settings.id, 
+        tiktok_pixel_code: null,
+        tiktok_access_token: null,
+        tiktok_tracking_enabled: false
+      } as any);
+      toast({ title: 'TikTok desconectado!' });
+    } catch (error) {
+      toast({ title: 'Erro ao desconectar', variant: 'destructive' });
+    }
+  };
+
   const handleTogglePush = async () => {
     setIsPushLoading(true);
     try {
@@ -173,6 +221,8 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
 
   const hasApiKey = !!(settings as any).fastsoft_api_key;
   const unipayEnabled = (settings as any).fastsoft_enabled || false;
+  const hasTikTokConfig = !!(settings as any).tiktok_pixel_code && !!(settings as any).tiktok_access_token;
+  const tiktokEnabled = (settings as any).tiktok_tracking_enabled || false;
 
   return (
     <div className="space-y-6">
@@ -187,7 +237,7 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
           <TabsTrigger value="plano" className="gap-2">
             <Crown className="w-4 h-4 hidden sm:inline" />
             Plano
@@ -195,6 +245,10 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
           <TabsTrigger value="pagamentos" className="gap-2">
             <CreditCard className="w-4 h-4 hidden sm:inline" />
             Pagamentos
+          </TabsTrigger>
+          <TabsTrigger value="tracking" className="gap-2">
+            <BarChart3 className="w-4 h-4 hidden sm:inline" />
+            Tracking
           </TabsTrigger>
           <TabsTrigger value="automacoes" className="gap-2">
             <Zap className="w-4 h-4 hidden sm:inline" />
@@ -332,6 +386,164 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
                       className="text-primary hover:underline"
                     >
                       Criar conta na UniPay
+                    </a>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Tracking */}
+        <TabsContent value="tracking" className="space-y-6">
+          <Card className="glass-card border-primary/20">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    TikTok Ads
+                  </CardTitle>
+                  <CardDescription>
+                    Rastreie conversões e cliques vindos do TikTok Ads
+                  </CardDescription>
+                </div>
+                {hasTikTokConfig && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+                    <div className={`w-2 h-2 rounded-full ${tiktokEnabled ? 'bg-green-500 animate-pulse' : 'bg-muted'}`} />
+                    <span className="text-xs font-medium text-primary">TikTok</span>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {hasTikTokConfig ? (
+                <>
+                  <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-green-500" />
+                      <div className="flex-1">
+                        <p className="font-medium text-green-600 dark:text-green-400">
+                          TikTok Pixel Conectado
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Seu pixel está configurado para rastrear conversões
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                    <div className="space-y-0.5">
+                      <Label>Tracking Ativo</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Enviar eventos para o TikTok Ads
+                      </p>
+                    </div>
+                    <Switch
+                      checked={tiktokEnabled}
+                      onCheckedChange={handleToggleTikTokTracking}
+                    />
+                  </div>
+
+                  <div className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+                    <div>
+                      <Label className="text-sm text-muted-foreground">Deep Link para suas campanhas:</Label>
+                      <code className="block mt-1 p-2 bg-background rounded text-sm break-all">
+                        t.me/{client.telegram_bot_username}?start=tiktok_CAMPANHA
+                      </code>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Substitua <code>CAMPANHA</code> pelo nome da sua campanha. Para usar o ttclid, use:
+                      <code className="block mt-1 p-1 bg-background rounded">
+                        t.me/{client.telegram_bot_username}?start=ttclid_{'{{ttclid}}'}
+                      </code>
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => window.open('https://ads.tiktok.com/marketing_api/docs?id=1739584855420929', '_blank')}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Ver Documentação
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={handleDisconnectTikTok}
+                    >
+                      Desconectar
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Conecte seu TikTok Pixel para rastrear cliques e conversões vindos dos seus anúncios.
+                    </p>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Pixel Code</Label>
+                        <Input
+                          type="text"
+                          placeholder="Ex: CXXXXXXXXXXXXXXXX"
+                          value={tiktokPixelCode}
+                          onChange={(e) => setTiktokPixelCode(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Encontre em TikTok Ads Manager → Assets → Events → Web Events
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Access Token</Label>
+                        <div className="relative">
+                          <Input
+                            type={showTiktokToken ? 'text' : 'password'}
+                            placeholder="Cole seu access token aqui"
+                            value={tiktokAccessToken}
+                            onChange={(e) => setTiktokAccessToken(e.target.value)}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1/2 -translate-y-1/2"
+                            onClick={() => setShowTiktokToken(!showTiktokToken)}
+                          >
+                            {showTiktokToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Gere em TikTok Ads Manager → Assets → Events → Settings → Generate Access Token
+                        </p>
+                      </div>
+
+                      <Button 
+                        onClick={handleSaveTikTokConfig} 
+                        disabled={!tiktokPixelCode.trim() || !tiktokAccessToken.trim()}
+                        className="w-full"
+                      >
+                        Conectar TikTok Pixel
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Como configurar?</span>
+                    <a 
+                      href="https://ads.tiktok.com/help/article?aid=10028346" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Ver guia do TikTok
                     </a>
                   </div>
                 </>
