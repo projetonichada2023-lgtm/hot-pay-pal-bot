@@ -65,12 +65,10 @@ function buildFeeMessage(fee: any, remainingCount: number): string {
   const customMessage = fee.payment_message;
   
   if (customMessage) {
-    // Ensure line breaks are properly formatted for Telegram
-    // Replace literal \n strings with actual newlines, then normalize multiple newlines
     let formatted = customMessage
-      .replace(/\\n/g, '\n')  // Convert escaped \n to actual newlines
-      .replace(/\r\n/g, '\n') // Normalize Windows line endings
-      .replace(/\r/g, '\n')   // Normalize old Mac line endings
+      .replace(/\\n/g, '\n')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
       .replace(/{fee_name}/g, fee.name)
       .replace(/{fee_amount}/g, Number(fee.amount).toFixed(2))
       .replace(/{fee_description}/g, fee.description || '')
@@ -130,6 +128,140 @@ async function createInviteLink(botToken: string, groupId: string): Promise<stri
   }
 }
 
+// TikTok Events API helper - Send CompletePayment event
+async function sendTikTokCompletePaymentEvent(
+  clientId: string,
+  customer: any,
+  order: any,
+  product: any
+) {
+  // Get client settings for TikTok
+  const { data: settings } = await supabase
+    .from('client_settings')
+    .select('tiktok_tracking_enabled, tiktok_pixel_code, tiktok_access_token, tiktok_test_event_code')
+    .eq('client_id', clientId)
+    .single();
+
+  if (!settings?.tiktok_tracking_enabled || !settings?.tiktok_pixel_code || !settings?.tiktok_access_token) {
+    console.log('TikTok tracking not enabled or not configured for client:', clientId);
+    return;
+  }
+
+  // Check if customer came from TikTok (has utm_source = tiktok or ttclid)
+  if (customer?.utm_source !== 'tiktok' && !customer?.ttclid) {
+    console.log('Customer did not come from TikTok, skipping CompletePayment event');
+    return;
+  }
+
+  const eventId = crypto.randomUUID();
+  let apiStatus = 'pending';
+  let apiResponseCode: number | null = null;
+  let apiErrorMessage: string | null = null;
+
+  try {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const value = Number(order.amount) || 0;
+    
+    const eventData: any = {
+      event: 'CompletePayment',
+      event_id: eventId,
+      event_time: timestamp,
+      user: {
+        external_id: customer.id,
+      },
+      page: {
+        url: `https://t.me/${customer.telegram_username || customer.telegram_id}`,
+      },
+      properties: {
+        value: value,
+        currency: 'BRL',
+        content_id: product?.id || null,
+        content_name: product?.name || 'Product',
+        content_type: 'product',
+      },
+    };
+    
+    // Add ttclid if available for better attribution
+    if (customer.ttclid) {
+      eventData.user.ttclid = customer.ttclid;
+    }
+    
+    // Build request body
+    const requestBody: any = {
+      event_source: 'web',
+      event_source_id: settings.tiktok_pixel_code,
+      data: [eventData],
+    };
+    
+    // Add test_event_code if provided (for TikTok Test Events mode)
+    if (settings.tiktok_test_event_code) {
+      requestBody.test_event_code = settings.tiktok_test_event_code;
+      console.log('Sending TikTok CompletePayment event with TEST MODE:', settings.tiktok_test_event_code);
+    }
+    
+    console.log('Sending TikTok CompletePayment event:', JSON.stringify(requestBody));
+    
+    const response = await fetch('https://business-api.tiktok.com/open_api/v1.3/event/track/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Token': settings.tiktok_access_token,
+      },
+      body: JSON.stringify(requestBody),
+    });
+    
+    const result = await response.text();
+    console.log('TikTok CompletePayment API response:', response.status, result);
+    
+    apiResponseCode = response.status;
+    
+    if (response.ok) {
+      try {
+        const parsed = JSON.parse(result);
+        if (parsed.code === 0) {
+          apiStatus = 'success';
+        } else {
+          apiStatus = 'error';
+          apiErrorMessage = parsed.message || 'Unknown TikTok error';
+        }
+      } catch {
+        apiStatus = 'success';
+      }
+    } else {
+      apiStatus = 'error';
+      try {
+        const parsed = JSON.parse(result);
+        apiErrorMessage = parsed.message || `HTTP ${response.status}`;
+      } catch {
+        apiErrorMessage = `HTTP ${response.status}`;
+      }
+    }
+  } catch (error) {
+    console.error('Error sending TikTok CompletePayment event:', error);
+    apiStatus = 'error';
+    apiErrorMessage = error instanceof Error ? error.message : 'Network error';
+  }
+  
+  // Save event to database
+  await supabase.from('tiktok_events').insert({
+    client_id: clientId,
+    customer_id: customer.id,
+    event_type: 'CompletePayment',
+    event_id: eventId,
+    product_id: product?.id || null,
+    order_id: order.id,
+    utm_campaign: customer.utm_campaign || null,
+    value: Number(order.amount) || null,
+    currency: 'BRL',
+    ttclid: customer.ttclid || null,
+    api_status: apiStatus,
+    api_response_code: apiResponseCode,
+    api_error_message: apiErrorMessage,
+  });
+  
+  console.log('TikTok CompletePayment event saved with status:', apiStatus);
+}
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -179,7 +311,6 @@ serve(async (req) => {
             
             if (orderByMeta) {
               console.log('Found order by metadata:', orderByMeta.id);
-              // Continue processing with this order
               await processPaymentUpdate(orderByMeta, status, transaction);
             }
           }
@@ -238,9 +369,9 @@ async function processPaymentUpdate(order: any, status: string, transaction: any
   const botToken = client?.telegram_bot_token;
   const customerTelegramId = order.telegram_customers?.telegram_id;
   const product = order.products;
+  const customer = order.telegram_customers;
 
   // IMPORTANT: Only consider paid if status explicitly indicates payment
-  // Do NOT rely on paidAt field as it may be set before actual payment confirmation
   const isPaid = status === 'PAID' || status === 'AUTHORIZED' || status === 'paid' || status === 'authorized';
 
   if (isPaid) {
@@ -254,6 +385,11 @@ async function processPaymentUpdate(order: any, status: string, transaction: any
         paid_at: new Date().toISOString(),
       })
       .eq('id', orderId);
+
+    // *** SEND TIKTOK COMPLETEPAYMENT EVENT ***
+    if (customer) {
+      await sendTikTokCompletePaymentEvent(clientId, customer, order, product);
+    }
 
     // Send push notification to client
     try {
