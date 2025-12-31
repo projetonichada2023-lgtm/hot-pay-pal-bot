@@ -501,40 +501,68 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
                         <AlertCircle className="w-4 h-4 text-blue-500" />
                         Test Event Code (Modo Teste)
                       </Label>
-                      <Input
-                        type="text"
-                        placeholder="Ex: TEST12345"
-                        value={tiktokTestEventCode || (settings as any).tiktok_test_event_code || ''}
-                        onChange={(e) => setTiktokTestEventCode(e.target.value)}
-                        className="font-mono"
-                      />
+                      <div className="flex gap-2">
+                        <Input
+                          type="text"
+                          placeholder="Deixe vazio para produção"
+                          value={tiktokTestEventCode}
+                          onChange={(e) => setTiktokTestEventCode(e.target.value)}
+                          className="font-mono flex-1"
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={async () => {
+                            if (!settings) return;
+                            try {
+                              await updateSettings.mutateAsync({ 
+                                id: settings.id, 
+                                tiktok_test_event_code: tiktokTestEventCode.trim() || null
+                              } as any);
+                              toast({ 
+                                title: tiktokTestEventCode.trim() 
+                                  ? 'Modo teste ativado!' 
+                                  : 'Modo produção ativado!' 
+                              });
+                            } catch (error) {
+                              toast({ title: 'Erro ao salvar', variant: 'destructive' });
+                            }
+                          }}
+                        >
+                          Salvar
+                        </Button>
+                      </div>
+                      {(settings as any).tiktok_test_event_code && (
+                        <div className="flex items-center gap-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded">
+                          <AlertCircle className="w-4 h-4 text-yellow-500" />
+                          <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                            Modo teste ativo: <code className="font-mono">{(settings as any).tiktok_test_event_code}</code>
+                          </span>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="ml-auto h-6 text-xs text-destructive hover:text-destructive"
+                            onClick={async () => {
+                              if (!settings) return;
+                              try {
+                                await updateSettings.mutateAsync({ 
+                                  id: settings.id, 
+                                  tiktok_test_event_code: null
+                                } as any);
+                                setTiktokTestEventCode('');
+                                toast({ title: 'Modo produção ativado!' });
+                              } catch (error) {
+                                toast({ title: 'Erro ao salvar', variant: 'destructive' });
+                              }
+                            }}
+                          >
+                            Remover
+                          </Button>
+                        </div>
+                      )}
                       <p className="text-xs text-muted-foreground">
-                        Para ver eventos no <b>Teste de Eventos</b> do TikTok, copie o código de teste do TikTok Events Manager → Test Events.
-                        <br />
-                        <span className="text-blue-500">⚠️ Deixe vazio para enviar eventos em produção.</span>
+                        Para testar eventos, copie o código do TikTok Events Manager → Test Events.
                       </p>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={async () => {
-                          if (!settings) return;
-                          try {
-                            await updateSettings.mutateAsync({ 
-                              id: settings.id, 
-                              tiktok_test_event_code: tiktokTestEventCode.trim() || null
-                            } as any);
-                            toast({ 
-                              title: tiktokTestEventCode.trim() 
-                                ? 'Modo teste ativado!' 
-                                : 'Modo produção ativado!' 
-                            });
-                          } catch (error) {
-                            toast({ title: 'Erro ao salvar', variant: 'destructive' });
-                          }
-                        }}
-                      >
-                        {(settings as any).tiktok_test_event_code ? 'Atualizar Código' : 'Salvar Código de Teste'}
-                      </Button>
                     </div>
                   </div>
 
