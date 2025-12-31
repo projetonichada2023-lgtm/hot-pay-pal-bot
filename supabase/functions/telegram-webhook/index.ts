@@ -650,31 +650,83 @@ function parseDeepLinkParams(text: string): UtmParams {
   
   const payload = parts[1];
   
-  // Parse different formats:
-  // 1. tiktok_campaignName - Simple format for TikTok
-  // 2. ttclid_XXXXXX - TikTok Click ID
-  // 3. source_medium_campaign - Full UTM format
+  console.log('Parsing deep link payload:', payload);
   
+  // Parse different formats:
+  // 1. tiktok_CAMPAIGN_ttclid_XXXXX - Campaign + TikTok Click ID (RECOMMENDED)
+  // 2. ttclid_XXXXX - TikTok Click ID only
+  // 3. tiktok_CAMPAIGN - Campaign only
+  // 4. fb_CAMPAIGN - Facebook campaign
+  // 5. source_medium_campaign - Full UTM format
+  
+  // Check for combined format: tiktok_CAMPAIGN_ttclid_XXXXX
+  const ttclidMatch = payload.match(/^(.+?)_ttclid_(.+)$/);
+  if (ttclidMatch) {
+    const prefix = ttclidMatch[1];
+    const ttclidValue = ttclidMatch[2];
+    
+    params.ttclid = ttclidValue;
+    params.utm_medium = 'cpc';
+    
+    // Parse the prefix (before ttclid)
+    if (prefix.startsWith('tiktok_')) {
+      params.utm_source = 'tiktok';
+      params.utm_campaign = prefix.replace('tiktok_', '');
+    } else if (prefix.startsWith('fb_')) {
+      params.utm_source = 'facebook';
+      params.utm_campaign = prefix.replace('fb_', '');
+    } else if (prefix === 'tiktok' || prefix === 'fb' || prefix === 'facebook') {
+      params.utm_source = prefix === 'fb' ? 'facebook' : prefix;
+    } else {
+      // Assume it's just a campaign name from tiktok
+      params.utm_source = 'tiktok';
+      params.utm_campaign = prefix;
+    }
+    
+    console.log('Parsed combined format:', params);
+    return params;
+  }
+  
+  // Check for ttclid only format: ttclid_XXXXX
   if (payload.startsWith('ttclid_')) {
     params.ttclid = payload.replace('ttclid_', '');
     params.utm_source = 'tiktok';
     params.utm_medium = 'cpc';
-  } else if (payload.startsWith('tiktok_')) {
+    console.log('Parsed ttclid only format:', params);
+    return params;
+  }
+  
+  // Check for tiktok campaign format: tiktok_CAMPAIGN
+  if (payload.startsWith('tiktok_')) {
     params.utm_source = 'tiktok';
     params.utm_medium = 'cpc';
     params.utm_campaign = payload.replace('tiktok_', '');
-  } else if (payload.startsWith('fb_')) {
+    console.log('Parsed tiktok campaign format:', params);
+    return params;
+  }
+  
+  // Check for facebook campaign format: fb_CAMPAIGN
+  if (payload.startsWith('fb_')) {
     params.utm_source = 'facebook';
     params.utm_medium = 'cpc';
     params.utm_campaign = payload.replace('fb_', '');
-  } else if (payload.includes('_')) {
+    console.log('Parsed facebook campaign format:', params);
+    return params;
+  }
+  
+  // Generic format: source_medium_campaign
+  if (payload.includes('_')) {
     const [source, medium, campaign] = payload.split('_');
     params.utm_source = source || undefined;
     params.utm_medium = medium || undefined;
     params.utm_campaign = campaign || undefined;
-  } else {
-    params.utm_source = payload;
+    console.log('Parsed generic UTM format:', params);
+    return params;
   }
+  
+  // Single value - treat as source
+  params.utm_source = payload;
+  console.log('Parsed single value format:', params);
   
   return params;
 }
