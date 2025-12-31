@@ -1,12 +1,15 @@
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Clock, CheckCircle2, AlertCircle, MousePointer, Eye, ShoppingCart, CreditCard, XCircle, Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Clock, CheckCircle2, AlertCircle, MousePointer, Eye, ShoppingCart, CreditCard, XCircle, Loader2, Filter, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
 
 interface TikTokEventsHistoryProps {
   clientId: string;
@@ -46,7 +49,11 @@ const getStatusConfig = (status: string | null) => {
 };
 
 export const TikTokEventsHistory = ({ clientId }: TikTokEventsHistoryProps) => {
-  const { data: events, isLoading } = useQuery({
+  const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterCampaign, setFilterCampaign] = useState<string>('all');
+
+  const { data: events, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['tiktok-events-history', clientId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -54,7 +61,7 @@ export const TikTokEventsHistory = ({ clientId }: TikTokEventsHistoryProps) => {
         .select('id, event_type, event_id, value, currency, utm_campaign, ttclid, created_at, api_status, api_response_code, api_error_message')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(100);
 
       if (error) throw error;
       return data as TikTokEvent[];
@@ -62,6 +69,46 @@ export const TikTokEventsHistory = ({ clientId }: TikTokEventsHistoryProps) => {
     enabled: !!clientId,
     refetchInterval: 30000,
   });
+
+  // Get unique campaigns for filter
+  const campaigns = useMemo(() => {
+    if (!events) return [];
+    const uniqueCampaigns = [...new Set(events.map(e => e.utm_campaign).filter(Boolean))];
+    return uniqueCampaigns as string[];
+  }, [events]);
+
+  // Filtered events
+  const filteredEvents = useMemo(() => {
+    if (!events) return [];
+    return events.filter(event => {
+      if (filterType !== 'all' && event.event_type !== filterType) return false;
+      if (filterStatus !== 'all' && event.api_status !== filterStatus) return false;
+      if (filterCampaign !== 'all') {
+        if (filterCampaign === 'none' && event.utm_campaign) return false;
+        if (filterCampaign !== 'none' && event.utm_campaign !== filterCampaign) return false;
+      }
+      return true;
+    });
+  }, [events, filterType, filterStatus, filterCampaign]);
+
+  // Stats
+  const stats = useMemo(() => {
+    if (!events) return { total: 0, success: 0, error: 0, pending: 0 };
+    return {
+      total: events.length,
+      success: events.filter(e => e.api_status === 'success').length,
+      error: events.filter(e => e.api_status === 'error').length,
+      pending: events.filter(e => e.api_status === 'pending').length,
+    };
+  }, [events]);
+
+  const clearFilters = () => {
+    setFilterType('all');
+    setFilterStatus('all');
+    setFilterCampaign('all');
+  };
+
+  const hasActiveFilters = filterType !== 'all' || filterStatus !== 'all' || filterCampaign !== 'all';
 
   if (isLoading) {
     return (
@@ -85,24 +132,118 @@ export const TikTokEventsHistory = ({ clientId }: TikTokEventsHistoryProps) => {
     <TooltipProvider>
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Histórico de Eventos
-          </CardTitle>
-          <CardDescription>
-            Últimos 20 eventos enviados para o TikTok
-          </CardDescription>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Histórico de Eventos
+              </CardTitle>
+              <CardDescription>
+                {filteredEvents.length} de {stats.total} eventos
+              </CardDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+          </div>
+
+          {/* Stats */}
+          <div className="flex flex-wrap gap-2 mt-4">
+            <Badge variant="outline" className="bg-muted/50">
+              Total: {stats.total}
+            </Badge>
+            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+              Sucesso: {stats.success}
+            </Badge>
+            <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
+              Erro: {stats.error}
+            </Badge>
+            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+              Pendente: {stats.pending}
+            </Badge>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 mt-4">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Filtros:</span>
+            </div>
+            
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-[130px] h-8 text-sm">
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos tipos</SelectItem>
+                <SelectItem value="ClickButton">Click</SelectItem>
+                <SelectItem value="ViewContent">View</SelectItem>
+                <SelectItem value="InitiateCheckout">Checkout</SelectItem>
+                <SelectItem value="CompletePayment">Pagamento</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-[130px] h-8 text-sm">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos status</SelectItem>
+                <SelectItem value="success">Sucesso</SelectItem>
+                <SelectItem value="error">Erro</SelectItem>
+                <SelectItem value="pending">Pendente</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filterCampaign} onValueChange={setFilterCampaign}>
+              <SelectTrigger className="w-[150px] h-8 text-sm">
+                <SelectValue placeholder="Campanha" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas campanhas</SelectItem>
+                <SelectItem value="none">Sem campanha</SelectItem>
+                {campaigns.map(campaign => (
+                  <SelectItem key={campaign} value={campaign}>
+                    {campaign}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 text-sm">
+                Limpar
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          {!events || events.length === 0 ? (
+          {filteredEvents.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>Nenhum evento registrado ainda</p>
-              <p className="text-sm">Os eventos aparecerão aqui quando usuários interagirem com seu bot</p>
+              {hasActiveFilters ? (
+                <>
+                  <p>Nenhum evento encontrado com os filtros aplicados</p>
+                  <Button variant="link" onClick={clearFilters} className="mt-2">
+                    Limpar filtros
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p>Nenhum evento registrado ainda</p>
+                  <p className="text-sm">Os eventos aparecerão aqui quando usuários interagirem com seu bot</p>
+                </>
+              )}
             </div>
           ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {events.map((event) => {
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {filteredEvents.map((event) => {
                 const config = eventTypeConfig[event.event_type] || {
                   label: event.event_type,
                   icon: CheckCircle2,
