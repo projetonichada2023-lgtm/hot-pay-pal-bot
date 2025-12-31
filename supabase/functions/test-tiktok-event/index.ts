@@ -71,60 +71,118 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Send test event to TikTok
-    const eventId = crypto.randomUUID();
     const timestamp = Math.floor(Date.now() / 1000);
-
-    const eventData = {
-      event: 'ClickButton',
-      event_id: eventId,
-      event_time: timestamp,
-      user: {
-        external_id: `test_${user.id}`,
+    const testUserId = `test_${user.id.substring(0, 8)}`;
+    const botUrl = `https://t.me/${client.telegram_bot_username || 'test'}`;
+    
+    // Define all events to send
+    const eventsToSend = [
+      {
+        event: 'ClickButton',
+        event_id: `test_click_${Date.now()}`,
+        event_time: timestamp,
+        user: { external_id: testUserId },
+        page: { url: botUrl },
+        properties: {
+          currency: 'BRL',
+          content_name: 'TESTE_LOVABLE',
+          content_type: 'product',
+        },
       },
-      page: {
-        url: `https://t.me/${client.telegram_bot_username || 'test'}`,
+      {
+        event: 'ViewContent',
+        event_id: `test_view_${Date.now()}`,
+        event_time: timestamp,
+        user: { external_id: testUserId },
+        page: { url: botUrl },
+        properties: {
+          currency: 'BRL',
+          content_name: 'Produto Teste',
+          content_type: 'product',
+          value: 97.00,
+          contents: [{ content_id: 'test_product', content_name: 'Produto Teste', price: 97.00 }],
+        },
       },
-      properties: {
-        currency: 'BRL',
-        content_name: 'TESTE_LOVABLE',
-        content_type: 'product',
+      {
+        event: 'InitiateCheckout',
+        event_id: `test_checkout_${Date.now()}`,
+        event_time: timestamp,
+        user: { external_id: testUserId },
+        page: { url: botUrl },
+        properties: {
+          currency: 'BRL',
+          content_name: 'Produto Teste',
+          content_type: 'product',
+          value: 97.00,
+          contents: [{ content_id: 'test_product', content_name: 'Produto Teste', price: 97.00 }],
+        },
       },
-    };
+      {
+        event: 'CompletePayment',
+        event_id: `test_payment_${Date.now()}`,
+        event_time: timestamp,
+        user: { external_id: testUserId },
+        page: { url: botUrl },
+        properties: {
+          currency: 'BRL',
+          content_name: 'Produto Teste',
+          content_type: 'product',
+          value: 97.00,
+          contents: [{ content_id: 'test_product', content_name: 'Produto Teste', price: 97.00, quantity: 1 }],
+        },
+      },
+    ];
 
-    const requestBody: any = {
-      event_source: 'web',
-      event_source_id: settings.tiktok_pixel_code,
-      data: [eventData],
-    };
+    const results: any[] = [];
 
-    // Add test_event_code if configured
-    if (settings.tiktok_test_event_code) {
-      requestBody.test_event_code = settings.tiktok_test_event_code;
-      console.log('Using Test Event Code:', settings.tiktok_test_event_code);
+    // Send each event
+    for (const eventData of eventsToSend) {
+      const requestBody: any = {
+        event_source: 'web',
+        event_source_id: settings.tiktok_pixel_code,
+        data: [eventData],
+      };
+
+      // Add test_event_code if configured
+      if (settings.tiktok_test_event_code) {
+        requestBody.test_event_code = settings.tiktok_test_event_code;
+      }
+
+      console.log(`Sending ${eventData.event} test event to TikTok:`, JSON.stringify(requestBody));
+
+      const response = await fetch('https://business-api.tiktok.com/open_api/v1.3/event/track/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Token': settings.tiktok_access_token,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const result = await response.json();
+      console.log(`TikTok ${eventData.event} API response:`, response.status, JSON.stringify(result));
+
+      results.push({
+        event: eventData.event,
+        event_id: eventData.event_id,
+        success: response.ok && result.code === 0,
+        status: response.status,
+        response: result,
+      });
     }
 
-    console.log('Sending test event to TikTok:', JSON.stringify(requestBody));
-
-    const response = await fetch('https://business-api.tiktok.com/open_api/v1.3/event/track/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Token': settings.tiktok_access_token,
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    const result = await response.json();
-    console.log('TikTok API response:', response.status, JSON.stringify(result));
+    const allSuccess = results.every(r => r.success);
+    const successCount = results.filter(r => r.success).length;
 
     return new Response(JSON.stringify({
-      success: response.ok && result.code === 0,
-      status: response.status,
-      tiktok_response: result,
-      event_sent: eventData,
+      success: allSuccess,
+      message: allSuccess 
+        ? `✅ ${successCount} eventos enviados com sucesso!` 
+        : `⚠️ ${successCount}/${results.length} eventos enviados`,
+      events: results,
       pixel_code: settings.tiktok_pixel_code,
       test_event_code: settings.tiktok_test_event_code || null,
+      test_mode: !!settings.tiktok_test_event_code,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
