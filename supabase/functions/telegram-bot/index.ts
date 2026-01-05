@@ -1,7 +1,10 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+
+// =============================================================================
+// CONFIGURATION
+// =============================================================================
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +17,10 @@ const FASTSOFT_API_URL = 'https://api.fastsoftbrasil.com';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// Client context interface
+// =============================================================================
+// TYPES
+// =============================================================================
+
 interface ClientContext {
   clientId: string;
   botToken: string;
@@ -23,55 +29,118 @@ interface ClientContext {
   fastsoftEnabled: boolean;
 }
 
-// Telegram API helpers
-async function sendTelegramMessage(botToken: string, chatId: number, text: string, replyMarkup?: object) {
-  const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-  const body: any = {
+interface TelegramUser {
+  id: number;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+}
+
+interface PixResult {
+  pixCode: string;
+  qrCodeUrl: string;
+  paymentId: string;
+}
+
+// =============================================================================
+// TELEGRAM API UTILITIES
+// =============================================================================
+
+async function sendTelegramMessage(
+  botToken: string, 
+  chatId: number, 
+  text: string, 
+  replyMarkup?: object
+): Promise<any> {
+  const body: Record<string, any> = {
     chat_id: chatId,
     text,
     parse_mode: 'HTML',
   };
-  if (replyMarkup) {
-    body.reply_markup = replyMarkup;
-  }
-  
-  const response = await fetch(url, {
+  if (replyMarkup) body.reply_markup = replyMarkup;
+
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  
+
   const result = await response.json();
   console.log('Telegram sendMessage response:', result);
   return result;
 }
 
-async function sendTelegramPhoto(botToken: string, chatId: number, photoUrl: string, caption: string, replyMarkup?: object) {
-  const url = `https://api.telegram.org/bot${botToken}/sendPhoto`;
-  const body: any = {
+async function sendTelegramPhoto(
+  botToken: string, 
+  chatId: number, 
+  photoUrl: string, 
+  caption: string, 
+  replyMarkup?: object
+): Promise<any> {
+  const body: Record<string, any> = {
     chat_id: chatId,
     photo: photoUrl,
     caption,
     parse_mode: 'HTML',
   };
-  if (replyMarkup) {
-    body.reply_markup = replyMarkup;
-  }
-  
-  const response = await fetch(url, {
+  if (replyMarkup) body.reply_markup = replyMarkup;
+
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  
+
   return response.json();
 }
 
-// Get client context from bot token in URL or request
+async function answerCallbackQuery(botToken: string, callbackQueryId: string): Promise<void> {
+  await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ callback_query_id: callbackQueryId }),
+  });
+}
+
+// =============================================================================
+// UUID ENCODING UTILITIES (for Telegram callback data 64-byte limit)
+// =============================================================================
+
+function uuidToB64(uuid: string): string {
+  const hex = uuid.replace(/-/g, '');
+  const bytes = new Uint8Array(16);
+  for (let i = 0; i < 16; i++) {
+    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function b64ToUuid(b64url: string): string {
+  const padded = b64url.length % 4 === 0 ? b64url : b64url + '='.repeat(4 - (b64url.length % 4));
+  const base64 = padded.replace(/-/g, '+').replace(/_/g, '/');
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+  const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+// =============================================================================
+// DATABASE OPERATIONS
+// =============================================================================
+
 async function getClientContext(botToken: string): Promise<ClientContext | null> {
+  // Use join to reduce queries from 2 to 1
   const { data: client } = await supabase
     .from('clients')
-    .select('id, telegram_bot_token')
+    .select(`
+      id, 
+      telegram_bot_token,
+      client_settings!inner(fastsoft_api_key, fastsoft_public_key, fastsoft_enabled)
+    `)
     .eq('telegram_bot_token', botToken)
     .single();
 
@@ -80,12 +149,8 @@ async function getClientContext(botToken: string): Promise<ClientContext | null>
     return null;
   }
 
-  const { data: settings } = await supabase
-    .from('client_settings')
-    .select('fastsoft_api_key, fastsoft_public_key, fastsoft_enabled')
-    .eq('client_id', client.id)
-    .single();
-
+  const settings = (client.client_settings as any)?.[0] || client.client_settings;
+  
   return {
     clientId: client.id,
     botToken: client.telegram_bot_token,
@@ -95,8 +160,21 @@ async function getClientContext(botToken: string): Promise<ClientContext | null>
   };
 }
 
-// Get or create customer
-async function getOrCreateCustomer(clientId: string, telegramUser: any) {
+async function getClientContextByCustomer(telegramId: number): Promise<ClientContext | null> {
+  const { data: customer } = await supabase
+    .from('telegram_customers')
+    .select('clients!inner(telegram_bot_token)')
+    .eq('telegram_id', telegramId)
+    .limit(1)
+    .single();
+
+  if (!customer?.clients) return null;
+  
+  const botToken = (customer.clients as any).telegram_bot_token;
+  return botToken ? getClientContext(botToken) : null;
+}
+
+async function getOrCreateCustomer(clientId: string, telegramUser: TelegramUser) {
   const { data: existing } = await supabase
     .from('telegram_customers')
     .select('*')
@@ -122,11 +200,10 @@ async function getOrCreateCustomer(clientId: string, telegramUser: any) {
     console.error('Error creating customer:', error);
     return null;
   }
-  
+
   return newCustomer;
 }
 
-// Get bot messages for client
 async function getBotMessage(clientId: string, messageType: string, defaultMessage: string): Promise<string> {
   const { data } = await supabase
     .from('bot_messages')
@@ -134,22 +211,20 @@ async function getBotMessage(clientId: string, messageType: string, defaultMessa
     .eq('client_id', clientId)
     .eq('message_type', messageType)
     .single();
-  
+
   return data?.message_content || defaultMessage;
 }
 
-// Get client settings
 async function getClientSettings(clientId: string) {
   const { data } = await supabase
     .from('client_settings')
     .select('*')
     .eq('client_id', clientId)
     .single();
-  
+
   return data || { auto_delivery: true };
 }
 
-// Get products for client
 async function getProducts(clientId: string) {
   const { data } = await supabase
     .from('products')
@@ -157,22 +232,20 @@ async function getProducts(clientId: string) {
     .eq('client_id', clientId)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
-  
+
   return data || [];
 }
 
-// Get product by ID
 async function getProduct(productId: string) {
   const { data } = await supabase
     .from('products')
     .select('*')
     .eq('id', productId)
     .single();
-  
+
   return data;
 }
 
-// Get product fees
 async function getProductFees(productId: string) {
   const { data } = await supabase
     .from('product_fees')
@@ -180,97 +253,65 @@ async function getProductFees(productId: string) {
     .eq('product_id', productId)
     .eq('is_active', true)
     .order('display_order', { ascending: true });
-  
+
   return data || [];
 }
 
-// Get pending fees for an order (fees not yet paid)
 async function getPendingFees(orderId: string, productId: string): Promise<any[]> {
-  const allFees = await getProductFees(productId);
-  
-  // Get order to check which fees were already paid
-  const { data: order } = await supabase
-    .from('orders')
-    .select('fees_paid')
-    .eq('id', orderId)
-    .single();
-  
-  const paidFeeIds: string[] = order?.fees_paid || [];
-  
+  const [allFees, order] = await Promise.all([
+    getProductFees(productId),
+    supabase.from('orders').select('fees_paid').eq('id', orderId).single()
+  ]);
+
+  const paidFeeIds: string[] = order.data?.fees_paid || [];
   return allFees.filter(fee => !paidFeeIds.includes(fee.id));
 }
 
-// UUID to Base64 URL-safe encoding (for short callback data)
-function uuidToB64(uuid: string): string {
-  const hex = uuid.replace(/-/g, '');
-  const bytes = new Uint8Array(16);
-  for (let i = 0; i < 16; i++) {
-    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  let binary = '';
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
+async function logMessage(
+  clientId: string, 
+  customerId: string, 
+  chatId: number, 
+  direction: 'incoming' | 'outgoing', 
+  content: string, 
+  messageId?: number
+): Promise<void> {
+  await supabase.from('telegram_messages').insert({
+    client_id: clientId,
+    customer_id: customerId,
+    telegram_chat_id: chatId,
+    telegram_message_id: messageId,
+    direction,
+    message_type: 'text',
+    message_content: content,
+  });
 }
 
-// Base64 URL-safe to UUID
-function b64ToUuid(b64url: string): string {
-  const padded = b64url.length % 4 === 0 ? b64url : b64url + '='.repeat(4 - (b64url.length % 4));
-  const base64 = padded.replace(/-/g, '+').replace(/_/g, '/');
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+// =============================================================================
+// PIX GENERATION
+// =============================================================================
 
-  const hex = Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
-function buildFeeMessage(fee: any, remainingCount: number): string {
-  const customMessage = fee.payment_message;
-  
-  if (customMessage) {
-    return customMessage
-      .replace(/{fee_name}/g, fee.name)
-      .replace(/{fee_amount}/g, Number(fee.amount).toFixed(2))
-      .replace(/{fee_description}/g, fee.description || '')
-      .replace(/{remaining_count}/g, String(remainingCount));
-  }
-  
-  // Default message
-  return `💳 <b>Taxa Obrigatória</b>\n\n` +
-    `Para receber seu produto, você precisa pagar a seguinte taxa:\n\n` +
-    `<b>${fee.name}</b>${fee.description ? `\n${fee.description}` : ''}\n\n` +
-    `💰 <b>Valor: R$ ${Number(fee.amount).toFixed(2)}</b>\n\n` +
-    `📋 Taxas restantes: ${remainingCount}`;
-}
-
-// Generate PIX using FastSoft API
-async function generatePixFastsoft(ctx: ClientContext, amount: number, orderId: string, customer: any): Promise<{ pixCode: string; qrCodeUrl: string; paymentId: string } | null> {
+async function generatePixFastsoft(
+  ctx: ClientContext, 
+  amount: number, 
+  orderId: string, 
+  customer: any
+): Promise<PixResult | null> {
   if (!ctx.fastsoftPublicKey || !ctx.fastsoftSecretKey) {
     console.error('FastSoft keys not configured');
     return null;
   }
 
   try {
-    // Use public key + secret key for authentication
     const authHeader = 'Basic ' + btoa(`${ctx.fastsoftPublicKey}:${ctx.fastsoftSecretKey}`);
-    
+
     const requestBody = {
-      amount: Math.round(amount * 100), // Convert to cents
+      amount: Math.round(amount * 100),
       currency: 'BRL',
       paymentMethod: 'PIX',
       customer: {
         name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Cliente',
         email: customer.email || 'cliente@email.com',
-        document: {
-          number: '00000000000',
-          type: 'CPF',
-        },
+        document: { number: '00000000000', type: 'CPF' },
       },
       items: [{
         title: 'Produto Digital',
@@ -278,9 +319,7 @@ async function generatePixFastsoft(ctx: ClientContext, amount: number, orderId: 
         quantity: 1,
         tangible: false,
       }],
-      pix: {
-        expiresInDays: 1,
-      },
+      pix: { expiresInDays: 1 },
       metadata: JSON.stringify({ order_id: orderId, client_id: ctx.clientId }),
       postbackUrl: `${SUPABASE_URL}/functions/v1/fastsoft-webhook`,
     };
@@ -297,46 +336,50 @@ async function generatePixFastsoft(ctx: ClientContext, amount: number, orderId: 
     });
 
     const responseText = await response.text();
-    console.log('FastSoft response status:', response.status);
-    console.log('FastSoft response:', responseText);
+    console.log('FastSoft response:', response.status, responseText);
 
-    if (!response.ok) {
-      console.error('FastSoft API error:', response.status, responseText);
-      return null;
-    }
+    if (!response.ok) return null;
 
     const data = JSON.parse(responseText);
-    
-    // Extract PIX data from response
     const pixCode = data.pix?.qrcode || data.pixCode || '';
-    const qrCodeUrl = data.pix?.receiptUrl || `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCode)}`;
-    
-    return {
-      pixCode,
-      qrCodeUrl,
-      paymentId: data.id,
-    };
+    const qrCodeUrl = data.pix?.receiptUrl || 
+      `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCode)}`;
+
+    return { pixCode, qrCodeUrl, paymentId: data.id };
   } catch (error) {
     console.error('Error generating PIX with FastSoft:', error);
     return null;
   }
 }
 
-// Generate mock PIX (fallback when FastSoft is not configured)
-function generateMockPix(amount: number, orderId: string): { pixCode: string; qrCodeUrl: string; paymentId: string } {
+function generateMockPix(amount: number, orderId: string): PixResult {
   const randomId = crypto.randomUUID();
   const pixCode = `00020126580014BR.GOV.BCB.PIX0136${randomId}52040000530398654${amount.toFixed(2).replace('.', '')}5802BR5913LOJA DIGITAL6009SAO PAULO62070503***6304`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCode)}`;
-  
-  return {
-    pixCode,
-    qrCodeUrl,
-    paymentId: `MOCK_${orderId}_${Date.now()}`,
-  };
+
+  return { pixCode, qrCodeUrl, paymentId: `MOCK_${orderId}_${Date.now()}` };
 }
 
-// Create order
-async function createOrder(ctx: ClientContext, customerId: string, productId: string, amount: number, customer: any) {
+async function generatePix(ctx: ClientContext, amount: number, orderId: string, customer: any): Promise<PixResult> {
+  if (ctx.fastsoftEnabled && ctx.fastsoftPublicKey && ctx.fastsoftSecretKey) {
+    const fastsoftPix = await generatePixFastsoft(ctx, amount, orderId, customer);
+    if (fastsoftPix) return fastsoftPix;
+    console.log('FastSoft failed, falling back to mock PIX');
+  }
+  return generateMockPix(amount, orderId);
+}
+
+// =============================================================================
+// ORDER OPERATIONS
+// =============================================================================
+
+async function createOrder(
+  ctx: ClientContext, 
+  customerId: string, 
+  productId: string, 
+  amount: number, 
+  customer: any
+) {
   const { data: order, error } = await supabase
     .from('orders')
     .insert({
@@ -355,132 +398,113 @@ async function createOrder(ctx: ClientContext, customerId: string, productId: st
     return null;
   }
 
-  // Generate PIX - use FastSoft if enabled, otherwise mock
-  let pix: { pixCode: string; qrCodeUrl: string; paymentId: string };
-  
-  if (ctx.fastsoftEnabled && ctx.fastsoftPublicKey && ctx.fastsoftSecretKey) {
-    const fastsoftPix = await generatePixFastsoft(ctx, amount, order.id, customer);
-    if (fastsoftPix) {
-      pix = fastsoftPix;
-    } else {
-      console.log('FastSoft failed, falling back to mock PIX');
-      pix = generateMockPix(amount, order.id);
-    }
-  } else {
-    pix = generateMockPix(amount, order.id);
-  }
-  
-  // Update order with PIX data
+  const pix = await generatePix(ctx, amount, order.id, customer);
+
   await supabase
     .from('orders')
-    .update({
-      pix_code: pix.pixCode,
-      pix_qrcode: pix.qrCodeUrl,
-      payment_id: pix.paymentId,
-    })
+    .update({ pix_code: pix.pixCode, pix_qrcode: pix.qrCodeUrl, payment_id: pix.paymentId })
     .eq('id', order.id);
 
   return { ...order, ...pix };
 }
 
-// Log message to telegram_messages
-async function logMessage(clientId: string, customerId: string, chatId: number, direction: 'incoming' | 'outgoing', content: string, messageId?: number) {
-  await supabase.from('telegram_messages').insert({
-    client_id: clientId,
-    customer_id: customerId,
-    telegram_chat_id: chatId,
-    telegram_message_id: messageId,
-    direction,
-    message_type: 'text',
-    message_content: content,
-  });
+function buildFeeMessage(fee: any, remainingCount: number): string {
+  if (fee.payment_message) {
+    return fee.payment_message
+      .replace(/{fee_name}/g, fee.name)
+      .replace(/{fee_amount}/g, Number(fee.amount).toFixed(2))
+      .replace(/{fee_description}/g, fee.description || '')
+      .replace(/{remaining_count}/g, String(remainingCount));
+  }
+
+  return `💳 <b>Taxa Obrigatória</b>\n\n` +
+    `Para receber seu produto, você precisa pagar a seguinte taxa:\n\n` +
+    `<b>${fee.name}</b>${fee.description ? `\n${fee.description}` : ''}\n\n` +
+    `💰 <b>Valor: R$ ${Number(fee.amount).toFixed(2)}</b>\n\n` +
+    `📋 Taxas restantes: ${remainingCount}`;
 }
 
-// Handle /start command
-async function handleStart(ctx: ClientContext, chatId: number, telegramUser: any) {
+// =============================================================================
+// COMMAND HANDLERS
+// =============================================================================
+
+async function handleStart(ctx: ClientContext, chatId: number, telegramUser: TelegramUser): Promise<void> {
   const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
-  const welcomeMsg = await getBotMessage(ctx.clientId, 'welcome', 'Olá! 👋 Bem-vindo à nossa loja!');
-  const products = await getProducts(ctx.clientId);
-  
-  // Send welcome message first
+  const [welcomeMsg, products] = await Promise.all([
+    getBotMessage(ctx.clientId, 'welcome', 'Olá! 👋 Bem-vindo à nossa loja!'),
+    getProducts(ctx.clientId)
+  ]);
+
   const welcomeResult = await sendTelegramMessage(ctx.botToken, chatId, welcomeMsg);
   if (customer) {
     await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', welcomeMsg, welcomeResult?.result?.message_id);
   }
-  
-  // Then send product catalog
+
   if (products.length === 0) {
     const noProductsMsg = await getBotMessage(ctx.clientId, 'no_products', '😕 Nenhum produto disponível no momento.');
-    const keyboard = {
+    await sendTelegramMessage(ctx.botToken, chatId, noProductsMsg, {
       inline_keyboard: [
         [{ text: '📦 Meus Pedidos', callback_data: 'my_orders' }],
         [{ text: '❓ Ajuda', callback_data: 'help' }],
       ],
-    };
-    await sendTelegramMessage(ctx.botToken, chatId, noProductsMsg, keyboard);
-  } else {
-    const headerMsg = '🛍️ <b>Nossos Produtos</b>\n\nEscolha um produto para ver mais detalhes:';
-    const keyboard = {
-      inline_keyboard: [
-        ...products.map(p => [{ text: `📦 ${p.name} - R$ ${Number(p.price).toFixed(2)}`, callback_data: `view_${p.id}` }]),
-        [{ text: '📦 Meus Pedidos', callback_data: 'my_orders' }],
-        [{ text: '❓ Ajuda', callback_data: 'help' }],
-      ],
-    };
-    const catalogResult = await sendTelegramMessage(ctx.botToken, chatId, headerMsg, keyboard);
-    if (customer) {
-      await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', headerMsg, catalogResult?.result?.message_id);
-    }
+    });
+    return;
+  }
+
+  const headerMsg = '🛍️ <b>Nossos Produtos</b>\n\nEscolha um produto para ver mais detalhes:';
+  const catalogResult = await sendTelegramMessage(ctx.botToken, chatId, headerMsg, {
+    inline_keyboard: [
+      ...products.map(p => [{ text: `📦 ${p.name} - R$ ${Number(p.price).toFixed(2)}`, callback_data: `view_${p.id}` }]),
+      [{ text: '📦 Meus Pedidos', callback_data: 'my_orders' }],
+      [{ text: '❓ Ajuda', callback_data: 'help' }],
+    ],
+  });
+
+  if (customer) {
+    await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', headerMsg, catalogResult?.result?.message_id);
   }
 }
 
-// Handle products command
-async function handleProducts(ctx: ClientContext, chatId: number, telegramUser: any) {
-  const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
-  const products = await getProducts(ctx.clientId);
-  
+async function handleProducts(ctx: ClientContext, chatId: number, telegramUser: TelegramUser): Promise<void> {
+  const [customer, products] = await Promise.all([
+    getOrCreateCustomer(ctx.clientId, telegramUser),
+    getProducts(ctx.clientId)
+  ]);
+
   if (products.length === 0) {
     const noProductsMsg = await getBotMessage(ctx.clientId, 'no_products', '😕 Nenhum produto disponível no momento.');
     await sendTelegramMessage(ctx.botToken, chatId, noProductsMsg);
     return;
   }
-  
-  // Send product list header
+
   const headerMsg = '🛍️ <b>Nossos Produtos</b>\n\nEscolha um produto para ver mais detalhes:';
   await sendTelegramMessage(ctx.botToken, chatId, headerMsg, {
     inline_keyboard: products.map(p => [{ text: `📦 ${p.name} - R$ ${Number(p.price).toFixed(2)}`, callback_data: `view_${p.id}` }])
   });
-  
+
   if (customer) {
     await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', headerMsg);
   }
 }
 
-// Handle view product
-async function handleViewProduct(ctx: ClientContext, chatId: number, productId: string, telegramUser: any) {
-  const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
-  const product = await getProduct(productId);
-  
+async function handleViewProduct(ctx: ClientContext, chatId: number, productId: string, telegramUser: TelegramUser): Promise<void> {
+  const [customer, product] = await Promise.all([
+    getOrCreateCustomer(ctx.clientId, telegramUser),
+    getProduct(productId)
+  ]);
+
   if (!product) {
     await sendTelegramMessage(ctx.botToken, chatId, '❌ Produto não encontrado.');
     return;
   }
 
-  // Increment views
-  await supabase
-    .from('products')
-    .update({ views_count: (product.views_count || 0) + 1 })
-    .eq('id', productId);
+  // Increment views (fire and forget)
+  supabase.from('products').update({ views_count: (product.views_count || 0) + 1 }).eq('id', productId);
 
   const price = Number(product.price).toFixed(2);
   const caption = `<b>${product.name}</b>\n\n${product.description || 'Sem descrição'}\n\n💰 <b>R$ ${price}</b>${product.is_hot ? '\n\n🔥 PRODUTO EM DESTAQUE!' : ''}`;
-  
-  const keyboard = {
-    inline_keyboard: [
-      [{ text: '🛒 Comprar Agora', callback_data: `buy_${product.id}` }],
-    ],
-  };
-  
+  const keyboard = { inline_keyboard: [[{ text: '🛒 Comprar Agora', callback_data: `buy_${product.id}` }]] };
+
   if (product.image_url) {
     await sendTelegramPhoto(ctx.botToken, chatId, product.image_url, caption, keyboard);
   } else {
@@ -492,38 +516,39 @@ async function handleViewProduct(ctx: ClientContext, chatId: number, productId: 
   }
 }
 
-// Handle buy action
-async function handleBuy(ctx: ClientContext, chatId: number, productId: string, telegramUser: any) {
+async function handleBuy(ctx: ClientContext, chatId: number, productId: string, telegramUser: TelegramUser): Promise<void> {
   const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
   if (!customer) {
     await sendTelegramMessage(ctx.botToken, chatId, '❌ Erro ao processar. Tente novamente.');
     return;
   }
-  
+
   const product = await getProduct(productId);
   if (!product) {
     await sendTelegramMessage(ctx.botToken, chatId, '❌ Produto não encontrado.');
     return;
   }
-  
+
   await logMessage(ctx.clientId, customer.id, chatId, 'incoming', `[Clicou: Comprar "${product.name}"]`);
-  
+
   const order = await createOrder(ctx, customer.id, productId, Number(product.price), customer);
   if (!order) {
     await sendTelegramMessage(ctx.botToken, chatId, '❌ Erro ao criar pedido. Tente novamente.');
     return;
   }
-  
-  const orderCreatedMsg = await getBotMessage(ctx.clientId, 'order_created', '🛒 Pedido criado com sucesso! Efetue o pagamento para receber seu produto.');
-  const paymentInstructions = await getBotMessage(ctx.clientId, 'payment_instructions', 'Escaneie o QR Code ou copie o código PIX para realizar o pagamento.');
-  
+
+  const [orderCreatedMsg, paymentInstructions] = await Promise.all([
+    getBotMessage(ctx.clientId, 'order_created', '🛒 Pedido criado com sucesso! Efetue o pagamento para receber seu produto.'),
+    getBotMessage(ctx.clientId, 'payment_instructions', 'Escaneie o QR Code ou copie o código PIX para realizar o pagamento.')
+  ]);
+
   const message = `${orderCreatedMsg}\n\n` +
     `<b>Produto:</b> ${product.name}\n` +
     `<b>Valor:</b> R$ ${Number(product.price).toFixed(2)}\n\n` +
     `${paymentInstructions}\n\n` +
     `<code>${order.pixCode}</code>\n\n` +
     `⏰ <i>Você tem 15 minutos para efetuar o pagamento.</i>`;
-  
+
   const keyboard = {
     inline_keyboard: [
       [{ text: '✅ Já Paguei', callback_data: `paid_${order.id}` }],
@@ -531,7 +556,6 @@ async function handleBuy(ctx: ClientContext, chatId: number, productId: string, 
     ],
   };
 
-  // Try to send with QR code image, fallback to text only
   try {
     if (order.qrCodeUrl) {
       await sendTelegramPhoto(ctx.botToken, chatId, order.qrCodeUrl, message, keyboard);
@@ -545,16 +569,15 @@ async function handleBuy(ctx: ClientContext, chatId: number, productId: string, 
   await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', message);
 }
 
-// Handle payment confirmation (manual - for when FastSoft webhook doesn't work)
-async function handlePaidConfirmation(ctx: ClientContext, chatId: number, orderId: string, telegramUser: any) {
+async function handlePaidConfirmation(ctx: ClientContext, chatId: number, orderId: string, telegramUser: TelegramUser): Promise<void> {
   const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
-  
+
   const { data: order } = await supabase
     .from('orders')
     .select('*, products(*)')
     .eq('id', orderId)
     .single();
-  
+
   if (!order) {
     await sendTelegramMessage(ctx.botToken, chatId, '❌ Pedido não encontrado.');
     return;
@@ -564,43 +587,29 @@ async function handlePaidConfirmation(ctx: ClientContext, chatId: number, orderI
     await logMessage(ctx.clientId, customer.id, chatId, 'incoming', '[Clicou: Confirmar Pagamento]');
   }
 
-  // If FastSoft is enabled, we should wait for webhook
-  // But for now, we'll allow manual confirmation with a message
-  if (ctx.fastsoftEnabled && order.payment_id && !order.payment_id.startsWith('MOCK_')) {
-    // Check payment status with FastSoft API (optional)
-    // For now, just confirm manually
-  }
-  
-  const settings = await getClientSettings(ctx.clientId);
-  const successMsg = await getBotMessage(ctx.clientId, 'payment_success', '✅ Pagamento confirmado! Seu produto será entregue em instantes.');
-  
-  await supabase
-    .from('orders')
-    .update({
-      status: 'paid',
-      paid_at: new Date().toISOString(),
-    })
-    .eq('id', orderId);
-  
+  const [settings, successMsg] = await Promise.all([
+    getClientSettings(ctx.clientId),
+    getBotMessage(ctx.clientId, 'payment_success', '✅ Pagamento confirmado! Seu produto será entregue em instantes.')
+  ]);
+
+  await supabase.from('orders').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', orderId);
   await sendTelegramMessage(ctx.botToken, chatId, successMsg);
-  
+
   if (customer) {
     await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', successMsg);
   }
-  
-  // Check if product requires fees before delivery
+
+  // Check for pending fees
   const product = order.products;
   if (product?.require_fees_before_delivery) {
     const pendingFees = await getPendingFees(orderId, product.id);
-    
     if (pendingFees.length > 0) {
-      // Show next fee to pay
       await showNextFee(ctx, chatId, orderId, pendingFees[0], pendingFees.length, customer);
       return;
     }
   }
-  
-  // Auto delivery if enabled and no pending fees
+
+  // Auto delivery
   if (settings.auto_delivery && order.products?.file_url) {
     await deliverProduct(ctx, chatId, orderId, order, customer);
   } else {
@@ -608,50 +617,29 @@ async function handlePaidConfirmation(ctx: ClientContext, chatId: number, orderI
   }
 }
 
-// Show next fee to pay (without generating PIX yet)
-async function showNextFee(ctx: ClientContext, chatId: number, orderId: string, fee: any, remainingCount: number, customer: any) {
+async function showNextFee(ctx: ClientContext, chatId: number, orderId: string, fee: any, remainingCount: number, customer: any): Promise<void> {
   const message = buildFeeMessage(fee, remainingCount);
-  
   const buttonText = fee.button_text || '💳 Gerar PIX para Pagar';
-  
-  // Use shortened UUIDs to fit Telegram's 64-byte limit
-  const feeIdShort = uuidToB64(fee.id);
-  const orderIdShort = uuidToB64(orderId);
-  
-  const keyboard = {
-    inline_keyboard: [
-      [{ text: buttonText, callback_data: `gf:${feeIdShort}:${orderIdShort}` }],
-    ],
-  };
-  
-  await sendTelegramMessage(ctx.botToken, chatId, message, keyboard);
-  
+
+  await sendTelegramMessage(ctx.botToken, chatId, message, {
+    inline_keyboard: [[{ text: buttonText, callback_data: `gf:${uuidToB64(fee.id)}:${uuidToB64(orderId)}` }]],
+  });
+
   if (customer) {
     await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', message);
   }
 }
 
-// Handle generate fee PIX
-async function handleGenerateFeePix(ctx: ClientContext, chatId: number, feeIdShort: string, orderIdShort: string, telegramUser: any) {
-  // Convert shortened UUIDs back to full UUIDs
-  const feeId = b64ToUuid(feeIdShort);
-  const orderId = b64ToUuid(orderIdShort);
-  
+async function handleGenerateFeePix(ctx: ClientContext, chatId: number, feeIdShort: string, orderIdShort: string, telegramUser: TelegramUser): Promise<void> {
+  const [feeId, orderId] = [b64ToUuid(feeIdShort), b64ToUuid(orderIdShort)];
   const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
 
-  // Get fee details
-  const { data: fee } = await supabase
-    .from('product_fees')
-    .select('*')
-    .eq('id', feeId)
-    .single();
-
+  const { data: fee } = await supabase.from('product_fees').select('*').eq('id', feeId).single();
   if (!fee) {
     await sendTelegramMessage(ctx.botToken, chatId, '❌ Taxa não encontrada.');
     return;
   }
 
-  // Create fee order
   const { data: feeOrder } = await supabase
     .from('orders')
     .insert({
@@ -666,55 +654,32 @@ async function handleGenerateFeePix(ctx: ClientContext, chatId: number, feeIdSho
     })
     .select()
     .single();
-  
+
   if (!feeOrder) {
     await sendTelegramMessage(ctx.botToken, chatId, '❌ Erro ao gerar pagamento da taxa. Tente novamente.');
     return;
   }
-  
-  // Generate PIX using FastSoft if available, otherwise mock
-  let pix: { pixCode: string; qrCodeUrl: string; paymentId: string };
-  if (ctx.fastsoftEnabled && ctx.fastsoftSecretKey) {
-    const fastsoftPix = await generatePixFastsoft(ctx, fee.amount, feeOrder.id, customer);
-    if (fastsoftPix) {
-      pix = fastsoftPix;
-    } else {
-      pix = generateMockPix(fee.amount, feeOrder.id);
-    }
-  } else {
-    pix = generateMockPix(fee.amount, feeOrder.id);
-  }
-  
-  await supabase
-    .from('orders')
-    .update({
-      pix_code: pix.pixCode,
-      pix_qrcode: pix.qrCodeUrl,
-      payment_id: pix.paymentId,
-    })
-    .eq('id', feeOrder.id);
-  
+
+  const pix = await generatePix(ctx, fee.amount, feeOrder.id, customer);
+
+  await supabase.from('orders').update({
+    pix_code: pix.pixCode,
+    pix_qrcode: pix.qrCodeUrl,
+    payment_id: pix.paymentId,
+  }).eq('id', feeOrder.id);
+
   const pixMessage = `✅ <b>PIX Gerado!</b>\n\n💰 <b>Valor: R$ ${Number(fee.amount).toFixed(2)}</b>\n\nCopie o código abaixo:\n\n<code>${pix.pixCode}</code>`;
-  
-  // Use shortened UUID for feepaid callback
-  const feeOrderIdShort = uuidToB64(feeOrder.id);
-  
-  const keyboard = {
-    inline_keyboard: [
-      [{ text: '✅ Paguei a Taxa', callback_data: `fp:${feeOrderIdShort}` }],
-    ],
-  };
-  
-  await sendTelegramMessage(ctx.botToken, chatId, pixMessage, keyboard);
-  
+
+  await sendTelegramMessage(ctx.botToken, chatId, pixMessage, {
+    inline_keyboard: [[{ text: '✅ Paguei a Taxa', callback_data: `fp:${uuidToB64(feeOrder.id)}` }]],
+  });
+
   if (customer) {
     await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', pixMessage);
   }
 }
 
-// Handle fee payment confirmation
-async function handleFeePaid(ctx: ClientContext, chatId: number, feeOrderIdShort: string, telegramUser: any) {
-  // Convert shortened UUID back to full UUID
+async function handleFeePaid(ctx: ClientContext, chatId: number, feeOrderIdShort: string, telegramUser: TelegramUser): Promise<void> {
   const feeOrderId = b64ToUuid(feeOrderIdShort);
   const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
 
@@ -748,20 +713,14 @@ async function handleFeePaid(ctx: ClientContext, chatId: number, feeOrderIdShort
     return;
   }
 
-  // Mark fee order as paid
-  await supabase
-    .from('orders')
-    .update({ status: 'paid', paid_at: new Date().toISOString() })
-    .eq('id', feeOrderId);
-
-  // Add fee to paid list (unique)
+  // Update orders in parallel
   const currentPaidFees: string[] = parentOrder.fees_paid || [];
   const updatedPaidFees = Array.from(new Set([...currentPaidFees, feeId]));
 
-  await supabase
-    .from('orders')
-    .update({ fees_paid: updatedPaidFees })
-    .eq('id', parentOrderId);
+  await Promise.all([
+    supabase.from('orders').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', feeOrderId),
+    supabase.from('orders').update({ fees_paid: updatedPaidFees }).eq('id', parentOrderId)
+  ]);
 
   await sendTelegramMessage(ctx.botToken, chatId, '✅ Taxa paga com sucesso!');
 
@@ -775,7 +734,6 @@ async function handleFeePaid(ctx: ClientContext, chatId: number, feeOrderIdShort
     await showNextFee(ctx, chatId, parentOrderId, pendingFees[0], pendingFees.length, customer);
   } else {
     const settings = await getClientSettings(ctx.clientId);
-
     if (settings.auto_delivery && parentOrder.products?.file_url) {
       await deliverProduct(ctx, chatId, parentOrderId, parentOrder, customer);
     } else {
@@ -784,91 +742,68 @@ async function handleFeePaid(ctx: ClientContext, chatId: number, feeOrderIdShort
   }
 }
 
-// Deliver product
-async function deliverProduct(ctx: ClientContext, chatId: number, orderId: string, order: any, customer: any) {
-  await supabase
-    .from('orders')
-    .update({
-      status: 'delivered',
-      delivered_at: new Date().toISOString(),
-    })
-    .eq('id', orderId);
-  
-  await supabase
-    .from('products')
-    .update({ sales_count: (order.products?.sales_count || 0) + 1 })
-    .eq('id', order.product_id);
-  
+async function deliverProduct(ctx: ClientContext, chatId: number, orderId: string, order: any, customer: any): Promise<void> {
+  await Promise.all([
+    supabase.from('orders').update({ status: 'delivered', delivered_at: new Date().toISOString() }).eq('id', orderId),
+    supabase.from('products').update({ sales_count: (order.products?.sales_count || 0) + 1 }).eq('id', order.product_id)
+  ]);
+
   const deliveryMsg = await getBotMessage(ctx.clientId, 'product_delivered', '📦 Produto entregue! Obrigado pela compra!');
-  await sendTelegramMessage(
-    ctx.botToken,
-    chatId,
-    `${deliveryMsg}\n\n🔗 Acesse seu produto:\n${order.products?.file_url}`
-  );
-  
+  await sendTelegramMessage(ctx.botToken, chatId, `${deliveryMsg}\n\n🔗 Acesse seu produto:\n${order.products?.file_url}`);
+
   if (customer) {
     await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', deliveryMsg);
   }
 }
 
-// Handle order cancellation
-async function handleCancel(ctx: ClientContext, chatId: number, orderId: string, telegramUser: any) {
+async function handleCancel(ctx: ClientContext, chatId: number, orderId: string, telegramUser: TelegramUser): Promise<void> {
   const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
-  
-  await supabase
-    .from('orders')
-    .update({ status: 'cancelled' })
-    .eq('id', orderId);
-  
+
+  await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId);
+
   const cancelMsg = await getBotMessage(ctx.clientId, 'order_cancelled', '❌ Pedido cancelado.');
   await sendTelegramMessage(ctx.botToken, chatId, cancelMsg);
-  
+
   if (customer) {
     await logMessage(ctx.clientId, customer.id, chatId, 'incoming', '[Clicou: Cancelar Pedido]');
     await logMessage(ctx.clientId, customer.id, chatId, 'outgoing', cancelMsg);
   }
 }
 
-// Handle my orders
-async function handleMyOrders(ctx: ClientContext, chatId: number, telegramUser: any) {
+async function handleMyOrders(ctx: ClientContext, chatId: number, telegramUser: TelegramUser): Promise<void> {
   const customer = await getOrCreateCustomer(ctx.clientId, telegramUser);
   if (!customer) {
     await sendTelegramMessage(ctx.botToken, chatId, '❌ Erro ao buscar pedidos.');
     return;
   }
-  
+
   const { data: orders } = await supabase
     .from('orders')
     .select('*, products(name)')
     .eq('customer_id', customer.id)
     .order('created_at', { ascending: false })
     .limit(10);
-  
+
   if (!orders || orders.length === 0) {
     await sendTelegramMessage(ctx.botToken, chatId, '📭 Você ainda não tem pedidos.');
     return;
   }
-  
+
   const statusEmoji: Record<string, string> = {
-    pending: '⏳',
-    paid: '✅',
-    delivered: '📦',
-    cancelled: '❌',
-    refunded: '💸',
+    pending: '⏳', paid: '✅', delivered: '📦', cancelled: '❌', refunded: '💸',
   };
-  
+
   let message = '📋 <b>Seus Últimos Pedidos:</b>\n\n';
   for (const order of orders) {
     const emoji = statusEmoji[order.status] || '❓';
     const date = new Date(order.created_at).toLocaleDateString('pt-BR');
     message += `${emoji} ${order.products?.name || 'Produto'} - R$ ${Number(order.amount).toFixed(2)} (${date})\n`;
   }
-  
+
   await sendTelegramMessage(ctx.botToken, chatId, message);
 }
 
-// Handle help
-async function handleHelp(ctx: ClientContext, chatId: number) {
+async function handleHelp(ctx: ClientContext, chatId: number): Promise<void> {
   const message = `❓ <b>Ajuda</b>\n\n` +
     `<b>Comandos disponíveis:</b>\n` +
     `/start - Iniciar bot\n` +
@@ -881,9 +816,40 @@ async function handleHelp(ctx: ClientContext, chatId: number) {
     `3️⃣ Pague via PIX\n` +
     `4️⃣ Receba seu produto!\n\n` +
     `💬 Dúvidas? Entre em contato com o suporte.`;
-  
+
   await sendTelegramMessage(ctx.botToken, chatId, message);
 }
+
+// =============================================================================
+// CALLBACK ROUTER
+// =============================================================================
+
+async function handleCallback(ctx: ClientContext, chatId: number, data: string, telegramUser: TelegramUser): Promise<void> {
+  if (data === 'products') {
+    await handleProducts(ctx, chatId, telegramUser);
+  } else if (data === 'my_orders') {
+    await handleMyOrders(ctx, chatId, telegramUser);
+  } else if (data === 'help') {
+    await handleHelp(ctx, chatId);
+  } else if (data.startsWith('view_')) {
+    await handleViewProduct(ctx, chatId, data.replace('view_', ''), telegramUser);
+  } else if (data.startsWith('buy_')) {
+    await handleBuy(ctx, chatId, data.replace('buy_', ''), telegramUser);
+  } else if (data.startsWith('fp:')) {
+    await handleFeePaid(ctx, chatId, data.replace('fp:', ''), telegramUser);
+  } else if (data.startsWith('gf:')) {
+    const [feeIdShort, orderIdShort] = data.replace('gf:', '').split(':');
+    await handleGenerateFeePix(ctx, chatId, feeIdShort, orderIdShort, telegramUser);
+  } else if (data.startsWith('paid_')) {
+    await handlePaidConfirmation(ctx, chatId, data.replace('paid_', ''), telegramUser);
+  } else if (data.startsWith('cancel_')) {
+    await handleCancel(ctx, chatId, data.replace('cancel_', ''), telegramUser);
+  }
+}
+
+// =============================================================================
+// MAIN SERVER
+// =============================================================================
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -894,10 +860,10 @@ serve(async (req) => {
     const update = await req.json();
     console.log('Telegram update received:', JSON.stringify(update, null, 2));
 
-    // Extract bot token from the message - we need to find which client this is for
+    // Extract chat info
     let chatId: number;
-    let telegramUser: any;
-    
+    let telegramUser: TelegramUser;
+
     if (update.message) {
       chatId = update.message.chat.id;
       telegramUser = update.message.from;
@@ -910,35 +876,16 @@ serve(async (req) => {
       });
     }
 
-    // Find client by telegram_id of customer (they must have interacted before)
-    // Or we need to get the bot token from the URL params
+    // Resolve client context
     const url = new URL(req.url);
     const botTokenFromUrl = url.searchParams.get('bot_token');
-    
+
     let ctx: ClientContext | null = null;
-    
+
     if (botTokenFromUrl) {
       ctx = await getClientContext(botTokenFromUrl);
     } else {
-      // Try to find client by existing customer relationship
-      const { data: existingCustomer } = await supabase
-        .from('telegram_customers')
-        .select('client_id')
-        .eq('telegram_id', telegramUser.id)
-        .limit(1)
-        .single();
-      
-      if (existingCustomer?.client_id) {
-        const { data: clientData } = await supabase
-          .from('clients')
-          .select('telegram_bot_token')
-          .eq('id', existingCustomer.client_id)
-          .single();
-        
-        if (clientData?.telegram_bot_token) {
-          ctx = await getClientContext(clientData.telegram_bot_token);
-        }
-      }
+      ctx = await getClientContextByCustomer(telegramUser.id);
     }
 
     if (!ctx) {
@@ -949,7 +896,7 @@ serve(async (req) => {
       });
     }
 
-    // Handle message
+    // Handle message commands
     if (update.message) {
       const text = update.message.text || '';
 
@@ -962,66 +909,22 @@ serve(async (req) => {
       } else if (text.startsWith('/ajuda') || text.startsWith('/help')) {
         await handleHelp(ctx, chatId);
       } else {
-        await sendTelegramMessage(
-          ctx.botToken,
-          chatId,
-          'Use /produtos para ver nosso catálogo ou /ajuda para mais informações.'
-        );
+        await sendTelegramMessage(ctx.botToken, chatId, 'Use /produtos para ver nosso catálogo ou /ajuda para mais informações.');
       }
     }
 
-    // Handle callback query (button clicks)
+    // Handle callback queries (button clicks)
     if (update.callback_query) {
-      const callbackQuery = update.callback_query;
-      const data = callbackQuery.data;
-
-      // Answer callback to remove loading state
-      await fetch(`https://api.telegram.org/bot${ctx.botToken}/answerCallbackQuery`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callback_query_id: callbackQuery.id }),
-      });
-
-      if (data === 'products') {
-        await handleProducts(ctx, chatId, telegramUser);
-      } else if (data === 'my_orders') {
-        await handleMyOrders(ctx, chatId, telegramUser);
-      } else if (data === 'help') {
-        await handleHelp(ctx, chatId);
-      } else if (data.startsWith('view_')) {
-        const productId = data.replace('view_', '');
-        await handleViewProduct(ctx, chatId, productId, telegramUser);
-      } else if (data.startsWith('buy_')) {
-        const productId = data.replace('buy_', '');
-        await handleBuy(ctx, chatId, productId, telegramUser);
-      } else if (data.startsWith('fp:')) {
-        // Format: fp:{feeOrderIdShort}
-        const feeOrderIdShort = data.replace('fp:', '');
-        console.log('Fee paid callback:', { feeOrderIdShort });
-        await handleFeePaid(ctx, chatId, feeOrderIdShort, telegramUser);
-      } else if (data.startsWith('gf:')) {
-        // Format: gf:{feeIdShort}:{orderIdShort}
-        const parts = data.replace('gf:', '').split(':');
-        const feeIdShort = parts[0];
-        const orderIdShort = parts[1];
-        console.log('Generate fee PIX callback:', { feeIdShort, orderIdShort });
-        await handleGenerateFeePix(ctx, chatId, feeIdShort, orderIdShort, telegramUser);
-      } else if (data.startsWith('paid_')) {
-        const orderId = data.replace('paid_', '');
-        await handlePaidConfirmation(ctx, chatId, orderId, telegramUser);
-      } else if (data.startsWith('cancel_')) {
-        const orderId = data.replace('cancel_', '');
-        await handleCancel(ctx, chatId, orderId, telegramUser);
-      }
+      await answerCallbackQuery(ctx.botToken, update.callback_query.id);
+      await handleCallback(ctx, chatId, update.callback_query.data, telegramUser);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error processing webhook:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    console.error('Error processing telegram update:', error);
+    return new Response(JSON.stringify({ error: 'Internal error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
