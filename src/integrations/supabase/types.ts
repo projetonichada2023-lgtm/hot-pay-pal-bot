@@ -201,6 +201,10 @@ export type Database = {
           client_id: string
           closing_time: string | null
           created_at: string | null
+          facebook_access_token: string | null
+          facebook_pixel_id: string | null
+          facebook_test_event_code: string | null
+          facebook_tracking_enabled: boolean | null
           fastsoft_api_key: string | null
           fastsoft_enabled: boolean | null
           fastsoft_public_key: string | null
@@ -227,6 +231,10 @@ export type Database = {
           client_id: string
           closing_time?: string | null
           created_at?: string | null
+          facebook_access_token?: string | null
+          facebook_pixel_id?: string | null
+          facebook_test_event_code?: string | null
+          facebook_tracking_enabled?: boolean | null
           fastsoft_api_key?: string | null
           fastsoft_enabled?: boolean | null
           fastsoft_public_key?: string | null
@@ -253,6 +261,10 @@ export type Database = {
           client_id?: string
           closing_time?: string | null
           created_at?: string | null
+          facebook_access_token?: string | null
+          facebook_pixel_id?: string | null
+          facebook_test_event_code?: string | null
+          facebook_tracking_enabled?: boolean | null
           fastsoft_api_key?: string | null
           fastsoft_enabled?: boolean | null
           fastsoft_public_key?: string | null
