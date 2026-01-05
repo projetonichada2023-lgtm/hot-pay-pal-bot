@@ -4,10 +4,11 @@ import { useOrders, useUpdateOrderStatus, useOrderStats, Order, OrderStatus } fr
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Loader2, Clock, CheckCircle, Package, XCircle, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Loader2, Clock, CheckCircle, Package, XCircle, DollarSign, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { OrdersTable } from '@/components/orders/OrdersTable';
 import { OrderDetailsDialog } from '@/components/orders/OrderDetailsDialog';
 import { toast } from 'sonner';
+import { exportOrders } from '@/lib/export-csv';
 
 interface OrdersPageProps {
   client: Client;
@@ -93,6 +94,22 @@ export const OrdersPage = ({ client }: OrdersPageProps) => {
             Gerencie os pedidos dos seus clientes
           </p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            if (orders.length === 0) {
+              toast.error('Nenhum pedido para exportar');
+              return;
+            }
+            exportOrders(orders);
+            toast.success('Exportação concluída!');
+          }}
+          disabled={orders.length === 0}
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Exportar CSV
+        </Button>
       </div>
 
       {/* Stats Cards */}

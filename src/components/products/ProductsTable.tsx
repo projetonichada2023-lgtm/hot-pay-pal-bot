@@ -16,20 +16,26 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash2, Eye, ShoppingCart, Flame } from 'lucide-react';
+import { EmptyProducts } from '@/components/ui/empty-state';
 
 interface ProductsTableProps {
   products: Product[];
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
+  onAddProduct?: () => void;
 }
 
-export const ProductsTable = ({ products, onEdit, onDelete }: ProductsTableProps) => {
+export const ProductsTable = ({ products, onEdit, onDelete, onAddProduct }: ProductsTableProps) => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     }).format(price);
   };
+
+  if (products.length === 0) {
+    return <EmptyProducts onAddProduct={onAddProduct} />;
+  }
 
   return (
     <div className="rounded-md border border-border">
@@ -45,15 +51,8 @@ export const ProductsTable = ({ products, onEdit, onDelete }: ProductsTableProps
           </TableRow>
         </TableHeader>
         <TableBody>
-          {products.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                Nenhum produto cadastrado ainda.
-              </TableCell>
-            </TableRow>
-          ) : (
-            products.map((product) => (
-              <TableRow key={product.id}>
+          {products.map((product) => (
+            <TableRow key={product.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     {product.image_url ? (
@@ -123,8 +122,7 @@ export const ProductsTable = ({ products, onEdit, onDelete }: ProductsTableProps
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))
-          )}
+            ))}
         </TableBody>
       </Table>
     </div>

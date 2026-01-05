@@ -9,9 +9,11 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, MessageCircle, ShoppingCart } from 'lucide-react';
+import { Eye, ShoppingCart } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { EmptyCustomers } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface CustomersTableProps {
   customers: Customer[];
@@ -39,22 +41,39 @@ export const CustomersTable = ({ customers, isLoading, onViewCustomer }: Custome
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="rounded-lg border border-border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead>Cliente</TableHead>
+              <TableHead>Telegram</TableHead>
+              <TableHead className="text-center">Pedidos</TableHead>
+              <TableHead className="text-right">Total Gasto</TableHead>
+              <TableHead>Último Pedido</TableHead>
+              <TableHead>Cadastro</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {[...Array(5)].map((_, i) => (
+              <TableRow key={i}>
+                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell className="text-center"><Skeleton className="h-6 w-12 mx-auto" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     );
   }
 
   if (customers.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <MessageCircle className="w-12 h-12 text-muted-foreground mb-4" />
-        <h3 className="font-semibold text-lg">Nenhum cliente encontrado</h3>
-        <p className="text-muted-foreground">
-          Clientes aparecerão aqui quando interagirem com seu bot
-        </p>
-      </div>
-    );
+    return <EmptyCustomers />;
   }
 
   return (

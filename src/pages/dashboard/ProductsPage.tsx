@@ -4,7 +4,7 @@ import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, Prod
 import { useCreateProductFee } from '@/hooks/useProductFees';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Plus, Loader2, Lock } from 'lucide-react';
+import { Package, Plus, Loader2, Lock, Download } from 'lucide-react';
 import { ProductsTable } from '@/components/products/ProductsTable';
 import { ProductForm, ProductFormData } from '@/components/products/ProductForm';
 import { DeleteProductDialog } from '@/components/products/DeleteProductDialog';
@@ -12,6 +12,7 @@ import { PendingFee } from '@/components/products/PendingFeesManager';
 import { toast } from 'sonner';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { Badge } from '@/components/ui/badge';
+import { exportProducts } from '@/lib/export-csv';
 
 interface ProductsPageProps {
   client: Client;
@@ -137,6 +138,22 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
             {products?.length || 0} / {planLimits.max_products} produtos
           </Badge>
         )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            if (!products || products.length === 0) {
+              toast.error('Nenhum produto para exportar');
+              return;
+            }
+            exportProducts(products);
+            toast.success('Exportação concluída!');
+          }}
+          disabled={!products || products.length === 0}
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Exportar CSV
+        </Button>
         <Button onClick={handleCreate} disabled={!canAddProduct()}>
           {!canAddProduct() ? (
             <Lock className="w-4 h-4 mr-2" />
@@ -162,6 +179,7 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
               products={products || []}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onAddProduct={handleCreate}
             />
           )}
         </CardContent>
