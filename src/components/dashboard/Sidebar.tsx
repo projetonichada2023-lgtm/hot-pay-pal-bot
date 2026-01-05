@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Client } from '@/hooks/useClient';
 import { Button } from '@/components/ui/button';
 import { NotificationBadge } from './NotificationBadge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   LayoutDashboard, 
   MessageSquare, 
@@ -22,7 +23,9 @@ import {
   Moon,
   RefreshCw,
   Smartphone,
-  Target
+  Target,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -48,13 +51,18 @@ const menuItems = [
 
 export const Sidebar = ({ client }: SidebarProps) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sidebar-collapsed') === 'true';
+    }
+    return false;
+  });
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('theme');
       if (stored) {
         return stored === 'dark';
       }
-      // Default to dark mode
       return true;
     }
     return true;
@@ -72,6 +80,10 @@ export const Sidebar = ({ client }: SidebarProps) => {
     }
   }, [isDark]);
 
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', isCollapsed.toString());
+  }, [isCollapsed]);
+
   const handleLogout = async () => {
     await signOut();
     navigate('/auth');
@@ -84,6 +96,10 @@ export const Sidebar = ({ client }: SidebarProps) => {
 
   const toggleTheme = () => {
     setIsDark(!isDark);
+  };
+
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
   };
 
   return (
@@ -102,74 +118,102 @@ export const Sidebar = ({ client }: SidebarProps) => {
       <aside
         className={cn(
           'fixed md:relative z-40 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300',
-          isMobileOpen ? 'w-64 translate-x-0' : '-translate-x-full md:translate-x-0 md:w-64'
+          isMobileOpen ? 'w-64 translate-x-0' : '-translate-x-full md:translate-x-0',
+          !isMobileOpen && (isCollapsed ? 'md:w-16' : 'md:w-64')
         )}
       >
-        <div className="flex flex-col h-full p-4">
+        <div className="flex flex-col h-full p-2 md:p-4">
           {/* Logo */}
-          <div className="flex items-center gap-3 px-2 py-4 mb-6" data-tour="sidebar-logo">
-            <div className="w-10 h-10 rounded-xl gradient-hot flex items-center justify-center glow-hot">
+          <div className={cn(
+            "flex items-center gap-3 px-2 py-4 mb-4",
+            isCollapsed && "justify-center px-0"
+          )} data-tour="sidebar-logo">
+            <div className="w-10 h-10 rounded-xl gradient-hot flex items-center justify-center glow-hot shrink-0">
               <Bot className="w-5 h-5 text-primary-foreground" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="font-bold text-foreground truncate">{client.business_name}</h2>
-              <p className="text-xs text-muted-foreground truncate">
-                {client.telegram_bot_username ? `@${client.telegram_bot_username}` : 'Bot não configurado'}
-              </p>
-            </div>
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <h2 className="font-bold text-foreground truncate text-sm">{client.business_name}</h2>
+                <p className="text-xs text-muted-foreground truncate">
+                  {client.telegram_bot_username ? `@${client.telegram_bot_username}` : 'Bot não configurado'}
+                </p>
+              </div>
+            )}
           </div>
 
+          {/* Collapse Toggle - Desktop only */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden md:flex self-end mb-2 h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={toggleCollapse}
+          >
+            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </Button>
+
           {/* Navigation */}
-          <nav className="flex-1 space-y-1 overflow-auto">
-            {menuItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              const getTourAttribute = () => {
-                if (item.path === '/dashboard/products') return 'menu-products';
-                if (item.path === '/dashboard/bot-config') return 'menu-bot-config';
-                if (item.path === '/dashboard/funnel') return 'menu-funnel';
-                if (item.path === '/dashboard/messages') return 'menu-messages';
-                if (item.path === '/dashboard/recovery') return 'menu-recovery';
-                return undefined;
-              };
-              const tourAttr = getTourAttribute();
-              return (
-                <Button
-                  key={item.path}
-                  variant="ghost"
-                  className={cn(
-                    'w-full justify-start gap-3 h-11',
-                    isActive 
-                      ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50'
-                  )}
-                  onClick={() => handleNavigate(item.path)}
-                  {...(tourAttr ? { 'data-tour': tourAttr } : {})}
-                >
-                  <item.icon className={cn('w-5 h-5', isActive && 'text-primary')} />
-                  {item.label}
-                </Button>
-              );
-            })}
-          </nav>
+          <ScrollArea className="flex-1 -mx-2 px-2">
+            <nav className="space-y-1">
+              {menuItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                const getTourAttribute = () => {
+                  if (item.path === '/dashboard/products') return 'menu-products';
+                  if (item.path === '/dashboard/bot-config') return 'menu-bot-config';
+                  if (item.path === '/dashboard/funnel') return 'menu-funnel';
+                  if (item.path === '/dashboard/messages') return 'menu-messages';
+                  if (item.path === '/dashboard/recovery') return 'menu-recovery';
+                  return undefined;
+                };
+                const tourAttr = getTourAttribute();
+                return (
+                  <Button
+                    key={item.path}
+                    variant="ghost"
+                    className={cn(
+                      'w-full h-10 md:h-11',
+                      isCollapsed ? 'justify-center px-2' : 'justify-start gap-3 px-3',
+                      isActive 
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
+                        : 'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50'
+                    )}
+                    onClick={() => handleNavigate(item.path)}
+                    title={isCollapsed ? item.label : undefined}
+                    {...(tourAttr ? { 'data-tour': tourAttr } : {})}
+                  >
+                    <item.icon className={cn('w-5 h-5 shrink-0', isActive && 'text-primary')} />
+                    {!isCollapsed && <span className="truncate">{item.label}</span>}
+                  </Button>
+                );
+              })}
+            </nav>
+          </ScrollArea>
 
           {/* Theme Toggle */}
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 h-11 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 mb-2"
+            className={cn(
+              "h-10 md:h-11 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 mb-2",
+              isCollapsed ? "justify-center px-2 w-full" : "justify-start gap-3 w-full"
+            )}
             onClick={toggleTheme}
+            title={isCollapsed ? (isDark ? 'Modo Claro' : 'Modo Escuro') : undefined}
           >
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            {isDark ? 'Modo Claro' : 'Modo Escuro'}
+            {isDark ? <Sun className="w-5 h-5 shrink-0" /> : <Moon className="w-5 h-5 shrink-0" />}
+            {!isCollapsed && (isDark ? 'Modo Claro' : 'Modo Escuro')}
           </Button>
 
           {/* Logout */}
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 h-11 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            className={cn(
+              "h-10 md:h-11 text-muted-foreground hover:text-destructive hover:bg-destructive/10",
+              isCollapsed ? "justify-center px-2 w-full" : "justify-start gap-3 w-full"
+            )}
             onClick={handleLogout}
+            title={isCollapsed ? 'Sair' : undefined}
           >
-            <LogOut className="w-5 h-5" />
-            Sair
+            <LogOut className="w-5 h-5 shrink-0" />
+            {!isCollapsed && 'Sair'}
           </Button>
         </div>
       </aside>

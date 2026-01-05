@@ -46,9 +46,11 @@ const Dashboard = () => {
   return (
     <>
       <ImpersonationBanner />
-      <div className="min-h-screen bg-background flex">
+      <div className="min-h-screen bg-background flex w-full">
         <Sidebar client={client} />
-        <DashboardContent client={client} />
+        <div className="flex-1 min-w-0 overflow-x-hidden">
+          <DashboardContent client={client} />
+        </div>
         <NotificationCenter clientId={client.id} onNavigate={navigate} />
       
       {isOnboardingActive && currentTourStep && (
