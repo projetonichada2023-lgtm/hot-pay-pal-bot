@@ -46,7 +46,7 @@ export const DateRangeSelector = ({ dateRange, onDateRangeChange }: DateRangeSel
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <div className="flex gap-1.5 p-1 rounded-xl bg-muted/50 border border-border/50">
+      <div className="flex gap-1 sm:gap-1.5 p-0.5 sm:p-1 rounded-lg sm:rounded-xl bg-muted/50 border border-border/50 overflow-x-auto">
         {presetRanges.map((preset, index) => (
           <motion.div
             key={preset.days}
@@ -58,7 +58,7 @@ export const DateRangeSelector = ({ dateRange, onDateRangeChange }: DateRangeSel
               variant={activePreset === preset.days ? 'default' : 'ghost'}
               size="sm"
               className={cn(
-                'text-xs sm:text-sm h-8 px-3 rounded-lg transition-all',
+                'text-[10px] sm:text-sm h-6 sm:h-8 px-2 sm:px-3 rounded-md sm:rounded-lg transition-all whitespace-nowrap',
                 activePreset === preset.days ? 'shadow-sm' : 'hover:bg-background/50'
               )}
               onClick={() => handlePresetClick(preset.days)}
@@ -74,13 +74,15 @@ export const DateRangeSelector = ({ dateRange, onDateRangeChange }: DateRangeSel
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 text-xs sm:text-sm h-8 px-3 rounded-lg border-border/50 hover:border-border hover:bg-muted/50"
+            className="gap-1 sm:gap-2 text-[10px] sm:text-sm h-6 sm:h-8 px-2 sm:px-3 rounded-md sm:rounded-lg border-border/50 hover:border-border hover:bg-muted/50"
           >
-            <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="hidden xs:inline font-medium">
+            <CalendarIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground" />
+            <span className="hidden sm:inline font-medium">
               {format(dateRange.from, 'dd/MM')} - {format(dateRange.to, 'dd/MM/yy')}
             </span>
-            <span className="xs:hidden">Período</span>
+            <span className="sm:hidden font-medium">
+              {format(dateRange.from, 'dd/MM')}
+            </span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">

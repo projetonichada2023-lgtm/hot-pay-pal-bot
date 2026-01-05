@@ -82,29 +82,29 @@ export const ReportsPage = ({ client }: ReportsPageProps) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col gap-3 md:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold">Relatórios</h1>
-            <p className="text-muted-foreground text-sm">Análise detalhada de vendas e performance</p>
+            <h1 className="text-xl md:text-2xl font-bold">Relatórios</h1>
+            <p className="text-muted-foreground text-xs sm:text-sm">Análise detalhada de vendas e performance</p>
           </div>
-          <Button onClick={handleExportAll} className="gap-2">
+          <Button onClick={handleExportAll} className="gap-2 w-full sm:w-auto" size="sm">
             <Download className="w-4 h-4" />
             Exportar Tudo
           </Button>
         </div>
 
         {/* Date filters */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex gap-1 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-1 shrink-0">
             {presetRanges.map((preset) => (
               <Button
                 key={preset.days}
                 variant={activePreset === preset.days ? 'default' : 'outline'}
                 size="sm"
-                className="text-xs sm:text-sm"
+                className="text-[10px] sm:text-sm h-7 sm:h-8 px-2 sm:px-3"
                 onClick={() => handlePresetClick(preset.days)}
               >
                 {preset.label}
@@ -114,12 +114,12 @@ export const ReportsPage = ({ client }: ReportsPageProps) => {
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm">
-                <CalendarIcon className="w-3.5 h-3.5" />
-                <span className="hidden xs:inline">
+              <Button variant="outline" size="sm" className="gap-1 sm:gap-1.5 text-[10px] sm:text-sm h-7 sm:h-8 px-2 shrink-0">
+                <CalendarIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden sm:inline">
                   {format(dateRange.from, "dd/MM")} - {format(dateRange.to, "dd/MM/yy")}
                 </span>
-                <span className="xs:hidden">Período</span>
+                <span className="sm:hidden">Período</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -139,52 +139,52 @@ export const ReportsPage = ({ client }: ReportsPageProps) => {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="sales" className="gap-2">
-            <BarChart3 className="w-4 h-4 hidden sm:inline" />
-            Vendas
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
+        <TabsList className="grid w-full grid-cols-4 h-auto">
+          <TabsTrigger value="sales" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+            <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 hidden xs:inline" />
+            <span>Vendas</span>
           </TabsTrigger>
-          <TabsTrigger value="products" className="gap-2">
-            <Package className="w-4 h-4 hidden sm:inline" />
-            Produtos
+          <TabsTrigger value="products" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+            <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 hidden xs:inline" />
+            <span>Produtos</span>
           </TabsTrigger>
-          <TabsTrigger value="funnel" className="gap-2">
-            <GitBranch className="w-4 h-4 hidden sm:inline" />
-            Funil
+          <TabsTrigger value="funnel" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+            <GitBranch className="w-3.5 h-3.5 sm:w-4 sm:h-4 hidden xs:inline" />
+            <span>Funil</span>
           </TabsTrigger>
-          <TabsTrigger value="tiktok" className="gap-2">
-            <TrendingUp className="w-4 h-4 hidden sm:inline" />
-            TikTok
+          <TabsTrigger value="tiktok" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+            <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 hidden xs:inline" />
+            <span>TikTok</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="sales" className="space-y-6">
+        <TabsContent value="sales" className="space-y-4 md:space-y-6">
           <SalesReportChart data={salesData} isLoading={isLoading} />
           
           {/* Quick stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             <Card className="glass-card">
-              <CardContent className="pt-4">
-                <p className="text-xs text-muted-foreground">Total de Vendas</p>
-                <p className="text-xl font-bold text-success">
+              <CardContent className="p-3 sm:pt-4">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Total de Vendas</p>
+                <p className="text-base sm:text-xl font-bold text-success">
                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
                     .format(salesData.reduce((sum, d) => sum + d.sales, 0))}
                 </p>
               </CardContent>
             </Card>
             <Card className="glass-card">
-              <CardContent className="pt-4">
-                <p className="text-xs text-muted-foreground">Total de Pedidos</p>
-                <p className="text-xl font-bold">
+              <CardContent className="p-3 sm:pt-4">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Total de Pedidos</p>
+                <p className="text-base sm:text-xl font-bold">
                   {salesData.reduce((sum, d) => sum + d.orders, 0)}
                 </p>
               </CardContent>
             </Card>
             <Card className="glass-card">
-              <CardContent className="pt-4">
-                <p className="text-xs text-muted-foreground">Ticket Médio</p>
-                <p className="text-xl font-bold text-primary">
+              <CardContent className="p-3 sm:pt-4">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Ticket Médio</p>
+                <p className="text-base sm:text-xl font-bold text-primary">
                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
                     .format(
                       salesData.reduce((sum, d) => sum + d.orders, 0) > 0
@@ -195,9 +195,9 @@ export const ReportsPage = ({ client }: ReportsPageProps) => {
               </CardContent>
             </Card>
             <Card className="glass-card">
-              <CardContent className="pt-4">
-                <p className="text-xs text-muted-foreground">Média Diária</p>
-                <p className="text-xl font-bold text-telegram">
+              <CardContent className="p-3 sm:pt-4">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Média Diária</p>
+                <p className="text-base sm:text-xl font-bold text-telegram">
                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
                     .format(
                       salesData.length > 0

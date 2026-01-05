@@ -277,22 +277,22 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 md:space-y-8">
       {/* Header */}
       <motion.div className="dashboard-header" variants={headerVariants} initial="hidden" animate="visible">
-        <div className="relative z-10 flex flex-col gap-6">
+        <div className="relative z-10 flex flex-col gap-4 md:gap-6">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <motion.h1
-                className="text-3xl font-bold tracking-tight"
+                className="text-xl md:text-3xl font-bold tracking-tight"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
               >
                 Dashboard
               </motion.h1>
-              <motion.p className="text-muted-foreground" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-                Bem-vindo de volta, <span className="text-foreground font-medium">{client.business_name}</span>
+              <motion.p className="text-sm md:text-base text-muted-foreground" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+                Bem-vindo, <span className="text-foreground font-medium">{client.business_name}</span>
               </motion.p>
             </div>
             <motion.div
@@ -310,7 +310,7 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
 
           {/* Date filters + Customize */}
           <motion.div
-            className="flex items-center justify-between gap-3 flex-wrap"
+            className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
@@ -333,11 +333,11 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       {/* Stats Grid */}
       <motion.div
         className={cn(
-          'grid gap-4',
+          'grid gap-2 sm:gap-4',
           displayedCards.length <= 2
-            ? 'grid-cols-1 sm:grid-cols-2'
+            ? 'grid-cols-2'
             : displayedCards.length === 3
-            ? 'grid-cols-1 sm:grid-cols-3'
+            ? 'grid-cols-3'
             : 'grid-cols-2 lg:grid-cols-4'
         )}
         data-tour="stats-cards"
@@ -363,7 +363,7 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       </motion.div>
 
       {/* Widgets Grid */}
-      <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-6" variants={widgetContainerVariants} initial="hidden" animate="visible">
+      <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6" variants={widgetContainerVariants} initial="hidden" animate="visible">
         {visibleWidgets.map((widget) => (
           <div key={widget.id}>{renderWidget(widget.id)}</div>
         ))}

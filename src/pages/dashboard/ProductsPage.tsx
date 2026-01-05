@@ -121,55 +121,56 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Package className="w-6 h-6 text-primary" />
+          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+            <Package className="w-5 h-5 md:w-6 md:h-6 text-primary" />
             Produtos
           </h1>
-        <p className="text-muted-foreground">
-          Gerencie seus produtos digitais
-        </p>
-      </div>
-      <div className="flex items-center gap-3">
-        {planLimits && planLimits.max_products !== -1 && (
-          <Badge variant="outline" className="text-muted-foreground">
-            {products?.length || 0} / {planLimits.max_products} produtos
-          </Badge>
-        )}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            if (!products || products.length === 0) {
-              toast.error('Nenhum produto para exportar');
-              return;
-            }
-            exportProducts(products);
-            toast.success('Exportação concluída!');
-          }}
-          disabled={!products || products.length === 0}
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Exportar CSV
-        </Button>
-        <Button onClick={handleCreate} disabled={!canAddProduct()}>
-          {!canAddProduct() ? (
-            <Lock className="w-4 h-4 mr-2" />
-          ) : (
-            <Plus className="w-4 h-4 mr-2" />
+          <p className="text-sm text-muted-foreground">
+            Gerencie seus produtos digitais
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {planLimits && planLimits.max_products !== -1 && (
+            <Badge variant="outline" className="text-muted-foreground text-xs">
+              {products?.length || 0} / {planLimits.max_products}
+            </Badge>
           )}
-          Novo Produto
-        </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 sm:flex-none"
+            onClick={() => {
+              if (!products || products.length === 0) {
+                toast.error('Nenhum produto para exportar');
+                return;
+              }
+              exportProducts(products);
+              toast.success('Exportação concluída!');
+            }}
+            disabled={!products || products.length === 0}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Exportar</span> CSV
+          </Button>
+          <Button onClick={handleCreate} disabled={!canAddProduct()} size="sm" className="flex-1 sm:flex-none">
+            {!canAddProduct() ? (
+              <Lock className="w-4 h-4 mr-2" />
+            ) : (
+              <Plus className="w-4 h-4 mr-2" />
+            )}
+            <span className="hidden sm:inline">Novo</span> Produto
+          </Button>
+        </div>
       </div>
-    </div>
 
       <Card className="glass-card">
-        <CardHeader>
-          <CardTitle className="text-lg">Catálogo de Produtos</CardTitle>
+        <CardHeader className="p-3 md:p-6 pb-2 md:pb-4">
+          <CardTitle className="text-base md:text-lg">Catálogo de Produtos</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 md:p-6 pt-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
