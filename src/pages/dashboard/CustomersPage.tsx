@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { Client } from '@/hooks/useClient';
 import { useCustomers, Customer, CustomerFilters as Filters } from '@/hooks/useCustomers';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, Download } from 'lucide-react';
 import { CustomersTable } from '@/components/customers/CustomersTable';
 import { CustomerFilters } from '@/components/customers/CustomerFilters';
 import { CustomerDetailsDialog } from '@/components/customers/CustomerDetailsDialog';
 import { CustomerStats } from '@/components/customers/CustomerStats';
+import { exportCustomers } from '@/lib/export-csv';
+import { toast } from 'sonner';
 
 interface CustomersPageProps {
   client: Client;
@@ -40,6 +43,22 @@ export const CustomersPage = ({ client }: CustomersPageProps) => {
             Gerencie seus clientes do Telegram
           </p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            if (customers.length === 0) {
+              toast.error('Nenhum cliente para exportar');
+              return;
+            }
+            exportCustomers(customers);
+            toast.success('Exportação concluída!');
+          }}
+          disabled={customers.length === 0}
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Exportar CSV
+        </Button>
       </div>
 
       <CustomerStats customers={customers} />

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Package, CheckCircle, XCircle, RefreshCw, Eye } from 'lucide-react';
 import { format } from 'date-fns';
+import { EmptyOrders } from '@/components/ui/empty-state';
 import { ptBR } from 'date-fns/locale';
 
 interface OrdersTableProps {
@@ -102,11 +103,7 @@ export const OrdersTable = ({ orders, onUpdateStatus, onViewDetails, isUpdating 
   );
 
   if (orders.length === 0) {
-    return (
-      <div className="flex items-center justify-center py-12 text-muted-foreground">
-        Nenhum pedido encontrado.
-      </div>
-    );
+    return <EmptyOrders />;
   }
 
   return (
