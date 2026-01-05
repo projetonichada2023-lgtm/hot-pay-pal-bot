@@ -47,17 +47,17 @@ export const CustomerStats = ({ customers }: CustomerStatsProps) => {
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
       {stats.map((stat) => (
         <Card key={stat.label} className="glass-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg bg-muted ${stat.color}`}>
-                <stat.icon className="w-5 h-5" />
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`p-1.5 sm:p-2 rounded-lg bg-muted ${stat.color}`}>
+                <stat.icon className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-lg sm:text-2xl font-bold truncate">{stat.value}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{stat.label}</p>
               </div>
             </div>
           </CardContent>

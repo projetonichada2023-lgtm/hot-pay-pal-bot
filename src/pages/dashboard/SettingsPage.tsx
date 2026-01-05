@@ -174,34 +174,36 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   const unipayEnabled = (settings as any).fastsoft_enabled || false;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Settings className="w-6 h-6 text-primary" />
+        <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+          <Settings className="w-5 h-5 md:w-6 md:h-6 text-primary" />
           Configurações
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Gerencie seu plano, pagamentos e automações
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="plano" className="gap-2">
-            <Crown className="w-4 h-4 hidden sm:inline" />
-            Plano
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 md:space-y-6">
+        <TabsList className="grid w-full grid-cols-4 h-auto">
+          <TabsTrigger value="plano" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+            <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4 hidden xs:inline" />
+            <span>Plano</span>
           </TabsTrigger>
-          <TabsTrigger value="pagamentos" className="gap-2">
-            <CreditCard className="w-4 h-4 hidden sm:inline" />
-            Pagamentos
+          <TabsTrigger value="pagamentos" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+            <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4 hidden xs:inline" />
+            <span className="hidden sm:inline">Pagamentos</span>
+            <span className="sm:hidden">Pagar</span>
           </TabsTrigger>
-          <TabsTrigger value="automacoes" className="gap-2">
-            <Zap className="w-4 h-4 hidden sm:inline" />
-            Automações
+          <TabsTrigger value="automacoes" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+            <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 hidden xs:inline" />
+            <span className="hidden sm:inline">Automações</span>
+            <span className="sm:hidden">Auto</span>
           </TabsTrigger>
-          <TabsTrigger value="conta" className="gap-2">
-            <Building2 className="w-4 h-4 hidden sm:inline" />
-            Conta
+          <TabsTrigger value="conta" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+            <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 hidden xs:inline" />
+            <span>Conta</span>
           </TabsTrigger>
         </TabsList>
 

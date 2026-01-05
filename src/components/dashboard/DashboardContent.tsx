@@ -22,7 +22,7 @@ interface DashboardContentProps {
 export const DashboardContent = ({ client }: DashboardContentProps) => {
   return (
     <main className="flex-1 overflow-auto">
-      <div className="p-4 md:p-8 pr-20 md:pr-24">
+      <div className="p-3 sm:p-4 md:p-8 pr-14 sm:pr-16 md:pr-24">
         <Routes>
           <Route path="/" element={<OverviewPage client={client} />} />
           <Route path="/messages" element={<MessagesPage client={client} />} />
