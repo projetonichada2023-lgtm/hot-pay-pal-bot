@@ -33,19 +33,20 @@ export const CustomersPage = ({ client }: CustomersPageProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Users className="w-6 h-6 text-primary" />
+          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+            <Users className="w-5 h-5 md:w-6 md:h-6 text-primary" />
             Clientes
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Gerencie seus clientes do Telegram
           </p>
         </div>
         <Button
           variant="outline"
           size="sm"
+          className="w-full sm:w-auto"
           onClick={() => {
             if (customers.length === 0) {
               toast.error('Nenhum cliente para exportar');
@@ -64,7 +65,7 @@ export const CustomersPage = ({ client }: CustomersPageProps) => {
       <CustomerStats customers={customers} />
 
       <Card className="glass-card">
-        <CardContent className="p-6 space-y-6">
+        <CardContent className="p-3 md:p-6 space-y-4 md:space-y-6">
           <CustomerFilters filters={filters} onFiltersChange={setFilters} />
           <CustomersTable 
             customers={customers} 

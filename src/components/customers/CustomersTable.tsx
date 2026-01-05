@@ -46,11 +46,11 @@ export const CustomersTable = ({ customers, isLoading, onViewCustomer }: Custome
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead>Cliente</TableHead>
-              <TableHead>Telegram</TableHead>
+              <TableHead className="hidden sm:table-cell">Telegram</TableHead>
               <TableHead className="text-center">Pedidos</TableHead>
-              <TableHead className="text-right">Total Gasto</TableHead>
-              <TableHead>Último Pedido</TableHead>
-              <TableHead>Cadastro</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+              <TableHead className="hidden md:table-cell">Último Pedido</TableHead>
+              <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -82,11 +82,11 @@ export const CustomersTable = ({ customers, isLoading, onViewCustomer }: Custome
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead>Cliente</TableHead>
-            <TableHead>Telegram</TableHead>
+            <TableHead className="hidden sm:table-cell">Telegram</TableHead>
             <TableHead className="text-center">Pedidos</TableHead>
-            <TableHead className="text-right">Total Gasto</TableHead>
-            <TableHead>Último Pedido</TableHead>
-            <TableHead>Cadastro</TableHead>
+            <TableHead className="text-right">Total</TableHead>
+            <TableHead className="hidden md:table-cell">Último Pedido</TableHead>
+            <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -101,7 +101,7 @@ export const CustomersTable = ({ customers, isLoading, onViewCustomer }: Custome
                   )}
                 </div>
               </TableCell>
-              <TableCell>
+              <TableCell className="hidden sm:table-cell">
                 {customer.telegram_username ? (
                   <a 
                     href={`https://t.me/${customer.telegram_username}`}
@@ -121,11 +121,11 @@ export const CustomersTable = ({ customers, isLoading, onViewCustomer }: Custome
                   {customer.total_orders}
                 </Badge>
               </TableCell>
-              <TableCell className="text-right font-medium">
+              <TableCell className="text-right font-medium text-xs md:text-sm">
                 {formatCurrency(customer.total_spent)}
               </TableCell>
-              <TableCell>{formatDate(customer.last_order_date)}</TableCell>
-              <TableCell>{formatDate(customer.created_at)}</TableCell>
+              <TableCell className="hidden md:table-cell">{formatDate(customer.last_order_date)}</TableCell>
+              <TableCell className="hidden lg:table-cell">{formatDate(customer.created_at)}</TableCell>
               <TableCell className="text-right">
                 <Button
                   variant="ghost"
