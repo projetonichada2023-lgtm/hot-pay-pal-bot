@@ -21,7 +21,8 @@ import {
   Sun,
   Moon,
   RefreshCw,
-  Smartphone
+  Smartphone,
+  Target
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +39,7 @@ const menuItems = [
   { icon: ShoppingCart, label: 'Pedidos', path: '/dashboard/orders' },
   { icon: RefreshCw, label: 'Recuperação', path: '/dashboard/recovery' },
   { icon: Users, label: 'Clientes', path: '/dashboard/customers' },
+  { icon: Target, label: 'Tracking', path: '/dashboard/tracking' },
   { icon: BarChart3, label: 'Relatórios', path: '/dashboard/reports' },
   { icon: Bot, label: 'Bot Config', path: '/dashboard/bot-config' },
   { icon: Smartphone, label: 'Simulador', path: '/dashboard/simulator' },
