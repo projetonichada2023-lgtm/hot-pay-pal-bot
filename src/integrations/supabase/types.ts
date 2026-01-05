@@ -342,6 +342,89 @@ export type Database = {
         }
         Relationships: []
       }
+      facebook_events: {
+        Row: {
+          api_error_message: string | null
+          api_response_code: number | null
+          api_status: string | null
+          client_id: string
+          created_at: string
+          currency: string | null
+          customer_id: string | null
+          event_id: string
+          event_type: string
+          id: string
+          order_id: string | null
+          product_id: string | null
+          ttclid: string | null
+          utm_campaign: string | null
+          value: number | null
+        }
+        Insert: {
+          api_error_message?: string | null
+          api_response_code?: number | null
+          api_status?: string | null
+          client_id: string
+          created_at?: string
+          currency?: string | null
+          customer_id?: string | null
+          event_id: string
+          event_type: string
+          id?: string
+          order_id?: string | null
+          product_id?: string | null
+          ttclid?: string | null
+          utm_campaign?: string | null
+          value?: number | null
+        }
+        Update: {
+          api_error_message?: string | null
+          api_response_code?: number | null
+          api_status?: string | null
+          client_id?: string
+          created_at?: string
+          currency?: string | null
+          customer_id?: string | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          order_id?: string | null
+          product_id?: string | null
+          ttclid?: string | null
+          utm_campaign?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facebook_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facebook_events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facebook_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facebook_events_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_templates: {
         Row: {
           body: string

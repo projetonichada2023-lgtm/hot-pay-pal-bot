@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.test-tiktok-event]
 verify_jwt = false
+
+[functions.test-facebook-event]
+verify_jwt = false
