@@ -607,17 +607,32 @@ async function getOrCreateCustomer(clientId: string, telegramUser: any, utmParam
     .maybeSingle();
 
   if (existing) {
-    // Update UTM params if provided and not already set
-    if (utmParams && (utmParams.utm_source || utmParams.ttclid) && !existing.utm_source) {
-      await supabase
-        .from('telegram_customers')
-        .update({
-          utm_source: utmParams.utm_source || null,
-          utm_medium: utmParams.utm_medium || null,
-          utm_campaign: utmParams.utm_campaign || null,
-          ttclid: utmParams.ttclid || null,
-        })
-        .eq('id', existing.id);
+    // Update UTM params if provided and not already set, or update ttclid if missing
+    const shouldUpdateUtm = utmParams && (utmParams.utm_source || utmParams.ttclid) && !existing.utm_source;
+    const shouldUpdateTtclid = utmParams?.ttclid && !existing.ttclid;
+    
+    if (shouldUpdateUtm || shouldUpdateTtclid) {
+      const updateData: Record<string, string | null> = {};
+      
+      // Only update UTM params if not already set
+      if (!existing.utm_source && utmParams?.utm_source) {
+        updateData.utm_source = utmParams.utm_source;
+        updateData.utm_medium = utmParams.utm_medium || null;
+        updateData.utm_campaign = utmParams.utm_campaign || null;
+      }
+      
+      // Always update ttclid if provided and not already set
+      if (!existing.ttclid && utmParams?.ttclid) {
+        updateData.ttclid = utmParams.ttclid;
+        console.log('Updating customer ttclid:', utmParams.ttclid);
+      }
+      
+      if (Object.keys(updateData).length > 0) {
+        await supabase
+          .from('telegram_customers')
+          .update(updateData)
+          .eq('id', existing.id);
+      }
     }
     return existing;
   }
