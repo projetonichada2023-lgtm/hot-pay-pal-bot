@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.test-facebook-event]
 verify_jwt = false
+
+[functions.create-tiktok-link]
+verify_jwt = false
