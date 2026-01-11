@@ -17,11 +17,13 @@ import {
   Sparkles,
   Search,
   Smartphone,
+  GitBranch,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { MessageTypeSection } from '@/components/messages/MessageTypeSection';
+import { MessageFlowDiagram } from '@/components/messages/MessageFlowDiagram';
 import { Badge } from '@/components/ui/badge';
 
 interface MessagesPageProps {
@@ -142,6 +144,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set(['welcome']));
   const [activeTab, setActiveTab] = useState('sales');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFlowDiagram, setShowFlowDiagram] = useState(false);
 
   const handleUpdateMessage = async (id: string, updates: Partial<BotMessage>) => {
     try {
@@ -247,6 +250,17 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
     });
   };
 
+  const handleFlowNodeClick = (messageType: string) => {
+    setActiveTab('all');
+    setExpandedTypes(prev => new Set([...prev, messageType]));
+    setShowFlowDiagram(false);
+    // Scroll to the message type after a short delay
+    setTimeout(() => {
+      const element = document.getElementById(`message-type-${messageType}`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -306,16 +320,33 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
             </div>
           </div>
           
-          {/* Simulator button */}
-          <Button
-            variant="outline"
-            onClick={() => navigate('/dashboard/simulator')}
-            className="shrink-0"
-          >
-            <Smartphone className="w-4 h-4 mr-2" />
-            Testar no Simulador
-          </Button>
+          {/* Action buttons */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant={showFlowDiagram ? "default" : "outline"}
+              onClick={() => setShowFlowDiagram(!showFlowDiagram)}
+            >
+              <GitBranch className="w-4 h-4 mr-2" />
+              Ver Fluxo
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/dashboard/simulator')}
+            >
+              <Smartphone className="w-4 h-4 mr-2" />
+              Simulador
+            </Button>
+          </div>
         </div>
+
+        {/* Flow Diagram */}
+        {showFlowDiagram && messages && (
+          <MessageFlowDiagram 
+            messages={messages} 
+            onNodeClick={handleFlowNodeClick}
+            onClose={() => setShowFlowDiagram(false)}
+          />
+        )}
 
         {/* Search */}
         <div className="relative max-w-md">
