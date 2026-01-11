@@ -642,7 +642,7 @@ async function getOrCreateCustomer(clientId: string, telegramUser: any, utmParam
 }
 
 // Parse deep link parameters from /start command
-function parseDeepLinkParams(text: string): UtmParams {
+async function parseDeepLinkParams(text: string): Promise<UtmParams> {
   const params: UtmParams = {};
   const parts = text.split(' ');
   
@@ -653,11 +653,49 @@ function parseDeepLinkParams(text: string): UtmParams {
   console.log('Parsing deep link payload:', payload);
   
   // Parse different formats:
-  // 1. tiktok_CAMPAIGN_ttclid_XXXXX - Campaign + TikTok Click ID (RECOMMENDED)
-  // 2. ttclid_XXXXX - TikTok Click ID only
-  // 3. tiktok_CAMPAIGN - Campaign only
-  // 4. fb_CAMPAIGN - Facebook campaign
-  // 5. source_medium_campaign - Full UTM format
+  // 1. SHORT_CODE - Lookup from ttclid_mappings table (NEW - for TikTok short links)
+  // 2. tiktok_CAMPAIGN_ttclid_XXXXX - Campaign + TikTok Click ID
+  // 3. ttclid_XXXXX - TikTok Click ID only
+  // 4. tiktok_CAMPAIGN - Campaign only
+  // 5. fb_CAMPAIGN - Facebook campaign
+  // 6. source_medium_campaign - Full UTM format
+  
+  // First, check if it's a short code from ttclid_mappings
+  // Short codes are 10-12 alphanumeric chars without underscores in specific patterns
+  const isLikelyShortCode = /^[A-Za-z0-9]{10,12}$/.test(payload) && 
+    !payload.startsWith('tiktok') && 
+    !payload.startsWith('ttclid') && 
+    !payload.startsWith('fb');
+  
+  if (isLikelyShortCode) {
+    console.log('Payload looks like a short code, looking up in database...');
+    
+    const { data: mapping, error } = await supabase
+      .from('ttclid_mappings')
+      .select('ttclid, utm_source, utm_medium, utm_campaign, id')
+      .eq('short_code', payload)
+      .maybeSingle();
+    
+    if (mapping) {
+      console.log('Found short code mapping:', mapping.id);
+      
+      params.ttclid = mapping.ttclid;
+      params.utm_source = mapping.utm_source || 'tiktok';
+      params.utm_medium = mapping.utm_medium || 'cpc';
+      params.utm_campaign = mapping.utm_campaign || undefined;
+      
+      // Mark as used
+      await supabase
+        .from('ttclid_mappings')
+        .update({ used_at: new Date().toISOString() })
+        .eq('id', mapping.id);
+      
+      console.log('Resolved short code to params:', params);
+      return params;
+    } else {
+      console.log('No mapping found for short code:', payload);
+    }
+  }
   
   // Check for combined format: tiktok_CAMPAIGN_ttclid_XXXXX
   const ttclidMatch = payload.match(/^(.+?)_ttclid_(.+)$/);
@@ -1278,7 +1316,7 @@ serve(async (req) => {
       // Parse UTM params from deep link if /start command
       let utmParams: UtmParams = {};
       if (text.startsWith('/start')) {
-        utmParams = parseDeepLinkParams(text);
+        utmParams = await parseDeepLinkParams(text);
         console.log('Parsed UTM params:', JSON.stringify(utmParams));
       }
 
