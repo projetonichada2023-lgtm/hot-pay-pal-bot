@@ -25,7 +25,8 @@ import {
   Smartphone,
   Target,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Map
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -36,6 +37,7 @@ interface SidebarProps {
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: MessageCircle, label: 'Conversas', path: '/dashboard/chats' },
+  { icon: Map, label: 'Mapa do Fluxo', path: '/dashboard/flow-map' },
   { icon: MessageSquare, label: 'Mensagens Bot', path: '/dashboard/messages' },
   { icon: Package, label: 'Produtos', path: '/dashboard/products' },
   { icon: GitBranch, label: 'Funil', path: '/dashboard/funnel' },
