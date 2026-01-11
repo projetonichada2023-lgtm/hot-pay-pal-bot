@@ -14,6 +14,7 @@ import { RecoveryPage } from '@/pages/dashboard/RecoveryPage';
 import { SimulatorPage } from '@/pages/dashboard/SimulatorPage';
 import { UpgradePage } from '@/pages/dashboard/UpgradePage';
 import { TrackingPage } from '@/pages/dashboard/TrackingPage';
+import { FlowMapPage } from '@/pages/dashboard/FlowMapPage';
 
 interface DashboardContentProps {
   client: Client;
@@ -26,6 +27,7 @@ export const DashboardContent = ({ client }: DashboardContentProps) => {
         <Routes>
           <Route path="/" element={<OverviewPage client={client} />} />
           <Route path="/messages" element={<MessagesPage client={client} />} />
+          <Route path="/flow-map" element={<FlowMapPage client={client} />} />
           <Route path="/chats" element={<ChatsPage client={client} />} />
           <Route path="/products" element={<ProductsPage client={client} />} />
           <Route path="/funnel" element={<FunnelPage client={client} />} />
