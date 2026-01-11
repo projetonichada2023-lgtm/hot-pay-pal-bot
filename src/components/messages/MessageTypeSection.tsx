@@ -101,7 +101,7 @@ export const MessageTypeSection = ({
     <Collapsible open={isExpanded} onOpenChange={onToggleExpanded}>
       <Card 
         className="overflow-hidden border-border/40 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm transition-all duration-300 hover:border-border/60"
-        id={`section-${messageType}`}
+        id={`message-type-${messageType}`}
       >
         <CollapsibleTrigger asChild>
           <CardHeader className="pb-4 cursor-pointer group">
