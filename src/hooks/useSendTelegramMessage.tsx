@@ -8,13 +8,14 @@ interface SendMessageParams {
   message?: string;
   mediaUrl?: string;
   mediaType?: 'photo' | 'video' | 'document';
+  botId?: string | null;
 }
 
 export function useSendTelegramMessage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ clientId, chatId, customerId, message, mediaUrl, mediaType }: SendMessageParams) => {
+    mutationFn: async ({ clientId, chatId, customerId, message, mediaUrl, mediaType, botId }: SendMessageParams) => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.access_token) {
@@ -29,6 +30,7 @@ export function useSendTelegramMessage() {
           message,
           mediaUrl,
           mediaType,
+          botId,
         },
       });
 

@@ -132,7 +132,7 @@ serve(async (req) => {
     }
 
     // Get request body
-    const { clientId, chatId, customerId, message, mediaUrl, mediaType } = await req.json();
+    const { clientId, chatId, customerId, message, mediaUrl, mediaType, botId } = await req.json();
 
     if (!clientId || !chatId) {
       throw new Error('Missing required fields: clientId, chatId');
@@ -142,12 +142,12 @@ serve(async (req) => {
       throw new Error('Either message or mediaUrl is required');
     }
 
-    console.log(`User ${user.id} sending ${mediaType || 'text'} to chat ${chatId} for client ${clientId}`);
+    console.log(`User ${user.id} sending ${mediaType || 'text'} to chat ${chatId} for client ${clientId}, bot: ${botId || 'primary'}`);
 
     // Verify the user owns this client
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('id, user_id, telegram_bot_token')
+      .select('id, user_id')
       .eq('id', clientId)
       .single();
 
@@ -159,7 +159,55 @@ serve(async (req) => {
       throw new Error('Unauthorized: You do not own this client');
     }
 
-    if (!client.telegram_bot_token) {
+    // Get bot token - prioritize specific botId, then primary bot, then legacy client token
+    let botToken: string | null = null;
+    let resolvedBotId: string | null = null;
+
+    if (botId) {
+      // Use specific bot
+      const { data: bot } = await supabase
+        .from('client_bots')
+        .select('id, telegram_bot_token')
+        .eq('id', botId)
+        .eq('client_id', clientId)
+        .single();
+
+      if (bot?.telegram_bot_token) {
+        botToken = bot.telegram_bot_token;
+        resolvedBotId = bot.id;
+      }
+    }
+
+    if (!botToken) {
+      // Try primary bot
+      const { data: primaryBot } = await supabase
+        .from('client_bots')
+        .select('id, telegram_bot_token')
+        .eq('client_id', clientId)
+        .eq('is_primary', true)
+        .eq('is_active', true)
+        .single();
+
+      if (primaryBot?.telegram_bot_token) {
+        botToken = primaryBot.telegram_bot_token;
+        resolvedBotId = primaryBot.id;
+      }
+    }
+
+    if (!botToken) {
+      // Fallback to legacy client token
+      const { data: legacyClient } = await supabase
+        .from('clients')
+        .select('telegram_bot_token')
+        .eq('id', clientId)
+        .single();
+
+      if (legacyClient?.telegram_bot_token) {
+        botToken = legacyClient.telegram_bot_token;
+      }
+    }
+
+    if (!botToken) {
       throw new Error('Bot token not configured for this client');
     }
 
@@ -174,18 +222,18 @@ serve(async (req) => {
       
       switch (mediaType) {
         case 'photo':
-          result = await sendTelegramPhoto(client.telegram_bot_token, chatId, mediaUrl, message);
+          result = await sendTelegramPhoto(botToken, chatId, mediaUrl, message);
           break;
         case 'video':
-          result = await sendTelegramVideo(client.telegram_bot_token, chatId, mediaUrl, message);
+          result = await sendTelegramVideo(botToken, chatId, mediaUrl, message);
           break;
         case 'document':
         default:
-          result = await sendTelegramDocument(client.telegram_bot_token, chatId, mediaUrl, message);
+          result = await sendTelegramDocument(botToken, chatId, mediaUrl, message);
           break;
       }
     } else if (message) {
-      result = await sendTelegramMessage(client.telegram_bot_token, chatId, message);
+      result = await sendTelegramMessage(botToken, chatId, message);
     } else {
       throw new Error('No content to send');
     }
@@ -201,6 +249,7 @@ serve(async (req) => {
         direction: 'outgoing',
         message_type: savedMessageType,
         message_content: savedContent,
+        bot_id: resolvedBotId,
       });
 
     if (insertError) {
