@@ -6,15 +6,21 @@ export type Product = Tables<'products'>;
 export type ProductInsert = TablesInsert<'products'>;
 export type ProductUpdate = TablesUpdate<'products'>;
 
-export const useProducts = (clientId: string) => {
+export const useProducts = (clientId: string, botId?: string | null) => {
   return useQuery({
-    queryKey: ['products', clientId],
+    queryKey: ['products', clientId, botId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
         .select('*')
-        .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
+        .eq('client_id', clientId);
+
+      // Filter by bot_id if provided
+      if (botId) {
+        query = query.eq('bot_id', botId);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       return data as Product[];

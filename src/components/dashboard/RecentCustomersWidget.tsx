@@ -9,16 +9,23 @@ import { ptBR } from 'date-fns/locale';
 
 interface RecentCustomersWidgetProps {
   clientId: string;
+  botId?: string | null;
 }
 
-export const RecentCustomersWidget = ({ clientId }: RecentCustomersWidgetProps) => {
+export const RecentCustomersWidget = ({ clientId, botId }: RecentCustomersWidgetProps) => {
   const { data: customers, isLoading } = useQuery({
-    queryKey: ['recent-customers', clientId],
+    queryKey: ['recent-customers', clientId, botId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('telegram_customers')
         .select('id, first_name, last_name, telegram_username, created_at')
-        .eq('client_id', clientId)
+        .eq('client_id', clientId);
+
+      if (botId) {
+        query = query.eq('bot_id', botId);
+      }
+
+      const { data, error } = await query
         .order('created_at', { ascending: false })
         .limit(5);
 

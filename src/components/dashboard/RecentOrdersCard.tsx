@@ -9,6 +9,7 @@ import { Package, Clock, CheckCircle, XCircle, Truck } from 'lucide-react';
 
 interface RecentOrdersCardProps {
   clientId: string;
+  botId?: string | null;
 }
 
 const statusConfig = {
@@ -19,8 +20,8 @@ const statusConfig = {
   refunded: { label: 'Reembolsado', icon: XCircle, variant: 'outline' as const },
 };
 
-export const RecentOrdersCard = ({ clientId }: RecentOrdersCardProps) => {
-  const { data, isLoading } = useOrders(clientId, null, 1, 5);
+export const RecentOrdersCard = ({ clientId, botId }: RecentOrdersCardProps) => {
+  const { data, isLoading } = useOrders(clientId, null, 1, 5, botId);
   const navigate = useNavigate();
 
   const recentOrders = data?.orders || [];

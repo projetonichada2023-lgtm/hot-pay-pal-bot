@@ -19,10 +19,11 @@ export const useOrders = (
   clientId: string, 
   status?: OrderStatus | null,
   page: number = 1,
-  pageSize: number = 10
+  pageSize: number = 10,
+  botId?: string | null
 ) => {
   return useQuery({
-    queryKey: ['orders', clientId, status, page, pageSize],
+    queryKey: ['orders', clientId, status, page, pageSize, botId],
     queryFn: async (): Promise<PaginatedOrdersResult> => {
       // First get total count
       let countQuery = supabase
@@ -32,6 +33,10 @@ export const useOrders = (
 
       if (status) {
         countQuery = countQuery.eq('status', status);
+      }
+      
+      if (botId) {
+        countQuery = countQuery.eq('bot_id', botId);
       }
 
       const { count, error: countError } = await countQuery;
@@ -53,6 +58,10 @@ export const useOrders = (
 
       if (status) {
         query = query.eq('status', status);
+      }
+      
+      if (botId) {
+        query = query.eq('bot_id', botId);
       }
 
       const { data, error } = await query;
@@ -100,14 +109,20 @@ export const useUpdateOrderStatus = () => {
   });
 };
 
-export const useOrderStats = (clientId: string) => {
+export const useOrderStats = (clientId: string, botId?: string | null) => {
   return useQuery({
-    queryKey: ['order-stats', clientId],
+    queryKey: ['order-stats', clientId, botId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
         .select('status, amount')
         .eq('client_id', clientId);
+
+      if (botId) {
+        query = query.eq('bot_id', botId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 

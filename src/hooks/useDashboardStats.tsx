@@ -45,11 +45,11 @@ const getDaysDiff = (from: Date, to: Date) => {
   return Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 };
 
-export const useDashboardStats = (clientId: string, dateRange: DateRange) => {
+export const useDashboardStats = (clientId: string, dateRange: DateRange, botId?: string | null) => {
   const rangeKey = `${format(dateRange.from, 'yyyy-MM-dd')}_${format(dateRange.to, 'yyyy-MM-dd')}`;
   
   return useQuery({
-    queryKey: ['dashboard-stats', clientId, rangeKey],
+    queryKey: ['dashboard-stats', clientId, rangeKey, botId],
     queryFn: async (): Promise<DashboardStats> => {
       const selectedStart = startOfDay(dateRange.from);
       const selectedEnd = endOfDay(dateRange.to);
@@ -60,26 +60,44 @@ export const useDashboardStats = (clientId: string, dateRange: DateRange) => {
       const previousEnd = endOfDay(subDays(dateRange.from, 1));
 
       // Fetch all orders
-      const { data: orders, error } = await supabase
+      let ordersQuery = supabase
         .from('orders')
         .select('amount, status, created_at')
         .eq('client_id', clientId);
 
+      if (botId) {
+        ordersQuery = ordersQuery.eq('bot_id', botId);
+      }
+
+      const { data: orders, error } = await ordersQuery;
+
       if (error) throw error;
 
       // Fetch customers count
-      const { count: customersTotal } = await supabase
+      let customersCountQuery = supabase
         .from('telegram_customers')
         .select('*', { count: 'exact', head: true })
         .eq('client_id', clientId);
 
+      if (botId) {
+        customersCountQuery = customersCountQuery.eq('bot_id', botId);
+      }
+
+      const { count: customersTotal } = await customersCountQuery;
+
       // Fetch new customers in selected range
-      const { count: customersNew } = await supabase
+      let newCustomersQuery = supabase
         .from('telegram_customers')
         .select('*', { count: 'exact', head: true })
         .eq('client_id', clientId)
         .gte('created_at', selectedStart.toISOString())
         .lte('created_at', selectedEnd.toISOString());
+
+      if (botId) {
+        newCustomersQuery = newCustomersQuery.eq('bot_id', botId);
+      }
+
+      const { count: customersNew } = await newCustomersQuery;
 
       // Calculate metrics
       const selectedOrders = orders?.filter(o => {
@@ -150,11 +168,17 @@ export const useDashboardStats = (clientId: string, dateRange: DateRange) => {
         : abandonmentRate > 0 ? abandonmentRate : 0;
 
       // Recurring customers (customers with more than 1 order in the period)
-      const { data: allOrders } = await supabase
+      let allOrdersQuery = supabase
         .from('orders')
         .select('customer_id')
         .eq('client_id', clientId)
         .in('status', ['paid', 'delivered'] as const);
+
+      if (botId) {
+        allOrdersQuery = allOrdersQuery.eq('bot_id', botId);
+      }
+
+      const { data: allOrders } = await allOrdersQuery;
 
       const customerOrderCount: Record<string, number> = {};
       allOrders?.forEach(o => {
@@ -197,23 +221,29 @@ export const useDashboardStats = (clientId: string, dateRange: DateRange) => {
   });
 };
 
-export const useSalesChart = (clientId: string, dateRange: DateRange) => {
+export const useSalesChart = (clientId: string, dateRange: DateRange, botId?: string | null) => {
   const rangeKey = `${format(dateRange.from, 'yyyy-MM-dd')}_${format(dateRange.to, 'yyyy-MM-dd')}`;
   
   return useQuery({
-    queryKey: ['sales-chart', clientId, rangeKey],
+    queryKey: ['sales-chart', clientId, rangeKey, botId],
     queryFn: async (): Promise<DailySales[]> => {
       const startDate = startOfDay(dateRange.from);
       const endDate = endOfDay(dateRange.to);
       const daysDiff = getDaysDiff(dateRange.from, dateRange.to);
 
-      const { data: orders, error } = await supabase
+      let query = supabase
         .from('orders')
         .select('amount, status, created_at')
         .eq('client_id', clientId)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
         .in('status', ['paid', 'delivered']);
+
+      if (botId) {
+        query = query.eq('bot_id', botId);
+      }
+
+      const { data: orders, error } = await query;
 
       if (error) throw error;
 

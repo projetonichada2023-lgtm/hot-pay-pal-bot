@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 export interface CartRecoveryMessage {
   id: string;
   client_id: string;
+  bot_id: string | null;
   delay_minutes: number;
   time_unit: 'minutes' | 'hours' | 'days';
   message_content: string;
@@ -18,20 +19,25 @@ export interface CartRecoveryMessage {
   updated_at: string;
 }
 
-export const useCartRecovery = (clientId: string | undefined) => {
+export const useCartRecovery = (clientId: string | undefined, botId?: string | null) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const { data: messages = [], isLoading, error } = useQuery({
-    queryKey: ["cart-recovery-messages", clientId],
+    queryKey: ["cart-recovery-messages", clientId, botId],
     queryFn: async () => {
       if (!clientId) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from("cart_recovery_messages")
         .select("*")
-        .eq("client_id", clientId)
-        .order("display_order", { ascending: true });
+        .eq("client_id", clientId);
+
+      if (botId) {
+        query = query.eq("bot_id", botId);
+      }
+
+      const { data, error } = await query.order("display_order", { ascending: true });
       
       if (error) throw error;
       return data as CartRecoveryMessage[];

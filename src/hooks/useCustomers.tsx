@@ -10,6 +10,7 @@ export interface Customer {
   last_name: string | null;
   email: string | null;
   phone: string | null;
+  bot_id: string | null;
   created_at: string | null;
   updated_at: string | null;
   total_orders: number;
@@ -35,28 +36,40 @@ export interface CustomerFilters {
   sortBy: 'recent' | 'oldest' | 'most_orders' | 'highest_spent';
 }
 
-export const useCustomers = (filters: CustomerFilters) => {
+export const useCustomers = (filters: CustomerFilters, botId?: string | null) => {
   const clientQuery = useClient();
   const client = clientQuery.data;
 
   return useQuery({
-    queryKey: ['customers', client?.id, filters],
+    queryKey: ['customers', client?.id, filters, botId],
     queryFn: async () => {
       if (!client?.id) return [];
 
       // Fetch customers
-      const { data: customers, error: customersError } = await supabase
+      let customersQuery = supabase
         .from('telegram_customers')
         .select('*')
         .eq('client_id', client.id);
 
+      if (botId) {
+        customersQuery = customersQuery.eq('bot_id', botId);
+      }
+
+      const { data: customers, error: customersError } = await customersQuery;
+
       if (customersError) throw customersError;
 
       // Fetch all orders for these customers
-      const { data: orders, error: ordersError } = await supabase
+      let ordersQuery = supabase
         .from('orders')
         .select('id, customer_id, amount, status, created_at')
         .eq('client_id', client.id);
+
+      if (botId) {
+        ordersQuery = ordersQuery.eq('bot_id', botId);
+      }
+
+      const { data: orders, error: ordersError } = await ordersQuery;
 
       if (ordersError) throw ordersError;
 
@@ -138,16 +151,16 @@ export const useCustomers = (filters: CustomerFilters) => {
   });
 };
 
-export const useCustomerOrders = (customerId: string | null) => {
+export const useCustomerOrders = (customerId: string | null, botId?: string | null) => {
   const clientQuery = useClient();
   const client = clientQuery.data;
 
   return useQuery({
-    queryKey: ['customer-orders', customerId],
+    queryKey: ['customer-orders', customerId, botId],
     queryFn: async () => {
       if (!customerId || !client?.id) return [];
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
         .select(`
           id,
@@ -161,8 +174,13 @@ export const useCustomerOrders = (customerId: string | null) => {
           products (name)
         `)
         .eq('customer_id', customerId)
-        .eq('client_id', client.id)
-        .order('created_at', { ascending: false });
+        .eq('client_id', client.id);
+
+      if (botId) {
+        query = query.eq('bot_id', botId);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
 

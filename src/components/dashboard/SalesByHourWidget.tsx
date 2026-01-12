@@ -7,17 +7,24 @@ import { Clock } from 'lucide-react';
 
 interface SalesByHourWidgetProps {
   clientId: string;
+  botId?: string | null;
 }
 
-export const SalesByHourWidget = ({ clientId }: SalesByHourWidgetProps) => {
+export const SalesByHourWidget = ({ clientId, botId }: SalesByHourWidgetProps) => {
   const { data: hourlyData, isLoading } = useQuery({
-    queryKey: ['sales-by-hour', clientId],
+    queryKey: ['sales-by-hour', clientId, botId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
         .select('created_at, amount, status')
         .eq('client_id', clientId)
         .in('status', ['paid', 'delivered']);
+
+      if (botId) {
+        query = query.eq('bot_id', botId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
