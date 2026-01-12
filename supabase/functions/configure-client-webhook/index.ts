@@ -51,7 +51,10 @@ serve(async (req) => {
       throw new Error('Missing botId or (client_id and bot_token)');
     }
 
-    const webhookUrl = `${SUPABASE_URL}/functions/v1/telegram-webhook`;
+    // Use bot_id in webhook URL when available for proper routing
+    const webhookUrl = botId 
+      ? `${SUPABASE_URL}/functions/v1/telegram-webhook?bot_id=${botId}`
+      : `${SUPABASE_URL}/functions/v1/telegram-webhook?client_id=${clientId}`;
     
     console.log('Setting webhook for bot:', botId || clientId, 'URL:', webhookUrl);
 
