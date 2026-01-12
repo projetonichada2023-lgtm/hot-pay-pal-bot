@@ -7,10 +7,11 @@ import { BarChart3, MousePointerClick, ShoppingCart, DollarSign, TrendingUp, Eye
 
 interface TikTokStatsCardProps {
   clientId: string | undefined;
+  botId?: string | null;
 }
 
-export const TikTokStatsCard = ({ clientId }: TikTokStatsCardProps) => {
-  const { data: stats, isLoading } = useTikTokStats(clientId);
+export const TikTokStatsCard = ({ clientId, botId }: TikTokStatsCardProps) => {
+  const { data: stats, isLoading } = useTikTokStats(clientId, botId);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {

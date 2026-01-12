@@ -14,6 +14,7 @@ import { SalesReportChart } from '@/components/reports/SalesReportChart';
 import { TopProductsChart } from '@/components/reports/TopProductsChart';
 import { FunnelPerformanceChart } from '@/components/reports/FunnelPerformanceChart';
 import { TikTokStatsCard } from '@/components/reports/TikTokStatsCard';
+import { useBotContext } from '@/contexts/BotContext';
 import { cn } from '@/lib/utils';
 
 interface ReportsPageProps {
@@ -28,6 +29,7 @@ const presetRanges = [
 ];
 
 export const ReportsPage = ({ client }: ReportsPageProps) => {
+  const { selectedBot } = useBotContext();
   const [dateRange, setDateRange] = useState<DateRange>({
     from: subDays(new Date(), 29),
     to: new Date(),
@@ -35,7 +37,7 @@ export const ReportsPage = ({ client }: ReportsPageProps) => {
   const [activePreset, setActivePreset] = useState<number | null>(30);
   const [activeTab, setActiveTab] = useState('sales');
 
-  const { salesData, topProducts, funnelData, isLoading } = useReportsData(client.id, dateRange);
+  const { salesData, topProducts, funnelData, isLoading } = useReportsData(client.id, dateRange, selectedBot?.id);
 
   const handlePresetClick = (days: number) => {
     const to = new Date();
@@ -219,7 +221,7 @@ export const ReportsPage = ({ client }: ReportsPageProps) => {
         </TabsContent>
 
         <TabsContent value="tiktok">
-          <TikTokStatsCard clientId={client.id} />
+          <TikTokStatsCard clientId={client.id} botId={selectedBot?.id} />
         </TabsContent>
       </Tabs>
     </div>
