@@ -142,7 +142,8 @@ async function saveMessage(
   customerId: string | null, 
   direction: 'incoming' | 'outgoing', 
   content: string | null,
-  messageId?: number
+  messageId?: number,
+  botId?: string | null
 ) {
   try {
     await supabase.from('telegram_messages').insert({
@@ -152,6 +153,7 @@ async function saveMessage(
       direction,
       message_content: content,
       telegram_message_id: messageId || null,
+      bot_id: botId || null,
     });
   } catch (e) {
     console.error('Failed to save message:', e);
@@ -1299,27 +1301,65 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
+    const botId = url.searchParams.get('bot_id');
     const clientId = url.searchParams.get('client_id');
     
-    if (!clientId) {
-      throw new Error('Missing client_id');
+    if (!botId && !clientId) {
+      throw new Error('Missing bot_id or client_id');
     }
 
-    // Get client info
-    const { data: client } = await supabase
-      .from('clients')
-      .select('*')
-      .eq('id', clientId)
-      .single();
+    let client: any;
+    let bot: any;
 
-    if (!client || !client.telegram_bot_token) {
-      throw new Error('Client not found or bot not configured');
+    // Prioritize bot_id lookup from client_bots table
+    if (botId) {
+      const { data: botData } = await supabase
+        .from('client_bots')
+        .select('*, clients(*)')
+        .eq('id', botId)
+        .single();
+
+      if (!botData || !botData.telegram_bot_token) {
+        throw new Error('Bot not found or not configured');
+      }
+
+      bot = botData;
+      client = botData.clients;
+    } else if (clientId) {
+      // Fallback: Get primary bot for client
+      const { data: botData } = await supabase
+        .from('client_bots')
+        .select('*, clients(*)')
+        .eq('client_id', clientId)
+        .eq('is_primary', true)
+        .eq('is_active', true)
+        .single();
+
+      if (botData && botData.telegram_bot_token) {
+        bot = botData;
+        client = botData.clients;
+      } else {
+        // Fallback to legacy clients table
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', clientId)
+          .single();
+
+        if (!clientData || !clientData.telegram_bot_token) {
+          throw new Error('Client not found or bot not configured');
+        }
+        client = clientData;
+        bot = { id: null, telegram_bot_token: clientData.telegram_bot_token };
+      }
     }
 
     const update = await req.json();
-    console.log('Webhook for client:', clientId, JSON.stringify(update));
+    const resolvedClientId = client?.id as string;
+    console.log('Webhook for bot:', bot?.id || 'legacy', 'client:', resolvedClientId, JSON.stringify(update));
 
-    const botToken = client.telegram_bot_token;
+    const botToken = bot.telegram_bot_token;
+    const currentBotId = bot?.id || null;
 
     // =============== HANDLE MESSAGES ===============
     if (update.message) {
@@ -1336,16 +1376,16 @@ serve(async (req) => {
       }
 
       // Ensure customer exists (with UTM params if available)
-      const customer = await getOrCreateCustomer(clientId, telegramUser, utmParams);
+      const customer = await getOrCreateCustomer(resolvedClientId, telegramUser, utmParams);
 
       // Save incoming message
-      await saveMessage(clientId, chatId, customer?.id || null, 'incoming', text, messageId);
+      await saveMessage(resolvedClientId, chatId, customer?.id || null, 'incoming', text, messageId, currentBotId);
 
       // Handle /start command
       if (text.startsWith('/start')) {
         // Send TikTok ClickButton event if tracking is enabled and source is TikTok
         if (utmParams.utm_source === 'tiktok') {
-          const settings = await getClientSettings(clientId);
+          const settings = await getClientSettings(resolvedClientId);
           if (settings?.tiktok_tracking_enabled && settings?.tiktok_pixel_code && settings?.tiktok_access_token) {
             console.log('Sending TikTok ClickButton event for new user');
             await sendTikTokEvent(
@@ -1353,14 +1393,14 @@ serve(async (req) => {
               settings.tiktok_access_token,
               'ClickButton',
               customer,
-              clientId,
+              resolvedClientId,
               { content_name: utmParams.utm_campaign || 'bot_start' },
               settings.tiktok_test_event_code
             );
           }
         }
 
-        const welcomeMessages = await getClientMessagesWithMedia(clientId, 'welcome');
+        const welcomeMessages = await getClientMessagesWithMedia(resolvedClientId, 'welcome');
         
         if (welcomeMessages.length > 0) {
           // Send all welcome messages in sequence (without buttons - catalog comes after)
@@ -1380,7 +1420,7 @@ serve(async (req) => {
             }
             
             if (sent?.result?.message_id) {
-              await saveMessage(clientId, chatId, customer?.id || null, 'outgoing', msg.message_content, sent.result.message_id);
+              await saveMessage(resolvedClientId, chatId, customer?.id || null, 'outgoing', msg.message_content, sent.result.message_id, currentBotId);
             }
           }
         } else {
@@ -1388,17 +1428,17 @@ serve(async (req) => {
           const msgText = '👋 Bem-vindo à nossa loja!';
           const sent = await sendTelegramMessage(botToken, chatId, msgText);
           if (sent?.result?.message_id) {
-            await saveMessage(clientId, chatId, customer?.id || null, 'outgoing', msgText, sent.result.message_id);
+            await saveMessage(resolvedClientId, chatId, customer?.id || null, 'outgoing', msgText, sent.result.message_id, currentBotId);
           }
         }
         
         // Always show products catalog after welcome
-        await handleShowProducts(botToken, chatId, clientId, customer?.id || null);
+        await handleShowProducts(botToken, chatId, resolvedClientId, customer?.id || null);
       }
 
       // Handle /produtos command
       if (text.startsWith('/produtos')) {
-        await handleShowProducts(botToken, chatId, clientId, customer?.id || null);
+        await handleShowProducts(botToken, chatId, resolvedClientId, customer?.id || null);
       }
     }
 
@@ -1414,15 +1454,15 @@ serve(async (req) => {
       await answerCallbackQuery(botToken, callbackQuery.id);
 
       // Ensure customer exists
-      const customer = await getOrCreateCustomer(clientId, telegramUser);
+      const customer = await getOrCreateCustomer(resolvedClientId, telegramUser);
 
       // Save callback_query as an event in the conversation
       const callbackLabel = await getCallbackLabel(data);
-      await saveMessage(clientId, chatId, customer?.id || null, 'incoming', `[Clicou: ${callbackLabel}]`, messageId);
+      await saveMessage(resolvedClientId, chatId, customer?.id || null, 'incoming', `[Clicou: ${callbackLabel}]`, messageId, currentBotId);
 
       // Show products list
       if (data === 'products') {
-        await handleShowProducts(botToken, chatId, clientId, customer?.id || null);
+        await handleShowProducts(botToken, chatId, resolvedClientId, customer?.id || null);
       }
 
       // Click on product from catalog - go directly to buy (generate PIX)
@@ -1431,7 +1471,7 @@ serve(async (req) => {
         
         // Send TikTok ViewContent event if tracking is enabled
         if (customer?.utm_source === 'tiktok' || customer?.ttclid) {
-          const settings = await getClientSettings(clientId);
+          const settings = await getClientSettings(resolvedClientId);
           if (settings?.tiktok_tracking_enabled && settings?.tiktok_pixel_code && settings?.tiktok_access_token) {
             const product = await getProduct(productId);
             if (product) {
@@ -1441,7 +1481,7 @@ serve(async (req) => {
                 settings.tiktok_access_token,
                 'ViewContent',
                 customer,
-                clientId,
+                resolvedClientId,
                 { 
                   content_id: productId, 
                   content_name: product.name,
@@ -1456,7 +1496,7 @@ serve(async (req) => {
         }
         
         // Go directly to purchase flow instead of showing product details
-        await handleBuyProduct(botToken, chatId, clientId, customer.id, productId, {});
+        await handleBuyProduct(botToken, chatId, resolvedClientId, customer.id, productId, {});
       }
 
       // Buy upsell/downsell using compact callback_data (Telegram limit is 64 bytes)
@@ -1472,7 +1512,7 @@ serve(async (req) => {
           const productId = b64ToUuid(productB64);
           const parentOrderId = b64ToUuid(parentB64);
 
-          await handleBuyProduct(botToken, chatId, clientId, customer.id, productId, {
+          await handleBuyProduct(botToken, chatId, resolvedClientId, customer.id, productId, {
             isUpsell: prefix === 'buyu',
             isDownsell: prefix === 'buyd',
             parentOrderId,
@@ -1504,25 +1544,25 @@ serve(async (req) => {
           }
         }
         
-        await handleBuyProduct(botToken, chatId, clientId, customer.id, productId, { isUpsell, isDownsell, parentOrderId });
+        await handleBuyProduct(botToken, chatId, resolvedClientId, customer.id, productId, { isUpsell, isDownsell, parentOrderId });
       }
 
       // Copy PIX code - send it again for easy copy
       if (data.startsWith('copypix_')) {
         const orderId = data.replace('copypix_', '');
-        await handleCopyPixCode(botToken, chatId, clientId, orderId);
+        await handleCopyPixCode(botToken, chatId, resolvedClientId, orderId);
       }
 
       // Confirm payment / verify payment
       if (data.startsWith('paid_')) {
         const orderId = data.replace('paid_', '');
-        await handlePaymentConfirmed(botToken, chatId, clientId, orderId, telegramUser.id);
+        await handlePaymentConfirmed(botToken, chatId, resolvedClientId, orderId, telegramUser.id);
       }
 
       // Cancel order
       if (data.startsWith('cancel_')) {
         const orderId = data.replace('cancel_', '');
-        await handleCancelOrder(botToken, chatId, clientId, orderId, messageId);
+        await handleCancelOrder(botToken, chatId, resolvedClientId, orderId, messageId);
       }
 
       // Decline upsell - show next upsell or downsell (compact format: declu_PARENTB64_INDEX)
@@ -1531,7 +1571,7 @@ serve(async (req) => {
           const parts = data.replace('declu_', '').split('_');
           const parentOrderId = b64ToUuid(parts[0]);
           const currentIndex = parts[1] ? parseInt(parts[1]) : 0;
-          await handleDeclineUpsellFromOrder(botToken, chatId, clientId, parentOrderId, currentIndex);
+          await handleDeclineUpsellFromOrder(botToken, chatId, resolvedClientId, parentOrderId, currentIndex);
         } catch (e) {
           console.error('Invalid declu callback:', data, e);
         }
@@ -1542,7 +1582,7 @@ serve(async (req) => {
         const parts = data.replace('decline_upsell_', '').split('_');
         const productId = parts[0];
         const parentOrderId = parts[1];
-        await handleDeclineUpsell(botToken, chatId, clientId, productId, parentOrderId);
+        await handleDeclineUpsell(botToken, chatId, resolvedClientId, productId, parentOrderId);
       }
 
       // Handle generate fee PIX (format: gf:FEEID_SHORT:ORDERID_SHORT)
@@ -1551,19 +1591,19 @@ serve(async (req) => {
         const feeIdShort = parts[0];
         const orderIdShort = parts[1];
         console.log('Generate fee PIX callback:', { feeIdShort, orderIdShort });
-        await handleGenerateFeePixCallback(botToken, chatId, clientId, feeIdShort, orderIdShort, telegramUser.id);
+        await handleGenerateFeePixCallback(botToken, chatId, resolvedClientId, feeIdShort, orderIdShort, telegramUser.id);
       }
 
       // Handle fee payment confirmation (format: fp:FEEORDERID_SHORT)
       if (data.startsWith('fp:')) {
         const feeOrderIdShort = data.replace('fp:', '');
         console.log('Fee paid callback in webhook:', { feeOrderIdShort });
-        await handleFeePaidCallback(botToken, chatId, clientId, feeOrderIdShort, telegramUser.id);
+        await handleFeePaidCallback(botToken, chatId, resolvedClientId, feeOrderIdShort, telegramUser.id);
       }
 
       // Back to menu
       if (data === 'menu') {
-        const welcomeMessage = await getClientMessage(clientId, 'welcome');
+        const welcomeMessage = await getClientMessage(resolvedClientId, 'welcome');
         await editMessageText(botToken, chatId, messageId, welcomeMessage || '👋 O que deseja fazer?', {
           inline_keyboard: [[{ text: '🛍️ Ver Produtos', callback_data: 'products' }]]
         });

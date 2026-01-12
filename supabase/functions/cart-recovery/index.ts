@@ -17,9 +17,11 @@ const INITIAL_RETRY_DELAY_MS = 1000;
 // TYPES
 // =============================================================================
 
-interface ClientWithSettings {
+interface BotWithClient {
+  id: string;
   client_id: string;
-  clients: { telegram_bot_token: string };
+  telegram_bot_token: string;
+  is_active: boolean;
 }
 
 interface RecoveryMessage {
@@ -31,6 +33,7 @@ interface RecoveryMessage {
   media_type: string | null;
   offer_product_id: string | null;
   offer_message: string | null;
+  bot_id: string | null;
   offer_product: {
     id: string;
     name: string;
@@ -193,36 +196,40 @@ async function sendOfferProduct(
 // MAIN RECOVERY LOGIC
 // =============================================================================
 
-async function processClient(
+async function processBot(
   supabase: any,
-  clientId: string,
-  botToken: string
+  bot: BotWithClient
 ): Promise<{ ordersProcessed: number; customersProcessed: number }> {
   const stats = { ordersProcessed: 0, customersProcessed: 0 };
   const now = new Date();
 
-  // Fetch recovery messages with offer products (single query with join)
+  const clientId = bot.client_id;
+  const botId = bot.id;
+  const botToken = bot.telegram_bot_token;
+
+  // Fetch recovery messages for this bot (or global messages without bot_id)
   const { data: recoveryMessages, error: messagesError } = await supabase
     .from("cart_recovery_messages")
     .select(`
       id, delay_minutes, time_unit, message_content, media_url, media_type,
-      offer_product_id, offer_message,
+      offer_product_id, offer_message, bot_id,
       offer_product:products!cart_recovery_messages_offer_product_id_fkey(id, name, price, image_url)
     `)
     .eq("client_id", clientId)
+    .or(`bot_id.eq.${botId},bot_id.is.null`)
     .eq("is_active", true)
     .order("delay_minutes", { ascending: true });
 
   if (messagesError || !recoveryMessages?.length) {
-    if (messagesError) console.error(`Error fetching recovery messages for client ${clientId}:`, messagesError);
+    if (messagesError) console.error(`Error fetching recovery messages for bot ${botId}:`, messagesError);
     return stats;
   }
 
-  console.log(`Client ${clientId}: ${recoveryMessages.length} active recovery messages`);
+  console.log(`Bot ${botId}: ${recoveryMessages.length} active recovery messages`);
 
   // Fetch pending orders and customers without orders in parallel
   const [ordersResult, customersResult] = await Promise.all([
-    // Orders query with joins (reduces N+1)
+    // Orders query with joins - filter by bot_id
     supabase
       .from("orders")
       .select(`
@@ -231,24 +238,26 @@ async function processClient(
         products(name)
       `)
       .eq("client_id", clientId)
+      .eq("bot_id", botId)
       .in("status", ["pending", "cancelled"])
       .lt("recovery_messages_sent", recoveryMessages.length),
 
-    // Customers query
+    // Customers query - filter by bot_id
     supabase
       .from("telegram_customers")
       .select("id, telegram_id, first_name, created_at, recovery_messages_sent, last_recovery_sent_at")
       .eq("client_id", clientId)
+      .eq("bot_id", botId)
       .lt("recovery_messages_sent", recoveryMessages.length)
   ]);
 
-  if (ordersResult.error) console.error(`Error fetching orders for client ${clientId}:`, ordersResult.error);
-  if (customersResult.error) console.error(`Error fetching customers for client ${clientId}:`, customersResult.error);
+  if (ordersResult.error) console.error(`Error fetching orders for bot ${botId}:`, ordersResult.error);
+  if (customersResult.error) console.error(`Error fetching customers for bot ${botId}:`, customersResult.error);
 
   const pendingOrders: any[] = ordersResult.data || [];
   const allCustomers: any[] = customersResult.data || [];
 
-  console.log(`Client ${clientId}: ${pendingOrders.length} pending orders, ${allCustomers.length} potential customers`);
+  console.log(`Bot ${botId}: ${pendingOrders.length} pending orders, ${allCustomers.length} potential customers`);
 
   // Get customer IDs that have orders (to exclude from customer-only recovery)
   const customerIdsWithOrders = new Set(pendingOrders.map((o: any) => o.telegram_customers?.id).filter(Boolean));
@@ -379,13 +388,10 @@ serve(async (req) => {
 
     console.log("Starting cart recovery check...");
 
-    // Get all clients with cart recovery enabled (single query with join)
+    // Get all active bots with cart recovery enabled for their clients
     const { data: clientSettings, error: settingsError } = await supabase
       .from("client_settings")
-      .select(`
-        client_id,
-        clients!inner(telegram_bot_token)
-      `)
+      .select("client_id")
       .eq("cart_reminder_enabled", true);
 
     if (settingsError) {
@@ -393,27 +399,43 @@ serve(async (req) => {
       throw settingsError;
     }
 
-    const enabledClients = (clientSettings || []).filter(
-      (s: any) => !!(s.clients as any)?.telegram_bot_token
-    ) as unknown as ClientWithSettings[];
+    const enabledClientIds = (clientSettings || []).map((s: any) => s.client_id);
 
-    console.log(`Found ${enabledClients.length} clients with cart recovery enabled`);
+    if (enabledClientIds.length === 0) {
+      console.log("No clients with cart recovery enabled");
+      return new Response(
+        JSON.stringify({ success: true, message: "No clients with cart recovery enabled" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Process clients in parallel batches (max 5 concurrent)
+    // Get all active bots for these clients
+    const { data: activeBots, error: botsError } = await supabase
+      .from("client_bots")
+      .select("id, client_id, telegram_bot_token, is_active")
+      .in("client_id", enabledClientIds)
+      .eq("is_active", true)
+      .not("telegram_bot_token", "is", null);
+
+    if (botsError) {
+      console.error("Error fetching bots:", botsError);
+      throw botsError;
+    }
+
+    const bots = (activeBots || []) as BotWithClient[];
+    console.log(`Found ${bots.length} active bots for cart recovery`);
+
+    // Process bots in parallel batches (max 5 concurrent)
     const BATCH_SIZE = 5;
     const results = { totalOrders: 0, totalCustomers: 0 };
 
-    for (let i = 0; i < enabledClients.length; i += BATCH_SIZE) {
-      const batch = enabledClients.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < bots.length; i += BATCH_SIZE) {
+      const batch = bots.slice(i, i + BATCH_SIZE);
 
       const batchResults = await Promise.all(
-        batch.map(setting =>
-          processClient(
-            supabase,
-            setting.client_id,
-            (setting.clients as any).telegram_bot_token
-          ).catch(error => {
-            console.error(`Error processing client ${setting.client_id}:`, error);
+        batch.map(bot =>
+          processBot(supabase, bot).catch(error => {
+            console.error(`Error processing bot ${bot.id}:`, error);
             return { ordersProcessed: 0, customersProcessed: 0 };
           })
         )
@@ -432,7 +454,7 @@ serve(async (req) => {
         success: true,
         message: "Cart recovery check completed",
         stats: {
-          clientsProcessed: enabledClients.length,
+          botsProcessed: bots.length,
           ordersRecovered: results.totalOrders,
           customersRecovered: results.totalCustomers,
         },
