@@ -8,6 +8,7 @@ import {
   useReorderBotMessages,
   BotMessage,
 } from '@/hooks/useBotMessages';
+import { useBotContext } from '@/contexts/BotContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -131,7 +132,8 @@ const categories = {
 };
 
 export const MessagesPage = ({ client }: MessagesPageProps) => {
-  const { data: messages, isLoading } = useBotMessages(client.id);
+  const { selectedBot } = useBotContext();
+  const { data: messages, isLoading } = useBotMessages(client.id, selectedBot?.id);
   const updateMessage = useUpdateBotMessage();
   const createMessage = useCreateBotMessage();
   const deleteMessage = useDeleteBotMessage();
@@ -157,6 +159,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
       const maxOrder = Math.max(0, ...existingMessages.map(m => m.display_order));
       await createMessage.mutateAsync({
         client_id: client.id,
+        bot_id: selectedBot?.id || null,
         message_type: messageType,
         message_content: 'Nova mensagem...',
         display_order: maxOrder + 1,
@@ -180,6 +183,7 @@ export const MessagesPage = ({ client }: MessagesPageProps) => {
       const maxOrder = Math.max(0, ...existingMessages.map(m => m.display_order));
       await createMessage.mutateAsync({
         client_id: client.id,
+        bot_id: selectedBot?.id || null,
         message_type: messageType,
         message_content: content,
         display_order: maxOrder + 1,

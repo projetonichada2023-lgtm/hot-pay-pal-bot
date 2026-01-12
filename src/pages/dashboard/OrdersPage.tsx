@@ -9,6 +9,7 @@ import { OrdersTable } from '@/components/orders/OrdersTable';
 import { OrderDetailsDialog } from '@/components/orders/OrderDetailsDialog';
 import { toast } from 'sonner';
 import { exportOrders } from '@/lib/export-csv';
+import { useBotContext } from '@/contexts/BotContext';
 
 interface OrdersPageProps {
   client: Client;
@@ -26,6 +27,7 @@ const statusOptions = [
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
 export const OrdersPage = ({ client }: OrdersPageProps) => {
+  const { selectedBot } = useBotContext();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -36,9 +38,10 @@ export const OrdersPage = ({ client }: OrdersPageProps) => {
     client.id, 
     statusFilter === 'all' ? null : statusFilter as OrderStatus,
     currentPage,
-    pageSize
+    pageSize,
+    selectedBot?.id
   );
-  const { data: stats } = useOrderStats(client.id);
+  const { data: stats } = useOrderStats(client.id, selectedBot?.id);
   const updateStatus = useUpdateOrderStatus();
 
   const orders = data?.orders || [];
