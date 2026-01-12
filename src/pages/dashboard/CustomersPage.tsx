@@ -10,12 +10,14 @@ import { CustomerDetailsDialog } from '@/components/customers/CustomerDetailsDia
 import { CustomerStats } from '@/components/customers/CustomerStats';
 import { exportCustomers } from '@/lib/export-csv';
 import { toast } from 'sonner';
+import { useBotContext } from '@/contexts/BotContext';
 
 interface CustomersPageProps {
   client: Client;
 }
 
 export const CustomersPage = ({ client }: CustomersPageProps) => {
+  const { selectedBot } = useBotContext();
   const [filters, setFilters] = useState<Filters>({
     search: '',
     hasOrders: 'all',
@@ -24,7 +26,7 @@ export const CustomersPage = ({ client }: CustomersPageProps) => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const { data: customers = [], isLoading } = useCustomers(filters);
+  const { data: customers = [], isLoading } = useCustomers(filters, selectedBot?.id);
 
   const handleViewCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);

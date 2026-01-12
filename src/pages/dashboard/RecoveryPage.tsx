@@ -11,6 +11,7 @@ import { useClientSettings, useUpdateClientSettings, Client } from "@/hooks/useC
 import { useProducts } from "@/hooks/useProducts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useBotContext } from "@/contexts/BotContext";
 import { 
   Plus, Trash2, Clock, MessageSquare, Edit2, Save, X, Info, 
   RefreshCw, ShoppingCart, TrendingUp, AlertCircle, Loader2,
@@ -349,11 +350,12 @@ const RecoveryMessageForm = ({ message, onSave, onCancel, displayOrder, clientId
 };
 
 export const RecoveryPage = ({ client }: RecoveryPageProps) => {
+  const { selectedBot } = useBotContext();
   const { toast } = useToast();
   const { data: settings, isLoading: settingsLoading } = useClientSettings(client.id);
   const updateSettings = useUpdateClientSettings();
-  const { messages, isLoading, createMessage, updateMessage, deleteMessage } = useCartRecovery(client?.id);
-  const { data: products = [] } = useProducts(client?.id);
+  const { messages, isLoading, createMessage, updateMessage, deleteMessage } = useCartRecovery(client?.id, selectedBot?.id);
+  const { data: products = [] } = useProducts(client?.id, selectedBot?.id);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const { canAddRecoveryMessage, canUseCartRecovery, showLimitReachedToast, planLimits } = usePlanLimits();
@@ -376,9 +378,9 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
 
   // Fetch pending orders for recovery
   const { data: pendingOrders = [], isLoading: ordersLoading, refetch: refetchOrders } = useQuery({
-    queryKey: ["pending-orders-recovery", client.id],
+    queryKey: ["pending-orders-recovery", client.id, selectedBot?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("orders")
         .select(`
           *,
@@ -389,6 +391,11 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
         .eq("status", "pending")
         .order("created_at", { ascending: false });
       
+      if (selectedBot?.id) {
+        query = query.eq("bot_id", selectedBot.id);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -396,40 +403,55 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
 
   // Fetch recovery stats
   const { data: recoveryStats } = useQuery({
-    queryKey: ["recovery-stats", client.id],
+    queryKey: ["recovery-stats", client.id, selectedBot?.id],
     queryFn: async () => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       // Get recovered orders (paid after receiving recovery messages)
-      const { data: recovered, error: recoveredError } = await supabase
+      let recoveredQuery = supabase
         .from("orders")
         .select("amount, recovery_messages_sent")
         .eq("client_id", client.id)
         .eq("status", "paid")
         .gt("recovery_messages_sent", 0)
         .gte("paid_at", thirtyDaysAgo.toISOString());
+      
+      if (selectedBot?.id) {
+        recoveredQuery = recoveredQuery.eq("bot_id", selectedBot.id);
+      }
 
+      const { data: recovered, error: recoveredError } = await recoveredQuery;
       if (recoveredError) throw recoveredError;
 
       // Get total messages sent (from orders)
-      const { data: ordersWithMessages, error: messagesError } = await supabase
+      let ordersWithMessagesQuery = supabase
         .from("orders")
         .select("recovery_messages_sent")
         .eq("client_id", client.id)
         .gt("recovery_messages_sent", 0)
         .gte("created_at", thirtyDaysAgo.toISOString());
+      
+      if (selectedBot?.id) {
+        ordersWithMessagesQuery = ordersWithMessagesQuery.eq("bot_id", selectedBot.id);
+      }
 
+      const { data: ordersWithMessages, error: messagesError } = await ordersWithMessagesQuery;
       if (messagesError) throw messagesError;
 
       // Get messages sent to customers without orders
-      const { data: customersWithMessages, error: customersError } = await supabase
+      let customersWithMessagesQuery = supabase
         .from("telegram_customers")
         .select("recovery_messages_sent")
         .eq("client_id", client.id)
         .gt("recovery_messages_sent", 0)
         .gte("updated_at", thirtyDaysAgo.toISOString());
+      
+      if (selectedBot?.id) {
+        customersWithMessagesQuery = customersWithMessagesQuery.eq("bot_id", selectedBot.id);
+      }
 
+      const { data: customersWithMessages, error: customersError } = await customersWithMessagesQuery;
       if (customersError) throw customersError;
 
       const totalRecovered = recovered?.reduce((sum, o) => sum + Number(o.amount), 0) || 0;
@@ -441,13 +463,19 @@ export const RecoveryPage = ({ client }: RecoveryPageProps) => {
       const totalMessagesSent = orderMessages + customerMessages;
       
       // Get orders that received messages but didn't convert
-      const { data: ordersNotConverted } = await supabase
+      let ordersNotConvertedQuery = supabase
         .from("orders")
         .select("id")
         .eq("client_id", client.id)
         .in("status", ["pending", "cancelled"])
         .gt("recovery_messages_sent", 0)
         .gte("created_at", thirtyDaysAgo.toISOString());
+      
+      if (selectedBot?.id) {
+        ordersNotConvertedQuery = ordersNotConvertedQuery.eq("bot_id", selectedBot.id);
+      }
+
+      const { data: ordersNotConverted } = await ordersNotConvertedQuery;
       
       const totalOrdersWithMessages = (ordersNotConverted?.length || 0) + ordersRecovered;
       const conversionRate = totalOrdersWithMessages > 0 

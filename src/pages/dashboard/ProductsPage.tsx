@@ -13,17 +13,19 @@ import { toast } from 'sonner';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { Badge } from '@/components/ui/badge';
 import { exportProducts } from '@/lib/export-csv';
+import { useBotContext } from '@/contexts/BotContext';
 
 interface ProductsPageProps {
   client: Client;
 }
 
 export const ProductsPage = ({ client }: ProductsPageProps) => {
+  const { selectedBot } = useBotContext();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  const { data: products, isLoading } = useProducts(client.id);
+  const { data: products, isLoading } = useProducts(client.id, selectedBot?.id);
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
@@ -69,6 +71,7 @@ export const ProductsPage = ({ client }: ProductsPageProps) => {
         // Create the product first
         const newProduct = await createProduct.mutateAsync({
           client_id: client.id,
+          bot_id: selectedBot?.id || null,
           name: data.name,
           description: data.description || null,
           price: data.price,
