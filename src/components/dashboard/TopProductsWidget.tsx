@@ -7,17 +7,24 @@ import { Trophy } from 'lucide-react';
 
 interface TopProductsWidgetProps {
   clientId: string;
+  botId?: string | null;
 }
 
-export const TopProductsWidget = ({ clientId }: TopProductsWidgetProps) => {
+export const TopProductsWidget = ({ clientId, botId }: TopProductsWidgetProps) => {
   const { data: products, isLoading } = useQuery({
-    queryKey: ['top-products', clientId],
+    queryKey: ['top-products', clientId, botId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
         .select('id, name, sales_count, price')
         .eq('client_id', clientId)
-        .eq('is_active', true)
+        .eq('is_active', true);
+
+      if (botId) {
+        query = query.eq('bot_id', botId);
+      }
+
+      const { data, error } = await query
         .order('sales_count', { ascending: false })
         .limit(5);
 

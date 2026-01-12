@@ -5,10 +5,11 @@ import { TrendingUp, ArrowUpRight, ArrowDownRight, DollarSign } from 'lucide-rea
 
 interface FunnelInsightsCardProps {
   clientId: string;
+  botId?: string | null;
 }
 
-export const FunnelInsightsCard = ({ clientId }: FunnelInsightsCardProps) => {
-  const { data: stats, isLoading } = useFunnelStats(clientId);
+export const FunnelInsightsCard = ({ clientId, botId }: FunnelInsightsCardProps) => {
+  const { data: stats, isLoading } = useFunnelStats(clientId, botId);
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {

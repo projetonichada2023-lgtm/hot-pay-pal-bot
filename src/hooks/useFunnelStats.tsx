@@ -25,12 +25,12 @@ interface GlobalStats {
   totalAdditionalRevenue: number;
 }
 
-export const useFunnelStats = (clientId: string) => {
+export const useFunnelStats = (clientId: string, botId?: string | null) => {
   return useQuery({
-    queryKey: ['funnel-stats', clientId],
+    queryKey: ['funnel-stats', clientId, botId],
     queryFn: async () => {
       // Get all orders with their parent orders
-      const { data: orders, error } = await supabase
+      let ordersQuery = supabase
         .from('orders')
         .select(`
           id,
@@ -43,13 +43,25 @@ export const useFunnelStats = (clientId: string) => {
         `)
         .eq('client_id', clientId);
 
+      if (botId) {
+        ordersQuery = ordersQuery.eq('bot_id', botId);
+      }
+
+      const { data: orders, error } = await ordersQuery;
+
       if (error) throw error;
 
       // Get products for names
-      const { data: products } = await supabase
+      let productsQuery = supabase
         .from('products')
         .select('id, name, upsell_product_id, downsell_product_id')
         .eq('client_id', clientId);
+
+      if (botId) {
+        productsQuery = productsQuery.eq('bot_id', botId);
+      }
+
+      const { data: products } = await productsQuery;
 
       const productMap = new Map(products?.map(p => [p.id, p]) || []);
 

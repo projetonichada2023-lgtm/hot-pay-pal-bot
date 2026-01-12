@@ -7,6 +7,7 @@ import { PieChartIcon } from 'lucide-react';
 
 interface OrderStatusWidgetProps {
   clientId: string;
+  botId?: string | null;
 }
 
 const STATUS_CONFIG = {
@@ -17,14 +18,20 @@ const STATUS_CONFIG = {
   refunded: { label: 'Reembolsado', color: 'hsl(220, 15%, 50%)' },
 };
 
-export const OrderStatusWidget = ({ clientId }: OrderStatusWidgetProps) => {
+export const OrderStatusWidget = ({ clientId, botId }: OrderStatusWidgetProps) => {
   const { data: statusData, isLoading } = useQuery({
-    queryKey: ['order-status-distribution', clientId],
+    queryKey: ['order-status-distribution', clientId, botId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
         .select('status')
         .eq('client_id', clientId);
+
+      if (botId) {
+        query = query.eq('bot_id', botId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 

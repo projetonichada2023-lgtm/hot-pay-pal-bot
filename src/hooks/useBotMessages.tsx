@@ -11,6 +11,7 @@ export interface MessageButton {
 export interface BotMessage {
   id: string;
   client_id: string;
+  bot_id: string | null;
   message_type: string;
   message_content: string;
   is_active: boolean;
@@ -29,14 +30,21 @@ function parseButtons(buttons: Json | null): MessageButton[] | null {
   return buttons as unknown as MessageButton[];
 }
 
-export const useBotMessages = (clientId: string | undefined) => {
+export const useBotMessages = (clientId: string | undefined, botId?: string | null) => {
   return useQuery({
-    queryKey: ['bot_messages', clientId],
+    queryKey: ['bot_messages', clientId, botId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('bot_messages')
         .select('*')
-        .eq('client_id', clientId!)
+        .eq('client_id', clientId!);
+
+      // Filter by bot_id if provided
+      if (botId) {
+        query = query.eq('bot_id', botId);
+      }
+
+      const { data, error } = await query
         .order('message_type')
         .order('display_order');
 
@@ -97,6 +105,7 @@ export const useCreateBotMessage = () => {
   return useMutation({
     mutationFn: async ({ 
       client_id, 
+      bot_id,
       message_type, 
       message_content, 
       display_order,
@@ -105,6 +114,7 @@ export const useCreateBotMessage = () => {
       buttons,
     }: { 
       client_id: string; 
+      bot_id?: string | null;
       message_type: string; 
       message_content: string; 
       display_order: number;
@@ -116,6 +126,7 @@ export const useCreateBotMessage = () => {
         .from('bot_messages')
         .insert({
           client_id,
+          bot_id: bot_id || null,
           message_type,
           message_content,
           display_order,

@@ -6,10 +6,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 interface SalesChartProps {
   clientId: string;
   dateRange: DateRange;
+  botId?: string | null;
 }
 
-export const SalesChart = ({ clientId, dateRange }: SalesChartProps) => {
-  const { data: chartData, isLoading } = useSalesChart(clientId, dateRange);
+export const SalesChart = ({ clientId, dateRange, botId }: SalesChartProps) => {
+  const { data: chartData, isLoading } = useSalesChart(clientId, dateRange, botId);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {

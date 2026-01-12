@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useDashboardStats, DateRange } from '@/hooks/useDashboardStats';
 import { useDashboardPreferences } from '@/hooks/useDashboardPreferences';
+import { useBotContext } from '@/contexts/BotContext';
 import { SalesChart } from '@/components/dashboard/SalesChart';
 import { RecentOrdersCard } from '@/components/dashboard/RecentOrdersCard';
 import { FunnelInsightsCard } from '@/components/dashboard/FunnelInsightsCard';
@@ -188,12 +189,13 @@ const METRIC_DEFINITIONS: MetricDefinition[] = [
 ];
 
 export const OverviewPage = ({ client }: OverviewPageProps) => {
+  const { selectedBot } = useBotContext();
   const [dateRange, setDateRange] = useState<DateRange>({
     from: new Date(),
     to: new Date(),
   });
 
-  const { data: stats, isLoading } = useDashboardStats(client.id, dateRange);
+  const { data: stats, isLoading } = useDashboardStats(client.id, dateRange, selectedBot?.id);
   const {
     metrics,
     visibleMetrics,
@@ -232,43 +234,43 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
       case 'salesChart':
         return (
           <motion.div className="lg:col-span-2" data-tour="sales-chart" variants={widgetVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-            <SalesChart clientId={client.id} dateRange={dateRange} />
+            <SalesChart clientId={client.id} dateRange={dateRange} botId={selectedBot?.id} />
           </motion.div>
         );
       case 'recentOrders':
         return (
           <motion.div variants={widgetVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-            <RecentOrdersCard clientId={client.id} />
+            <RecentOrdersCard clientId={client.id} botId={selectedBot?.id} />
           </motion.div>
         );
       case 'funnelInsights':
         return (
           <motion.div variants={widgetVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-            <FunnelInsightsCard clientId={client.id} />
+            <FunnelInsightsCard clientId={client.id} botId={selectedBot?.id} />
           </motion.div>
         );
       case 'topProducts':
         return (
           <motion.div variants={widgetVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-            <TopProductsWidget clientId={client.id} />
+            <TopProductsWidget clientId={client.id} botId={selectedBot?.id} />
           </motion.div>
         );
       case 'orderStatus':
         return (
           <motion.div variants={widgetVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-            <OrderStatusWidget clientId={client.id} />
+            <OrderStatusWidget clientId={client.id} botId={selectedBot?.id} />
           </motion.div>
         );
       case 'recentCustomers':
         return (
           <motion.div variants={widgetVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-            <RecentCustomersWidget clientId={client.id} />
+            <RecentCustomersWidget clientId={client.id} botId={selectedBot?.id} />
           </motion.div>
         );
       case 'salesByHour':
         return (
           <motion.div variants={widgetVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-            <SalesByHourWidget clientId={client.id} />
+            <SalesByHourWidget clientId={client.id} botId={selectedBot?.id} />
           </motion.div>
         );
       default:
