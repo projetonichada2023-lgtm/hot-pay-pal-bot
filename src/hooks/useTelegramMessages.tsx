@@ -31,7 +31,7 @@ export interface ChatConversation {
   messages: TelegramMessage[];
 }
 
-export function useTelegramConversations(clientId: string) {
+export function useTelegramConversations(clientId: string, botId?: string | null) {
   const queryClient = useQueryClient();
 
   // Set up realtime subscription
@@ -66,15 +66,21 @@ export function useTelegramConversations(clientId: string) {
   }, [clientId, queryClient]);
 
   return useQuery({
-    queryKey: ['telegram-conversations', clientId],
+    queryKey: ['telegram-conversations', clientId, botId],
     queryFn: async () => {
-      const { data: messages, error } = await supabase
+      let query = supabase
         .from('telegram_messages')
         .select(`
           *,
           customer:telegram_customers(id, first_name, last_name, telegram_username)
         `)
-        .eq('client_id', clientId)
+        .eq('client_id', clientId);
+
+      if (botId) {
+        query = query.eq('bot_id', botId);
+      }
+
+      const { data: messages, error } = await query
         .order('created_at', { ascending: false })
         .limit(1000);
 
@@ -118,20 +124,26 @@ export function useTelegramConversations(clientId: string) {
   });
 }
 
-export function useTelegramChatMessages(clientId: string, chatId: number | null) {
+export function useTelegramChatMessages(clientId: string, chatId: number | null, botId?: string | null) {
   return useQuery({
-    queryKey: ['telegram-chat-messages', clientId, chatId],
+    queryKey: ['telegram-chat-messages', clientId, chatId, botId],
     queryFn: async () => {
       if (!chatId) return [];
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('telegram_messages')
         .select(`
           *,
           customer:telegram_customers(id, first_name, last_name, telegram_username)
         `)
         .eq('client_id', clientId)
-        .eq('telegram_chat_id', chatId)
+        .eq('telegram_chat_id', chatId);
+
+      if (botId) {
+        query = query.eq('bot_id', botId);
+      }
+
+      const { data, error } = await query
         .order('created_at', { ascending: true })
         .limit(500);
 
