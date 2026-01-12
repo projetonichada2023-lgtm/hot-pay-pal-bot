@@ -134,7 +134,7 @@ export const BotsPage = ({ client }: BotsPageProps) => {
   };
 
   const copyWebhookUrl = (botId: string) => {
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook`;
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook?bot_id=${botId}`;
     navigator.clipboard.writeText(url);
     setCopiedWebhook(true);
     setTimeout(() => setCopiedWebhook(false), 2000);
@@ -249,7 +249,7 @@ export const BotsPage = ({ client }: BotsPageProps) => {
                 <label className="text-sm font-medium">URL do Webhook</label>
                 <div className="flex gap-2">
                   <Input
-                    value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook`}
+                    value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook?bot_id=${botBeingConfigured.id}`}
                     readOnly
                     className="font-mono text-xs"
                   />
