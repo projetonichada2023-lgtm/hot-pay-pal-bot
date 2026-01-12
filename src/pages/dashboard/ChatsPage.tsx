@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { Client } from '@/hooks/useClient';
 import { useTelegramConversations, TelegramMessage } from '@/hooks/useTelegramMessages';
 import { useSendTelegramMessage, uploadChatMedia } from '@/hooks/useSendTelegramMessage';
+import { useBotContext } from '@/contexts/BotContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -100,7 +101,8 @@ function formatFileSize(bytes: number): string {
 }
 
 export const ChatsPage = ({ client }: ChatsPageProps) => {
-  const { data: conversations, isLoading } = useTelegramConversations(client.id);
+  const { selectedBot } = useBotContext();
+  const { data: conversations, isLoading } = useTelegramConversations(client.id, selectedBot?.id);
   const sendMessage = useSendTelegramMessage();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const selectedChat = conversations?.find((c) => c.customer_id === selectedChatId) || null;
