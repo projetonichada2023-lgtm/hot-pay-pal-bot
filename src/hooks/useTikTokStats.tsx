@@ -21,9 +21,9 @@ export interface TikTokStats {
   campaigns: TikTokCampaignStats[];
 }
 
-export const useTikTokStats = (clientId: string | undefined) => {
+export const useTikTokStats = (clientId: string | undefined, botId?: string | null) => {
   return useQuery({
-    queryKey: ['tiktok-stats', clientId],
+    queryKey: ['tiktok-stats', clientId, botId],
     queryFn: async (): Promise<TikTokStats> => {
       if (!clientId) {
         return {
@@ -38,11 +38,17 @@ export const useTikTokStats = (clientId: string | undefined) => {
       }
 
       // Get all TikTok events from the new table
-      const { data: events, error } = await supabase
+      let query = supabase
         .from('tiktok_events')
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
+
+      if (botId) {
+        query = query.eq('bot_id', botId);
+      }
+
+      const { data: events, error } = await query;
 
       if (error) throw error;
 

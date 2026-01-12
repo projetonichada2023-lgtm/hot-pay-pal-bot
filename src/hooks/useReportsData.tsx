@@ -24,18 +24,24 @@ export interface FunnelStageData {
   rate: number;
 }
 
-export const useReportsData = (clientId: string, dateRange: DateRange) => {
+export const useReportsData = (clientId: string, dateRange: DateRange, botId?: string | null) => {
   // Sales over time
   const salesQuery = useQuery({
-    queryKey: ['reports-sales', clientId, dateRange.from, dateRange.to],
+    queryKey: ['reports-sales', clientId, dateRange.from, dateRange.to, botId],
     queryFn: async (): Promise<DailySalesData[]> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
         .select('amount, status, created_at')
         .eq('client_id', clientId)
         .gte('created_at', startOfDay(dateRange.from).toISOString())
         .lte('created_at', endOfDay(dateRange.to).toISOString())
         .in('status', ['paid', 'delivered']);
+
+      if (botId) {
+        query = query.eq('bot_id', botId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -66,21 +72,33 @@ export const useReportsData = (clientId: string, dateRange: DateRange) => {
 
   // Top products
   const topProductsQuery = useQuery({
-    queryKey: ['reports-top-products', clientId, dateRange.from, dateRange.to],
+    queryKey: ['reports-top-products', clientId, dateRange.from, dateRange.to, botId],
     queryFn: async (): Promise<TopProduct[]> => {
-      const { data: orders, error: ordersError } = await supabase
+      let ordersQuery = supabase
         .from('orders')
         .select('product_id, amount, status')
         .eq('client_id', clientId)
         .gte('created_at', startOfDay(dateRange.from).toISOString())
         .lte('created_at', endOfDay(dateRange.to).toISOString());
 
+      if (botId) {
+        ordersQuery = ordersQuery.eq('bot_id', botId);
+      }
+
+      const { data: orders, error: ordersError } = await ordersQuery;
+
       if (ordersError) throw ordersError;
 
-      const { data: products, error: productsError } = await supabase
+      let productsQuery = supabase
         .from('products')
         .select('id, name, views_count')
         .eq('client_id', clientId);
+
+      if (botId) {
+        productsQuery = productsQuery.eq('bot_id', botId);
+      }
+
+      const { data: products, error: productsError } = await productsQuery;
 
       if (productsError) throw productsError;
 
@@ -118,14 +136,20 @@ export const useReportsData = (clientId: string, dateRange: DateRange) => {
 
   // Funnel performance
   const funnelQuery = useQuery({
-    queryKey: ['reports-funnel', clientId, dateRange.from, dateRange.to],
+    queryKey: ['reports-funnel', clientId, dateRange.from, dateRange.to, botId],
     queryFn: async (): Promise<FunnelStageData[]> => {
-      const { data: orders, error } = await supabase
+      let query = supabase
         .from('orders')
         .select('status, amount, is_upsell, is_downsell')
         .eq('client_id', clientId)
         .gte('created_at', startOfDay(dateRange.from).toISOString())
         .lte('created_at', endOfDay(dateRange.to).toISOString());
+
+      if (botId) {
+        query = query.eq('bot_id', botId);
+      }
+
+      const { data: orders, error } = await query;
 
       if (error) throw error;
 
