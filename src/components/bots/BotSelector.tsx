@@ -65,8 +65,23 @@ export const BotSelector = ({ isCollapsed = false }: BotSelectorProps) => {
             isCollapsed ? "px-2 justify-center" : "px-3 justify-start"
           )}
         >
-          <div className="w-10 h-10 rounded-xl gradient-hot flex items-center justify-center glow-hot shrink-0">
-            <Bot className="w-5 h-5 text-primary-foreground" />
+          <div className="relative">
+            <div className={cn(
+              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+              selectedBot?.is_active 
+                ? "gradient-hot glow-hot" 
+                : "bg-muted"
+            )}>
+              <Bot className={cn(
+                "w-5 h-5",
+                selectedBot?.is_active ? "text-primary-foreground" : "text-muted-foreground"
+              )} />
+            </div>
+            {/* Status indicator dot */}
+            <span className={cn(
+              "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-sidebar",
+              selectedBot?.is_active ? "bg-green-500" : "bg-muted-foreground"
+            )} />
           </div>
           {!isCollapsed && (
             <>
@@ -81,11 +96,21 @@ export const BotSelector = ({ isCollapsed = false }: BotSelectorProps) => {
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground truncate">
-                  {selectedBot?.telegram_bot_username 
-                    ? `@${selectedBot.telegram_bot_username}` 
-                    : 'Não configurado'}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <span className={cn(
+                    "text-[10px] font-medium px-1.5 py-0.5 rounded",
+                    selectedBot?.is_active 
+                      ? "bg-green-500/10 text-green-500" 
+                      : "bg-muted text-muted-foreground"
+                  )}>
+                    {selectedBot?.is_active ? 'Ativo' : 'Inativo'}
+                  </span>
+                  <span className="text-xs text-muted-foreground truncate">
+                    {selectedBot?.telegram_bot_username 
+                      ? `@${selectedBot.telegram_bot_username}` 
+                      : ''}
+                  </span>
+                </div>
               </div>
               <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
             </>
