@@ -8,6 +8,7 @@ import { NotificationCenter } from '@/components/dashboard/NotificationCenter';
 import { ImpersonationBanner } from '@/components/dashboard/ImpersonationBanner';
 import { OnboardingTour } from '@/components/onboarding/OnboardingTour';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { BotProvider } from '@/contexts/BotContext';
 import { Loader2 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -44,7 +45,7 @@ const Dashboard = () => {
   }
 
   return (
-    <>
+    <BotProvider clientId={client.id}>
       <ImpersonationBanner />
       <div className="min-h-screen bg-background flex w-full">
         <Sidebar client={client} />
@@ -64,7 +65,7 @@ const Dashboard = () => {
         />
       )}
       </div>
-    </>
+    </BotProvider>
   );
 };
 

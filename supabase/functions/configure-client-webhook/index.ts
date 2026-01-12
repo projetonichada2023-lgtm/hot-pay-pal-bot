@@ -15,18 +15,48 @@ serve(async (req) => {
   }
 
   try {
-    const { client_id, bot_token } = await req.json();
+    const body = await req.json();
+    
+    // Support both old format (client_id, bot_token) and new format (botId)
+    let botToken: string;
+    let botId: string | null = null;
+    let clientId: string | null = null;
 
-    if (!client_id || !bot_token) {
-      throw new Error('Missing client_id or bot_token');
+    if (body.botId) {
+      // New format: fetch bot from client_bots table
+      botId = body.botId;
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      
+      const { data: bot, error } = await supabase
+        .from('client_bots')
+        .select('telegram_bot_token, client_id')
+        .eq('id', botId)
+        .single();
+
+      if (error || !bot) {
+        throw new Error('Bot not found');
+      }
+
+      if (!bot.telegram_bot_token) {
+        throw new Error('Bot token not configured');
+      }
+
+      botToken = bot.telegram_bot_token;
+      clientId = bot.client_id;
+    } else if (body.client_id && body.bot_token) {
+      // Legacy format
+      clientId = body.client_id;
+      botToken = body.bot_token;
+    } else {
+      throw new Error('Missing botId or (client_id and bot_token)');
     }
 
-    const webhookUrl = `${SUPABASE_URL}/functions/v1/telegram-webhook?client_id=${client_id}`;
+    const webhookUrl = `${SUPABASE_URL}/functions/v1/telegram-webhook`;
     
-    console.log('Setting webhook for client:', client_id, 'URL:', webhookUrl);
+    console.log('Setting webhook for bot:', botId || clientId, 'URL:', webhookUrl);
 
     const response = await fetch(
-      `https://api.telegram.org/bot${bot_token}/setWebhook`,
+      `https://api.telegram.org/bot${botToken}/setWebhook`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -44,12 +74,22 @@ serve(async (req) => {
       throw new Error(result.description || 'Failed to set webhook');
     }
 
-    // Update client webhook status
+    // Update webhook status
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    await supabase
-      .from('clients')
-      .update({ webhook_configured: true })
-      .eq('id', client_id);
+    
+    if (botId) {
+      // Update client_bots table
+      await supabase
+        .from('client_bots')
+        .update({ webhook_configured: true })
+        .eq('id', botId);
+    } else if (clientId) {
+      // Legacy: update clients table
+      await supabase
+        .from('clients')
+        .update({ webhook_configured: true })
+        .eq('id', clientId);
+    }
 
     return new Response(
       JSON.stringify({ success: true, webhook_url: webhookUrl }),

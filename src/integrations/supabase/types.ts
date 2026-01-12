@@ -82,6 +82,7 @@ export type Database = {
       }
       bot_messages: {
         Row: {
+          bot_id: string | null
           buttons: Json | null
           client_id: string
           created_at: string | null
@@ -95,6 +96,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          bot_id?: string | null
           buttons?: Json | null
           client_id: string
           created_at?: string | null
@@ -108,6 +110,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          bot_id?: string | null
           buttons?: Json | null
           client_id?: string
           created_at?: string | null
@@ -122,6 +125,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "bot_messages_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bot_messages_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -132,6 +142,7 @@ export type Database = {
       }
       cart_recovery_messages: {
         Row: {
+          bot_id: string | null
           client_id: string
           created_at: string | null
           delay_minutes: number
@@ -147,6 +158,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          bot_id?: string | null
           client_id: string
           created_at?: string | null
           delay_minutes?: number
@@ -162,6 +174,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          bot_id?: string | null
           client_id?: string
           created_at?: string | null
           delay_minutes?: number
@@ -178,6 +191,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "cart_recovery_messages_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "cart_recovery_messages_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -189,6 +209,53 @@ export type Database = {
             columns: ["offer_product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_bots: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_primary: boolean | null
+          name: string
+          telegram_bot_token: string | null
+          telegram_bot_username: string | null
+          updated_at: string | null
+          webhook_configured: boolean | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          name?: string
+          telegram_bot_token?: string | null
+          telegram_bot_username?: string | null
+          updated_at?: string | null
+          webhook_configured?: boolean | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          name?: string
+          telegram_bot_token?: string | null
+          telegram_bot_username?: string | null
+          updated_at?: string | null
+          webhook_configured?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_bots_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -347,6 +414,7 @@ export type Database = {
           api_error_message: string | null
           api_response_code: number | null
           api_status: string | null
+          bot_id: string | null
           client_id: string
           created_at: string
           currency: string | null
@@ -364,6 +432,7 @@ export type Database = {
           api_error_message?: string | null
           api_response_code?: number | null
           api_status?: string | null
+          bot_id?: string | null
           client_id: string
           created_at?: string
           currency?: string | null
@@ -381,6 +450,7 @@ export type Database = {
           api_error_message?: string | null
           api_response_code?: number | null
           api_status?: string | null
+          bot_id?: string | null
           client_id?: string
           created_at?: string
           currency?: string | null
@@ -395,6 +465,13 @@ export type Database = {
           value?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "facebook_events_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "facebook_events_client_id_fkey"
             columns: ["client_id"]
@@ -461,6 +538,7 @@ export type Database = {
       orders: {
         Row: {
           amount: number
+          bot_id: string | null
           client_id: string
           created_at: string | null
           customer_id: string | null
@@ -484,6 +562,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          bot_id?: string | null
           client_id: string
           created_at?: string | null
           customer_id?: string | null
@@ -507,6 +586,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          bot_id?: string | null
           client_id?: string
           created_at?: string | null
           customer_id?: string | null
@@ -529,6 +609,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_client_id_fkey"
             columns: ["client_id"]
@@ -565,6 +652,7 @@ export type Database = {
           created_at: string | null
           custom_messages_enabled: boolean
           id: string
+          max_bots: number
           max_orders_per_month: number
           max_products: number
           max_recovery_messages: number
@@ -578,6 +666,7 @@ export type Database = {
           created_at?: string | null
           custom_messages_enabled?: boolean
           id?: string
+          max_bots?: number
           max_orders_per_month?: number
           max_products?: number
           max_recovery_messages?: number
@@ -591,6 +680,7 @@ export type Database = {
           created_at?: string | null
           custom_messages_enabled?: boolean
           id?: string
+          max_bots?: number
           max_orders_per_month?: number
           max_products?: number
           max_recovery_messages?: number
@@ -701,6 +791,7 @@ export type Database = {
       }
       products: {
         Row: {
+          bot_id: string | null
           client_id: string
           created_at: string | null
           description: string | null
@@ -722,6 +813,7 @@ export type Database = {
           views_count: number | null
         }
         Insert: {
+          bot_id?: string | null
           client_id: string
           created_at?: string | null
           description?: string | null
@@ -743,6 +835,7 @@ export type Database = {
           views_count?: number | null
         }
         Update: {
+          bot_id?: string | null
           client_id?: string
           created_at?: string | null
           description?: string | null
@@ -764,6 +857,13 @@ export type Database = {
           views_count?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "products_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_client_id_fkey"
             columns: ["client_id"]
@@ -880,6 +980,7 @@ export type Database = {
       }
       telegram_customers: {
         Row: {
+          bot_id: string | null
           client_id: string
           created_at: string | null
           email: string | null
@@ -898,6 +999,7 @@ export type Database = {
           utm_source: string | null
         }
         Insert: {
+          bot_id?: string | null
           client_id: string
           created_at?: string | null
           email?: string | null
@@ -916,6 +1018,7 @@ export type Database = {
           utm_source?: string | null
         }
         Update: {
+          bot_id?: string | null
           client_id?: string
           created_at?: string | null
           email?: string | null
@@ -935,6 +1038,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "telegram_customers_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "telegram_customers_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -945,6 +1055,7 @@ export type Database = {
       }
       telegram_messages: {
         Row: {
+          bot_id: string | null
           client_id: string
           created_at: string
           customer_id: string | null
@@ -956,6 +1067,7 @@ export type Database = {
           telegram_message_id: number | null
         }
         Insert: {
+          bot_id?: string | null
           client_id: string
           created_at?: string
           customer_id?: string | null
@@ -967,6 +1079,7 @@ export type Database = {
           telegram_message_id?: number | null
         }
         Update: {
+          bot_id?: string | null
           client_id?: string
           created_at?: string
           customer_id?: string | null
@@ -978,6 +1091,13 @@ export type Database = {
           telegram_message_id?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "telegram_messages_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "telegram_messages_client_id_fkey"
             columns: ["client_id"]
@@ -999,6 +1119,7 @@ export type Database = {
           api_error_message: string | null
           api_response_code: number | null
           api_status: string | null
+          bot_id: string | null
           client_id: string
           created_at: string
           currency: string | null
@@ -1016,6 +1137,7 @@ export type Database = {
           api_error_message?: string | null
           api_response_code?: number | null
           api_status?: string | null
+          bot_id?: string | null
           client_id: string
           created_at?: string
           currency?: string | null
@@ -1033,6 +1155,7 @@ export type Database = {
           api_error_message?: string | null
           api_response_code?: number | null
           api_status?: string | null
+          bot_id?: string | null
           client_id?: string
           created_at?: string
           currency?: string | null
@@ -1047,6 +1170,13 @@ export type Database = {
           value?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tiktok_events_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tiktok_events_client_id_fkey"
             columns: ["client_id"]
@@ -1079,6 +1209,7 @@ export type Database = {
       }
       ttclid_mappings: {
         Row: {
+          bot_id: string | null
           client_id: string
           created_at: string | null
           customer_id: string | null
@@ -1092,6 +1223,7 @@ export type Database = {
           utm_source: string | null
         }
         Insert: {
+          bot_id?: string | null
           client_id: string
           created_at?: string | null
           customer_id?: string | null
@@ -1105,6 +1237,7 @@ export type Database = {
           utm_source?: string | null
         }
         Update: {
+          bot_id?: string | null
           client_id?: string
           created_at?: string | null
           customer_id?: string | null
@@ -1118,6 +1251,13 @@ export type Database = {
           utm_source?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ttclid_mappings_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ttclid_mappings_client_id_fkey"
             columns: ["client_id"]
@@ -1157,6 +1297,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_bot_ids: { Args: never; Returns: string[] }
       get_my_client_id: { Args: never; Returns: string }
       has_role: {
         Args: {

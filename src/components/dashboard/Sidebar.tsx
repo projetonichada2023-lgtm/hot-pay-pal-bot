@@ -5,6 +5,7 @@ import { Client } from '@/hooks/useClient';
 import { Button } from '@/components/ui/button';
 import { NotificationBadge } from './NotificationBadge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { BotSelector } from '@/components/bots/BotSelector';
 import { 
   LayoutDashboard, 
   MessageSquare, 
@@ -25,7 +26,8 @@ import {
   Smartphone,
   Target,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Boxes
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -44,7 +46,7 @@ const menuItems = [
   { icon: Users, label: 'Clientes', path: '/dashboard/customers' },
   { icon: Target, label: 'Tracking', path: '/dashboard/tracking' },
   { icon: BarChart3, label: 'Relatórios', path: '/dashboard/reports' },
-  { icon: Bot, label: 'Bot Config', path: '/dashboard/bot-config' },
+  { icon: Boxes, label: 'Meus Bots', path: '/dashboard/bots' },
   { icon: Smartphone, label: 'Simulador', path: '/dashboard/simulator' },
   { icon: Settings, label: 'Configurações', path: '/dashboard/settings' },
 ];
@@ -123,23 +125,8 @@ export const Sidebar = ({ client }: SidebarProps) => {
         )}
       >
         <div className="flex flex-col h-full p-2 md:p-4">
-          {/* Logo */}
-          <div className={cn(
-            "flex items-center gap-3 px-2 py-4 mb-4",
-            isCollapsed && "justify-center px-0"
-          )} data-tour="sidebar-logo">
-            <div className="w-10 h-10 rounded-xl gradient-hot flex items-center justify-center glow-hot shrink-0">
-              <Bot className="w-5 h-5 text-primary-foreground" />
-            </div>
-            {!isCollapsed && (
-              <div className="flex-1 min-w-0">
-                <h2 className="font-bold text-foreground truncate text-sm">{client.business_name}</h2>
-                <p className="text-xs text-muted-foreground truncate">
-                  {client.telegram_bot_username ? `@${client.telegram_bot_username}` : 'Bot não configurado'}
-                </p>
-              </div>
-            )}
-          </div>
+          {/* Bot Selector */}
+          <BotSelector isCollapsed={isCollapsed} />
 
           {/* Collapse Toggle - Desktop only */}
           <Button
