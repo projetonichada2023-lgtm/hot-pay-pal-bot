@@ -252,40 +252,40 @@ const faqs = [
   }
 ];
 
-// Animation variants - optimized for performance
+// Animation variants - Premium stagger animations
 const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 50 },
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { duration: 0.4, ease: "easeOut" }
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
   }
 };
 
 const fadeInLeft: Variants = {
-  hidden: { opacity: 0, x: -30 },
+  hidden: { opacity: 0, x: -50 },
   visible: { 
     opacity: 1, 
     x: 0,
-    transition: { duration: 0.4, ease: "easeOut" }
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
   }
 };
 
 const fadeInRight: Variants = {
-  hidden: { opacity: 0, x: 30 },
+  hidden: { opacity: 0, x: 50 },
   visible: { 
     opacity: 1, 
     x: 0,
-    transition: { duration: 0.4, ease: "easeOut" }
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
   }
 };
 
 const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
+  hidden: { opacity: 0, scale: 0.9 },
   visible: { 
     opacity: 1, 
     scale: 1,
-    transition: { duration: 0.3, ease: "easeOut" }
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
   }
 };
 
@@ -294,13 +294,22 @@ const staggerContainer: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.05
+      staggerChildren: 0.12,
+      delayChildren: 0.1
     }
   }
 };
 
-// Scroll reveal component
+const staggerItem: Variants = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+  }
+};
+
+// Scroll reveal component with improved intersection
 function ScrollReveal({ 
   children, 
   variants = fadeInUp,
@@ -311,7 +320,7 @@ function ScrollReveal({
   className?: string;
 }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isInView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
     <motion.div
@@ -521,40 +530,40 @@ export default function Landing() {
           </motion.div>
           
           <motion.h1 
-            className="text-4xl md:text-6xl lg:text-7xl max-w-4xl mx-auto leading-tight mb-6"
-            initial={{ opacity: 0, y: 40 }}
+            className="text-4xl md:text-6xl lg:text-7xl max-w-4xl mx-auto leading-tight mb-6 premium-heading"
+            initial={{ opacity: 0, y: 50 }}
             animate={heroInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
+            transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
             Venda Produtos Digitais
             <motion.span 
               className="text-primary block mt-2"
-              initial={{ opacity: 0, x: -40 }}
-              animate={heroInView ? { opacity: 1, x: 0 } : {}}
-              transition={{ duration: 0.7, delay: 0.4, ease: "easeOut" }}
+              initial={{ opacity: 0, y: 50 }}
+              animate={heroInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.8, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
             >
               Direto no Telegram
             </motion.span>
           </motion.h1>
           
           <motion.p 
-            className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8"
-            initial={{ opacity: 0, y: 30 }}
+            className="text-lg md:text-xl max-w-2xl mx-auto mb-8 premium-body"
+            initial={{ opacity: 0, y: 40 }}
             animate={heroInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.5 }}
+            transition={{ duration: 0.7, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
             Crie seu bot de vendas automatizado com pagamento PIX, entrega instantânea e recuperação de carrinho. Sem código, sem complicação.
           </motion.p>
           
           <motion.div 
             className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4 sm:px-0"
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={heroInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.6 }}
+            transition={{ duration: 0.7, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
           >
             <Link to="/auth" className="w-full sm:w-auto">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base cta-button rounded-xl">
+                <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base cta-button cta-shine rounded-xl">
                   Criar Minha Loja
                   <motion.div
                     animate={{ x: [0, 5, 0] }}
@@ -640,14 +649,17 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 px-4 bg-card/30">
-        <div className="container mx-auto">
-          <ScrollReveal className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl mb-4">
+      {/* Features Section - Glassmorphism Cards */}
+      <section id="features" className="py-24 px-4 relative">
+        {/* Subtle background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent pointer-events-none" />
+        
+        <div className="container mx-auto relative z-10">
+          <ScrollReveal className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl mb-4 premium-heading">
               Tudo que você precisa para vender
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="premium-body text-lg max-w-2xl mx-auto">
               Ferramentas poderosas para criar, gerenciar e escalar seu negócio digital no Telegram.
             </p>
           </ScrollReveal>
@@ -657,28 +669,28 @@ export default function Landing() {
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-80px" }}
           >
             {features.map((feature) => (
               <motion.div
                 key={feature.title}
-                variants={fadeInUp}
+                variants={staggerItem}
               >
                 <motion.div
                   whileHover={{ y: -8, scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 >
-                  <Card className="p-6 bg-card/50 backdrop-blur border-border/30 hover:border-primary/50 transition-colors duration-300 hover:shadow-lg hover:shadow-primary/5 group h-full rounded-2xl">
+                  <div className="glass-premium p-8 rounded-2xl h-full group transition-all duration-500">
                     <motion.div 
-                      className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors"
+                      className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors duration-300"
                       whileHover={{ rotate: [0, -10, 10, 0] }}
                       transition={{ duration: 0.5 }}
                     >
-                      <feature.icon className="w-6 h-6 text-primary" />
+                      <feature.icon className="w-7 h-7 text-primary" />
                     </motion.div>
-                    <h3 className="text-lg mb-2">{feature.title}</h3>
-                    <p className="text-muted-foreground text-sm">{feature.description}</p>
-                  </Card>
+                    <h3 className="text-xl mb-3 premium-heading">{feature.title}</h3>
+                    <p className="premium-body text-sm">{feature.description}</p>
+                  </div>
                 </motion.div>
               </motion.div>
             ))}
@@ -686,33 +698,39 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* How it Works - Enhanced */}
-      <section id="como-funciona" className="py-20 px-4">
+      {/* How it Works - Enhanced Premium */}
+      <section id="como-funciona" className="py-24 px-4">
         <div className="container mx-auto">
-          <ScrollReveal className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl mb-4">
+          <ScrollReveal className="text-center mb-20">
+            <h2 className="text-3xl md:text-5xl mb-4 premium-heading">
               Como Funciona
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="premium-body text-lg max-w-2xl mx-auto">
               Em apenas 3 passos simples, sua loja estará pronta para receber vendas.
             </p>
           </ScrollReveal>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <motion.div 
+            className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-80px" }}
+          >
             {steps.map((step, index) => (
-              <ScrollReveal 
+              <motion.div 
                 key={step.number}
-                variants={index === 0 ? fadeInLeft : index === 2 ? fadeInRight : fadeInUp}
+                variants={staggerItem}
+                className="relative"
               >
                 <motion.div 
-                  className="relative"
-                  whileHover={{ y: -5 }}
+                  whileHover={{ y: -8 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  {/* Step Card */}
-                  <Card className="p-8 bg-card/50 backdrop-blur border-border/30 rounded-2xl text-center h-full">
+                  {/* Step Card with Glassmorphism */}
+                  <div className="glass-premium p-10 rounded-3xl text-center h-full">
                     <motion.div 
-                      className="text-7xl font-bold text-primary/10 absolute top-4 right-4"
+                      className="text-8xl font-bold text-primary/10 absolute top-6 right-6 premium-heading"
                       initial={{ scale: 0, rotate: -180 }}
                       whileInView={{ scale: 1, rotate: 0 }}
                       viewport={{ once: true }}
@@ -720,72 +738,74 @@ export default function Landing() {
                         type: "spring", 
                         stiffness: 150, 
                         damping: 15,
-                        delay: index * 0.2 
+                        delay: index * 0.15 
                       }}
                     >
                       {step.number}
                     </motion.div>
-                    <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 mx-auto">
-                      <step.icon className="w-8 h-8 text-primary" />
+                    <div className="w-18 h-18 rounded-2xl bg-primary/10 flex items-center justify-center mb-8 mx-auto w-[72px] h-[72px]">
+                      <step.icon className="w-9 h-9 text-primary" />
                     </div>
-                    <h3 className="text-xl mb-3">{step.title}</h3>
-                    <p className="text-muted-foreground">{step.description}</p>
-                  </Card>
+                    <h3 className="text-2xl mb-4 premium-heading">{step.title}</h3>
+                    <p className="premium-body">{step.description}</p>
+                  </div>
                 </motion.div>
-              </ScrollReveal>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           {/* Connection line for desktop */}
-          <div className="hidden md:block max-w-4xl mx-auto mt-8">
+          <div className="hidden md:block max-w-4xl mx-auto mt-10">
             <motion.div 
-              className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent"
+              className="h-0.5 bg-gradient-to-r from-transparent via-primary/40 to-transparent"
               initial={{ scaleX: 0 }}
               whileInView={{ scaleX: 1 }}
               viewport={{ once: true }}
-              transition={{ duration: 1, delay: 0.5 }}
+              transition={{ duration: 1.2, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
             />
           </div>
         </div>
       </section>
 
-      {/* Benefits Comparison Table */}
-      <section id="beneficios" className="py-20 px-4 bg-card/30">
-        <div className="container mx-auto">
-          <ScrollReveal className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl mb-4">
+      {/* Benefits Comparison Table - Premium with Conversy Glow */}
+      <section id="beneficios" className="py-24 px-4 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent pointer-events-none" />
+        
+        <div className="container mx-auto relative z-10">
+          <ScrollReveal className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl mb-4 premium-heading">
               Por que escolher o Conversy?
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="premium-body text-lg max-w-2xl mx-auto">
               Compare e veja as vantagens de vender no Telegram com automação.
             </p>
           </ScrollReveal>
 
           <ScrollReveal>
-            <div className="max-w-4xl mx-auto overflow-hidden rounded-2xl border border-border/30 bg-card/50 backdrop-blur">
+            <div className="max-w-4xl mx-auto overflow-hidden rounded-3xl glass-premium">
               {/* Table Header */}
-              <div className="grid grid-cols-4 bg-muted/30 border-b border-border/30">
-                <div className="p-4 md:p-6 font-medium text-sm md:text-base">Recurso</div>
-                <div className="p-4 md:p-6 text-center">
-                  <div className="inline-flex flex-col items-center gap-1">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-                      <Send className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
+              <div className="grid grid-cols-4">
+                <div className="p-5 md:p-6 font-medium text-sm md:text-base border-b border-white/5 premium-heading">Recurso</div>
+                <div className="p-5 md:p-6 text-center border-b border-white/5 conversy-glow bg-primary/[0.08]">
+                  <div className="inline-flex flex-col items-center gap-2">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30">
+                      <Send className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
                     </div>
-                    <span className="font-bold text-sm md:text-base text-primary">Conversy</span>
+                    <span className="font-bold text-sm md:text-base text-primary premium-heading">Conversy</span>
                   </div>
                 </div>
-                <div className="p-4 md:p-6 text-center">
-                  <div className="inline-flex flex-col items-center gap-1">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-emerald-600 flex items-center justify-center">
-                      <MessageCircle className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                <div className="p-5 md:p-6 text-center border-b border-white/5">
+                  <div className="inline-flex flex-col items-center gap-2">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-emerald-600 flex items-center justify-center">
+                      <MessageCircle className="w-5 h-5 md:w-6 md:h-6 text-white" />
                     </div>
                     <span className="font-medium text-sm md:text-base text-muted-foreground">WhatsApp</span>
                   </div>
                 </div>
-                <div className="p-4 md:p-6 text-center">
-                  <div className="inline-flex flex-col items-center gap-1">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-muted flex items-center justify-center">
-                      <ShoppingCart className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
+                <div className="p-5 md:p-6 text-center border-b border-white/5">
+                  <div className="inline-flex flex-col items-center gap-2">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/5 flex items-center justify-center">
+                      <ShoppingCart className="w-5 h-5 md:w-6 md:h-6 text-muted-foreground" />
                     </div>
                     <span className="font-medium text-sm md:text-base text-muted-foreground">Hotmart/Kiwify</span>
                   </div>
@@ -796,16 +816,14 @@ export default function Landing() {
               {benefits.map((row, index) => (
                 <motion.div
                   key={row.feature}
-                  className={`grid grid-cols-4 border-b border-border/20 last:border-b-0 ${
-                    index % 2 === 0 ? "bg-transparent" : "bg-muted/10"
-                  }`}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
+                  className="grid grid-cols-4 border-b border-white/5 last:border-b-0"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: index * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <div className="p-4 md:p-5 text-sm md:text-base">{row.feature}</div>
-                  <div className="p-4 md:p-5 flex justify-center items-center">
+                  <div className="p-4 md:p-5 text-sm md:text-base premium-body">{row.feature}</div>
+                  <div className="p-4 md:p-5 flex justify-center items-center conversy-glow bg-primary/[0.04]">
                     <motion.div
                       initial={{ scale: 0 }}
                       whileInView={{ scale: 1 }}
@@ -828,120 +846,122 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Para Quem é Section */}
-      <section className="py-20 px-4">
+      {/* Para Quem é Section - Premium */}
+      <section className="py-24 px-4">
         <div className="container mx-auto">
-          <ScrollReveal className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl mb-4">
+          <ScrollReveal className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl mb-4 premium-heading">
               Para Quem é o Conversy?
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="premium-body text-lg max-w-2xl mx-auto">
               Ideal para quem quer vender produtos digitais de forma automatizada e profissional.
             </p>
           </ScrollReveal>
 
           <motion.div 
-            className="grid md:grid-cols-3 gap-6 lg:gap-8"
+            className="grid md:grid-cols-3 gap-8"
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-80px" }}
           >
             {/* Infoprodutores */}
-            <motion.div variants={fadeInUp}>
+            <motion.div variants={staggerItem}>
               <motion.div
-                whileHover={{ y: -8, scale: 1.02 }}
+                whileHover={{ y: -10, scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 className="relative group"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <Card className="relative p-8 bg-card/50 backdrop-blur border-border/30 hover:border-violet-500/50 transition-all duration-300 h-full rounded-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="glass-premium relative p-8 rounded-3xl h-full">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mb-6 shadow-lg shadow-violet-500/25">
                     <TrendingUp className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl mb-3">Infoprodutores</h3>
-                  <p className="text-muted-foreground mb-4">
+                  <h3 className="text-xl mb-3 premium-heading">Infoprodutores</h3>
+                  <p className="premium-body mb-5">
                     Venda cursos, e-books, mentorias e templates direto no Telegram com entrega automática.
                   </p>
-                  <ul className="space-y-2">
+                  <ul className="space-y-3">
                     {["Entrega instantânea de arquivos", "Upsell pós-compra automático", "Métricas de conversão"].map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <li key={i} className="flex items-center gap-3 text-sm text-muted-foreground">
                         <CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0" />
                         {item}
                       </li>
                     ))}
                   </ul>
-                </Card>
+                </div>
               </motion.div>
             </motion.div>
 
             {/* Criadores de Conteúdo */}
-            <motion.div variants={fadeInUp}>
+            <motion.div variants={staggerItem}>
               <motion.div
-                whileHover={{ y: -8, scale: 1.02 }}
+                whileHover={{ y: -10, scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 className="relative group"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <Card className="relative p-8 bg-card/50 backdrop-blur border-border/30 hover:border-cyan-500/50 transition-all duration-300 h-full rounded-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="glass-premium relative p-8 rounded-3xl h-full">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center mb-6 shadow-lg shadow-cyan-500/25">
                     <MessageCircle className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl mb-3">Criadores de Conteúdo</h3>
-                  <p className="text-muted-foreground mb-4">
+                  <h3 className="text-xl mb-3 premium-heading">Criadores de Conteúdo</h3>
+                  <p className="premium-body mb-5">
                     Monetize sua audiência vendendo conteúdo exclusivo direto onde ela já está.
                   </p>
-                  <ul className="space-y-2">
+                  <ul className="space-y-3">
                     {["Presets e packs exclusivos", "Aulas e tutoriais premium", "Atendimento automatizado"].map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <li key={i} className="flex items-center gap-3 text-sm text-muted-foreground">
                         <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
                         {item}
                       </li>
                     ))}
                   </ul>
-                </Card>
+                </div>
               </motion.div>
             </motion.div>
 
             {/* Comunidades VIP */}
-            <motion.div variants={fadeInUp}>
+            <motion.div variants={staggerItem}>
               <motion.div
-                whileHover={{ y: -8, scale: 1.02 }}
+                whileHover={{ y: -10, scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 className="relative group"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <Card className="relative p-8 bg-card/50 backdrop-blur border-border/30 hover:border-amber-500/50 transition-all duration-300 h-full rounded-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="glass-premium relative p-8 rounded-3xl h-full">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-6 shadow-lg shadow-amber-500/25">
                     <Shield className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl mb-3">Comunidades VIP</h3>
-                  <p className="text-muted-foreground mb-4">
+                  <h3 className="text-xl mb-3 premium-heading">Comunidades VIP</h3>
+                  <p className="premium-body mb-5">
                     Gerencie acessos a grupos exclusivos com cobrança recorrente ou única.
                   </p>
-                  <ul className="space-y-2">
+                  <ul className="space-y-3">
                     {["Acesso automático ao grupo", "Gestão de membros integrada", "Renovação e cancelamento"].map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <li key={i} className="flex items-center gap-3 text-sm text-muted-foreground">
                         <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
                         {item}
                       </li>
                     ))}
                   </ul>
-                </Card>
+                </div>
               </motion.div>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* Trust Section */}
-      <section className="py-20 px-4 bg-card/30">
-        <div className="container mx-auto">
-          <ScrollReveal className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl mb-4">
+      {/* Trust Section - Premium */}
+      <section className="py-24 px-4 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent pointer-events-none" />
+        
+        <div className="container mx-auto relative z-10">
+          <ScrollReveal className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl mb-4 premium-heading">
               Segurança em Primeiro Lugar
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="premium-body text-lg max-w-2xl mx-auto">
               Seus pagamentos e dados estão protegidos com a mais alta tecnologia.
             </p>
           </ScrollReveal>
@@ -951,7 +971,7 @@ export default function Landing() {
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-80px" }}
           >
             {[
               { icon: Lock, title: "Dados Criptografados", desc: "SSL 256-bit em todas as transações", color: "emerald" },
@@ -961,15 +981,15 @@ export default function Landing() {
             ].map((item, index) => (
               <motion.div
                 key={item.title}
-                variants={fadeInUp}
-                className="flex items-center gap-4 p-5 rounded-2xl bg-card/50 border border-border/30"
+                variants={staggerItem}
+                className="glass-premium flex items-center gap-4 p-6 rounded-2xl"
               >
                 <div className={`w-14 h-14 rounded-xl bg-${item.color}-500/20 flex items-center justify-center shrink-0`}>
                   <item.icon className={`w-7 h-7 text-${item.color}-500`} />
                 </div>
                 <div>
-                  <p className="font-bold">{item.title}</p>
-                  <p className="text-sm text-muted-foreground">{item.desc}</p>
+                  <p className="font-bold premium-heading">{item.title}</p>
+                  <p className="text-sm premium-body">{item.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -977,28 +997,28 @@ export default function Landing() {
 
           {/* Additional trust indicators */}
           <motion.div 
-            className="flex flex-wrap justify-center items-center gap-6 mt-10 pt-8 border-t border-border/30"
+            className="flex flex-wrap justify-center items-center gap-6 mt-12 pt-10 border-t border-white/5"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm premium-body">
               <BadgeCheck className="w-5 h-5 text-emerald-500" />
               <span>Empresa 100% Brasileira</span>
             </div>
-            <div className="hidden md:block w-px h-4 bg-border" />
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="hidden md:block w-px h-4 bg-white/10" />
+            <div className="flex items-center gap-2 text-sm premium-body">
               <BadgeCheck className="w-5 h-5 text-emerald-500" />
               <span>Sem mensalidade fixa</span>
             </div>
-            <div className="hidden md:block w-px h-4 bg-border" />
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="hidden md:block w-px h-4 bg-white/10" />
+            <div className="flex items-center gap-2 text-sm premium-body">
               <BadgeCheck className="w-5 h-5 text-emerald-500" />
               <span>Entrega instantânea garantida</span>
             </div>
-            <div className="hidden md:block w-px h-4 bg-border" />
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="hidden md:block w-px h-4 bg-white/10" />
+            <div className="flex items-center gap-2 text-sm premium-body">
               <BadgeCheck className="w-5 h-5 text-emerald-500" />
               <span>PIX em tempo real</span>
             </div>
@@ -1015,31 +1035,31 @@ export default function Landing() {
         />
       </Suspense>
 
-      {/* FAQ Section */}
-      <section id="faq" className="py-20 px-4">
+      {/* FAQ Section - Premium */}
+      <section id="faq" className="py-24 px-4">
         <div className="container mx-auto">
-          <ScrollReveal className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl mb-4">
+          <ScrollReveal className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl mb-4 premium-heading">
               Perguntas Frequentes
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="premium-body text-lg max-w-2xl mx-auto">
               Tire suas dúvidas sobre o Conversy.
             </p>
           </ScrollReveal>
           
           <ScrollReveal className="max-w-3xl mx-auto">
             <Suspense fallback={<SectionLoader />}>
-              <Accordion type="single" collapsible className="w-full">
+              <Accordion type="single" collapsible className="w-full space-y-3">
                 {faqs.map((faq, index) => (
                   <AccordionItem 
                     key={index} 
                     value={`item-${index}`}
-                    className="border-border/30 data-[state=open]:border-primary/30 rounded-lg mb-2"
+                    className="glass-premium border-0 rounded-2xl overflow-hidden data-[state=open]:ring-1 data-[state=open]:ring-primary/20"
                   >
-                    <AccordionTrigger className="text-left hover:no-underline hover:text-primary transition-colors py-5 text-base px-4">
+                    <AccordionTrigger className="text-left hover:no-underline hover:text-primary transition-colors py-6 text-base px-6 premium-heading font-medium">
                       {faq.question}
                     </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground leading-relaxed pb-5 px-4">
+                    <AccordionContent className="premium-body leading-relaxed pb-6 px-6">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -1050,66 +1070,66 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 px-4">
+      {/* CTA Section - Premium */}
+      <section className="py-24 px-4">
         <div className="container mx-auto">
           <ScrollReveal variants={scaleIn}>
             <motion.div
               whileHover={{ scale: 1.01 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
-              <Card className="p-8 md:p-12 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 text-center relative overflow-hidden rounded-3xl">
+              <div className="glass-premium p-10 md:p-16 text-center relative overflow-hidden rounded-[2rem]">
                 {/* Animated background elements */}
                 <motion.div 
-                  className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl"
+                  className="absolute top-0 right-0 w-80 h-80 bg-primary/15 rounded-full blur-[100px]"
                   animate={{ 
-                    scale: [1, 1.2, 1],
-                    opacity: [0.5, 0.8, 0.5]
+                    scale: [1, 1.3, 1],
+                    opacity: [0.4, 0.7, 0.4]
                   }}
-                  transition={{ duration: 4, repeat: Infinity }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
                 />
                 <motion.div 
-                  className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl"
+                  className="absolute bottom-0 left-0 w-64 h-64 bg-primary/15 rounded-full blur-[100px]"
                   animate={{ 
-                    scale: [1.2, 1, 1.2],
-                    opacity: [0.8, 0.5, 0.8]
+                    scale: [1.3, 1, 1.3],
+                    opacity: [0.7, 0.4, 0.7]
                   }}
-                  transition={{ duration: 4, repeat: Infinity }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
                 />
                 
                 <div className="relative z-10">
                   <motion.h2 
-                    className="text-3xl md:text-4xl mb-4"
-                    initial={{ opacity: 0, y: 20 }}
+                    className="text-3xl md:text-5xl mb-5 premium-heading"
+                    initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
+                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                   >
                     Pronto para começar?
                   </motion.h2>
                   <motion.p 
-                    className="text-muted-foreground text-lg max-w-xl mx-auto mb-8"
-                    initial={{ opacity: 0, y: 20 }}
+                    className="premium-body text-lg max-w-xl mx-auto mb-10"
+                    initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.1 }}
+                    transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
                   >
                     Crie sua loja gratuita agora e comece a vender em minutos. Sem taxas mensais, pague apenas por venda.
                   </motion.p>
                   
                   <motion.div 
-                    className="flex flex-col sm:flex-row gap-4 justify-center mb-8"
-                    initial={{ opacity: 0, y: 20 }}
+                    className="flex flex-col sm:flex-row gap-4 justify-center mb-10"
+                    initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
+                    transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <Link to="/auth">
                       <motion.div 
                         whileHover={{ scale: 1.05 }} 
                         whileTap={{ scale: 0.95 }}
                       >
-                        <Button size="lg" className="gap-2 text-base px-8 cta-button rounded-xl">
+                        <Button size="lg" className="gap-2 text-base px-10 h-14 cta-button cta-shine rounded-xl">
                           Criar Conta Grátis
                           <motion.div
                             animate={{ x: [0, 5, 0] }}
@@ -1123,7 +1143,7 @@ export default function Landing() {
                   </motion.div>
                   
                   <motion.div 
-                    className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground"
+                    className="flex flex-wrap justify-center gap-8 text-sm premium-body"
                     variants={staggerContainer}
                     initial="hidden"
                     whileInView="visible"
@@ -1137,7 +1157,7 @@ export default function Landing() {
                       <motion.div 
                         key={item.text}
                         className="flex items-center gap-2"
-                        variants={fadeInUp}
+                        variants={staggerItem}
                       >
                         <motion.div
                           initial={{ scale: 0 }}
@@ -1149,14 +1169,14 @@ export default function Landing() {
                             delay: 0.3 + index * 0.1 
                           }}
                         >
-                          <item.icon className="w-4 h-4 text-primary" />
+                          <item.icon className="w-5 h-5 text-primary" />
                         </motion.div>
                         {item.text}
                       </motion.div>
                     ))}
                   </motion.div>
                 </div>
-              </Card>
+              </div>
             </motion.div>
           </ScrollReveal>
         </div>
@@ -1345,13 +1365,13 @@ export default function Landing() {
 
       {/* Mobile Floating CTA */}
       <motion.div 
-        className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-lg border-t border-border/30 md:hidden z-40"
+        className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-xl border-t border-white/5 md:hidden z-40"
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 1, duration: 0.5 }}
+        transition={{ delay: 1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       >
         <Link to="/auth" className="block">
-          <Button className="w-full h-14 text-lg gap-2 shadow-lg shadow-primary/25 cta-button rounded-xl">
+          <Button className="w-full h-14 text-lg gap-2 shadow-lg shadow-primary/30 cta-button cta-shine rounded-xl">
             Começar Grátis Agora
             <ArrowRight className="w-5 h-5" />
           </Button>

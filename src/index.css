@@ -226,6 +226,88 @@
     font-family: 'Clash Display', system-ui, sans-serif;
     font-weight: 500;
   }
+
+  /* Premium heading styles */
+  .premium-heading {
+    font-family: 'Clash Display', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  /* Premium body text */
+  .premium-body {
+    font-family: 'Archivo', system-ui, sans-serif;
+    font-weight: 400;
+    line-height: 1.7;
+    color: #a1a1a1;
+  }
+
+  /* Glassmorphism card */
+  .glass-premium {
+    @apply relative overflow-hidden;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .glass-premium:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  /* Conversy column glow effect */
+  .conversy-glow {
+    position: relative;
+  }
+
+  .conversy-glow::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(180deg, 
+      hsl(13, 70%, 51%, 0.15) 0%, 
+      hsl(13, 70%, 51%, 0.05) 50%,
+      hsl(13, 70%, 51%, 0.15) 100%
+    );
+    border-radius: inherit;
+    z-index: -1;
+    filter: blur(8px);
+  }
+
+  /* CTA shine animation */
+  .cta-shine {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-shine::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.2) 50%,
+      transparent 100%
+    );
+    animation: shine 5s infinite;
+  }
+
+  @keyframes shine {
+    0%, 80% {
+      left: -100%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
 }
 
 @layer components {
@@ -349,6 +431,17 @@
 
   .animate-fade-in {
     animation: fade-in 0.6s ease-out forwards;
+  }
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }
 
