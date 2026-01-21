@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { NotificationBadge } from './NotificationBadge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BotSelector } from '@/components/bots/BotSelector';
+import conversyLogo from '@/assets/conversy-logo.png';
+import conversyIcon from '@/assets/conversy-icon.png';
 import { 
   LayoutDashboard, 
   MessageSquare, 
@@ -125,6 +127,24 @@ export const Sidebar = ({ client }: SidebarProps) => {
         )}
       >
         <div className="flex flex-col h-full p-2 md:p-4">
+          {/* Logo Conversy */}
+          <div 
+            className={cn(
+              "flex items-center mb-4 pb-4 border-b border-sidebar-border",
+              isCollapsed ? "justify-center" : "px-2"
+            )}
+            data-tour="sidebar-logo"
+          >
+            <img 
+              src={isCollapsed ? conversyIcon : conversyLogo} 
+              alt="Conversy" 
+              className={cn(
+                "object-contain",
+                isCollapsed ? "h-8 w-8" : "h-8"
+              )}
+            />
+          </div>
+
           {/* Bot Selector */}
           <BotSelector isCollapsed={isCollapsed} />
 
