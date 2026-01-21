@@ -523,8 +523,8 @@ export default function Landing() {
               whileTap={{ scale: 0.98 }}
             >
               <img 
-                src={conversyLogo} 
-                alt="Conversy - Automação de Vendas" 
+                src={unipayLogo} 
+                alt="UniPay - Gateway de Pagamentos" 
                 className="h-8 w-auto object-contain"
                 loading="lazy"
                 decoding="async"
