@@ -598,7 +598,7 @@ export default function Landing() {
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
                 <AnimatedCounter value={500} suffix="+" delay={0.8} duration={1.5} />
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground mt-1">Lojas Ativas</div>
+              <div className="text-xs sm:text-sm text-muted-foreground mt-1">Negócios Ativos</div>
             </motion.div>
             
             <motion.div className="text-center" variants={scaleIn}>
