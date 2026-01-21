@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Bot, Zap, ArrowLeft, Mail } from 'lucide-react';
+import { Loader2, Zap, ArrowLeft, Mail } from 'lucide-react';
+import conversyLogo from '@/assets/conversy-logo.png';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -219,12 +220,13 @@ const Auth = () => {
 
       <Card className="w-full max-w-md glass-card animate-fade-in relative z-10">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-2xl gradient-hot flex items-center justify-center glow-hot">
-            <Bot className="w-8 h-8 text-primary-foreground" />
+          <div className="mx-auto">
+            <img 
+              src={conversyLogo} 
+              alt="Conversy" 
+              className="h-12 w-auto object-contain"
+            />
           </div>
-          <CardTitle className="text-2xl font-bold">
-            <span className="gradient-text">Conversy</span>
-          </CardTitle>
           <CardDescription className="text-muted-foreground">
             {view === 'forgot-password' && 'Recupere sua senha'}
             {view === 'reset-password' && 'Defina sua nova senha'}
