@@ -530,7 +530,7 @@ export default function Landing() {
           </motion.div>
           
           <motion.h1 
-            className="text-4xl md:text-6xl lg:text-7xl max-w-4xl mx-auto leading-tight mb-6 premium-heading"
+            className="text-4xl md:text-6xl lg:text-7xl max-w-4xl mx-auto leading-tight mb-6 font-display font-bold tracking-tight"
             initial={{ opacity: 0, y: 50 }}
             animate={heroInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
@@ -547,7 +547,7 @@ export default function Landing() {
           </motion.h1>
           
           <motion.p 
-            className="text-lg md:text-xl max-w-2xl mx-auto mb-8 premium-body"
+            className="text-lg md:text-xl max-w-2xl mx-auto mb-8 font-body text-muted-foreground leading-relaxed"
             initial={{ opacity: 0, y: 40 }}
             animate={heroInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
@@ -563,13 +563,13 @@ export default function Landing() {
           >
             <Link to="/auth" className="w-full sm:w-auto">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base cta-button cta-shine rounded-xl">
+                <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base font-display font-medium cta-shine btn-premium rounded-xl">
                   Começar Agora
                   <motion.div
                     animate={{ x: [0, 5, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   >
-                    <ArrowRight className="w-5 h-5" />
+                    <ArrowRight className="w-5 h-5" strokeWidth={1.5} />
                   </motion.div>
                 </Button>
               </motion.div>
@@ -578,10 +578,10 @@ export default function Landing() {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base rounded-xl border-border/50"
+                className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base font-display font-medium rounded-xl border-white/10 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300"
                 onClick={() => setDemoOpen(true)}
               >
-                <MessageCircle className="w-5 h-5" />
+                <MessageCircle className="w-5 h-5" strokeWidth={1.5} />
                 Ver Demonstração
               </Button>
             </motion.div>
@@ -649,17 +649,17 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features Section - Glassmorphism Cards */}
+      {/* Features Section - Premium Glassmorphism Cards */}
       <section id="features" className="py-24 px-4 relative">
         {/* Subtle background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent pointer-events-none" />
         
         <div className="container mx-auto relative z-10">
           <ScrollReveal className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl mb-4 premium-heading">
+            <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
               Tudo que você precisa para vender
             </h2>
-            <p className="premium-body text-lg max-w-2xl mx-auto">
+            <p className="font-body text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
               Ferramentas poderosas para criar, gerenciar e escalar seu negócio digital no Telegram.
             </p>
           </ScrollReveal>
@@ -680,16 +680,16 @@ export default function Landing() {
                   whileHover={{ y: -8, scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 >
-                  <div className="glass-premium p-8 rounded-2xl h-full group transition-all duration-500">
+                  <div className="landing-feature-card h-full group">
                     <motion.div 
                       className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors duration-300"
                       whileHover={{ rotate: [0, -10, 10, 0] }}
                       transition={{ duration: 0.5 }}
                     >
-                      <feature.icon className="w-7 h-7 text-primary" />
+                      <feature.icon className="w-7 h-7 text-primary" strokeWidth={1.5} />
                     </motion.div>
-                    <h3 className="text-xl mb-3 premium-heading">{feature.title}</h3>
-                    <p className="premium-body text-sm">{feature.description}</p>
+                    <h3 className="text-xl mb-3 font-display font-semibold">{feature.title}</h3>
+                    <p className="font-body text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
                   </div>
                 </motion.div>
               </motion.div>
@@ -702,10 +702,10 @@ export default function Landing() {
       <section id="como-funciona" className="py-24 px-4">
         <div className="container mx-auto">
           <ScrollReveal className="text-center mb-20">
-            <h2 className="text-3xl md:text-5xl mb-4 premium-heading">
+            <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
               Como Funciona
             </h2>
-            <p className="premium-body text-lg max-w-2xl mx-auto">
+            <p className="font-body text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
               Em apenas 3 passos simples, seu negócio estará pronto para receber vendas.
             </p>
           </ScrollReveal>
@@ -727,10 +727,10 @@ export default function Landing() {
                   whileHover={{ y: -8 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  {/* Step Card with Glassmorphism */}
-                  <div className="glass-premium p-10 rounded-3xl text-center h-full">
+                  {/* Step Card with Premium Glassmorphism */}
+                  <div className="landing-feature-card !p-10 rounded-3xl text-center h-full relative overflow-hidden">
                     <motion.div 
-                      className="text-8xl font-bold text-primary/10 absolute top-6 right-6 premium-heading"
+                      className="text-8xl font-display font-bold text-primary/10 absolute top-6 right-6"
                       initial={{ scale: 0, rotate: -180 }}
                       whileInView={{ scale: 1, rotate: 0 }}
                       viewport={{ once: true }}
@@ -743,11 +743,11 @@ export default function Landing() {
                     >
                       {step.number}
                     </motion.div>
-                    <div className="w-18 h-18 rounded-2xl bg-primary/10 flex items-center justify-center mb-8 mx-auto w-[72px] h-[72px]">
-                      <step.icon className="w-9 h-9 text-primary" />
+                    <div className="w-[72px] h-[72px] rounded-2xl bg-primary/10 flex items-center justify-center mb-8 mx-auto">
+                      <step.icon className="w-9 h-9 text-primary" strokeWidth={1.5} />
                     </div>
-                    <h3 className="text-2xl mb-4 premium-heading">{step.title}</h3>
-                    <p className="premium-body">{step.description}</p>
+                    <h3 className="text-2xl mb-4 font-display font-semibold">{step.title}</h3>
+                    <p className="font-body text-muted-foreground leading-relaxed">{step.description}</p>
                   </div>
                 </motion.div>
               </motion.div>
@@ -767,47 +767,47 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Benefits Comparison Table - Premium with Conversy Glow */}
+      {/* Benefits Comparison Table - Premium with Conversy Orange Glow */}
       <section id="beneficios" className="py-24 px-4 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent pointer-events-none" />
         
         <div className="container mx-auto relative z-10">
           <ScrollReveal className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl mb-4 premium-heading">
+            <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
               Por que escolher o Conversy?
             </h2>
-            <p className="premium-body text-lg max-w-2xl mx-auto">
+            <p className="font-body text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
               Compare e veja as vantagens de vender no Telegram com automação.
             </p>
           </ScrollReveal>
 
           <ScrollReveal>
-            <div className="max-w-4xl mx-auto overflow-hidden rounded-3xl glass-premium">
+            <div className="max-w-4xl mx-auto overflow-hidden rounded-3xl landing-feature-card !p-0">
               {/* Table Header */}
               <div className="grid grid-cols-4">
-                <div className="p-5 md:p-6 font-medium text-sm md:text-base border-b border-white/5 premium-heading">Recurso</div>
-                <div className="p-5 md:p-6 text-center border-b border-white/5 conversy-glow bg-primary/[0.08]">
-                  <div className="inline-flex flex-col items-center gap-2">
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30">
-                      <Send className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
+                <div className="p-5 md:p-6 font-display font-semibold text-sm md:text-base border-b border-white/5">Recurso</div>
+                <div className="p-5 md:p-6 text-center border-b border-primary/20 conversy-column-glow relative">
+                  <div className="inline-flex flex-col items-center gap-2 relative z-10">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/40">
+                      <Send className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" strokeWidth={1.5} />
                     </div>
-                    <span className="font-bold text-sm md:text-base text-primary premium-heading">Conversy</span>
+                    <span className="font-display font-bold text-sm md:text-base text-primary">Conversy</span>
                   </div>
                 </div>
                 <div className="p-5 md:p-6 text-center border-b border-white/5">
                   <div className="inline-flex flex-col items-center gap-2">
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-emerald-600 flex items-center justify-center">
-                      <MessageCircle className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-emerald-600/80 flex items-center justify-center">
+                      <MessageCircle className="w-5 h-5 md:w-6 md:h-6 text-white" strokeWidth={1.5} />
                     </div>
-                    <span className="font-medium text-sm md:text-base text-muted-foreground">WhatsApp</span>
+                    <span className="font-body text-sm md:text-base text-muted-foreground">WhatsApp</span>
                   </div>
                 </div>
                 <div className="p-5 md:p-6 text-center border-b border-white/5">
                   <div className="inline-flex flex-col items-center gap-2">
                     <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/5 flex items-center justify-center">
-                      <ShoppingCart className="w-5 h-5 md:w-6 md:h-6 text-muted-foreground" />
+                      <ShoppingCart className="w-5 h-5 md:w-6 md:h-6 text-muted-foreground" strokeWidth={1.5} />
                     </div>
-                    <span className="font-medium text-sm md:text-base text-muted-foreground">Hotmart/Kiwify</span>
+                    <span className="font-body text-sm md:text-base text-muted-foreground">Outros</span>
                   </div>
                 </div>
               </div>
@@ -816,19 +816,20 @@ export default function Landing() {
               {benefits.map((row, index) => (
                 <motion.div
                   key={row.feature}
-                  className="grid grid-cols-4 border-b border-white/5 last:border-b-0"
+                  className="grid grid-cols-4 border-b border-white/5 last:border-b-0 hover:bg-white/[0.02] transition-colors duration-300"
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <div className="p-4 md:p-5 text-sm md:text-base premium-body">{row.feature}</div>
-                  <div className="p-4 md:p-5 flex justify-center items-center conversy-glow bg-primary/[0.04]">
+                  <div className="p-4 md:p-5 text-sm md:text-base font-body text-muted-foreground">{row.feature}</div>
+                  <div className="p-4 md:p-5 flex justify-center items-center conversy-column-glow relative">
                     <motion.div
                       initial={{ scale: 0 }}
                       whileInView={{ scale: 1 }}
                       viewport={{ once: true }}
                       transition={{ type: "spring", stiffness: 500, delay: index * 0.05 + 0.1 }}
+                      className="relative z-10"
                     >
                       <StatusIcon status={row.conversy} />
                     </motion.div>
@@ -850,10 +851,10 @@ export default function Landing() {
       <section className="py-24 px-4">
         <div className="container mx-auto">
           <ScrollReveal className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl mb-4 premium-heading">
+            <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
               Para Quem é o Conversy?
             </h2>
-            <p className="premium-body text-lg max-w-2xl mx-auto">
+            <p className="font-body text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
               Ideal para quem quer vender produtos digitais de forma automatizada e profissional.
             </p>
           </ScrollReveal>
@@ -873,18 +874,18 @@ export default function Landing() {
                 className="relative group"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="glass-premium relative p-8 rounded-3xl h-full">
+                <div className="landing-feature-card relative rounded-3xl h-full">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mb-6 shadow-lg shadow-violet-500/25">
-                    <TrendingUp className="w-8 h-8 text-white" />
+                    <TrendingUp className="w-8 h-8 text-white" strokeWidth={1.5} />
                   </div>
-                  <h3 className="text-xl mb-3 premium-heading">Infoprodutores</h3>
-                  <p className="premium-body mb-5">
+                  <h3 className="text-xl mb-3 font-display font-semibold">Infoprodutores</h3>
+                  <p className="font-body text-muted-foreground mb-5 leading-relaxed">
                     Venda cursos, e-books, mentorias e templates direto no Telegram com entrega automática.
                   </p>
                   <ul className="space-y-3">
                     {["Entrega instantânea de arquivos", "Upsell pós-compra automático", "Métricas de conversão"].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0" />
+                      <li key={i} className="flex items-center gap-3 text-sm font-body text-muted-foreground">
+                        <CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0" strokeWidth={1.5} />
                         {item}
                       </li>
                     ))}
@@ -901,18 +902,18 @@ export default function Landing() {
                 className="relative group"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="glass-premium relative p-8 rounded-3xl h-full">
+                <div className="landing-feature-card relative rounded-3xl h-full">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center mb-6 shadow-lg shadow-cyan-500/25">
-                    <MessageCircle className="w-8 h-8 text-white" />
+                    <MessageCircle className="w-8 h-8 text-white" strokeWidth={1.5} />
                   </div>
-                  <h3 className="text-xl mb-3 premium-heading">Criadores de Conteúdo</h3>
-                  <p className="premium-body mb-5">
+                  <h3 className="text-xl mb-3 font-display font-semibold">Criadores de Conteúdo</h3>
+                  <p className="font-body text-muted-foreground mb-5 leading-relaxed">
                     Monetize sua audiência vendendo conteúdo exclusivo direto onde ela já está.
                   </p>
                   <ul className="space-y-3">
                     {["Presets e packs exclusivos", "Aulas e tutoriais premium", "Atendimento automatizado"].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <li key={i} className="flex items-center gap-3 text-sm font-body text-muted-foreground">
+                        <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" strokeWidth={1.5} />
                         {item}
                       </li>
                     ))}
@@ -929,18 +930,18 @@ export default function Landing() {
                 className="relative group"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="glass-premium relative p-8 rounded-3xl h-full">
+                <div className="landing-feature-card relative rounded-3xl h-full">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-6 shadow-lg shadow-amber-500/25">
-                    <Shield className="w-8 h-8 text-white" />
+                    <Shield className="w-8 h-8 text-white" strokeWidth={1.5} />
                   </div>
-                  <h3 className="text-xl mb-3 premium-heading">Comunidades VIP</h3>
-                  <p className="premium-body mb-5">
+                  <h3 className="text-xl mb-3 font-display font-semibold">Comunidades VIP</h3>
+                  <p className="font-body text-muted-foreground mb-5 leading-relaxed">
                     Gerencie acessos a grupos exclusivos com cobrança recorrente ou única.
                   </p>
                   <ul className="space-y-3">
                     {["Acesso automático ao grupo", "Gestão de membros integrada", "Renovação e cancelamento"].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                      <li key={i} className="flex items-center gap-3 text-sm font-body text-muted-foreground">
+                        <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" strokeWidth={1.5} />
                         {item}
                       </li>
                     ))}
@@ -958,10 +959,10 @@ export default function Landing() {
         
         <div className="container mx-auto relative z-10">
           <ScrollReveal className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl mb-4 premium-heading">
+            <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
               Segurança em Primeiro Lugar
             </h2>
-            <p className="premium-body text-lg max-w-2xl mx-auto">
+            <p className="font-body text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
               Seus pagamentos e dados estão protegidos com a mais alta tecnologia.
             </p>
           </ScrollReveal>
@@ -982,14 +983,14 @@ export default function Landing() {
               <motion.div
                 key={item.title}
                 variants={staggerItem}
-                className="glass-premium flex items-center gap-4 p-6 rounded-2xl"
+                className="landing-feature-card flex items-center gap-4 !p-6 rounded-2xl"
               >
                 <div className={`w-14 h-14 rounded-xl bg-${item.color}-500/20 flex items-center justify-center shrink-0`}>
-                  <item.icon className={`w-7 h-7 text-${item.color}-500`} />
+                  <item.icon className={`w-7 h-7 text-${item.color}-500`} strokeWidth={1.5} />
                 </div>
                 <div>
-                  <p className="font-bold premium-heading">{item.title}</p>
-                  <p className="text-sm premium-body">{item.desc}</p>
+                  <p className="font-display font-semibold">{item.title}</p>
+                  <p className="text-sm font-body text-muted-foreground">{item.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -1003,23 +1004,23 @@ export default function Landing() {
             viewport={{ once: true }}
             transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="flex items-center gap-2 text-sm premium-body">
-              <BadgeCheck className="w-5 h-5 text-emerald-500" />
+            <div className="flex items-center gap-2 text-sm font-body text-muted-foreground">
+              <BadgeCheck className="w-5 h-5 text-emerald-500" strokeWidth={1.5} />
               <span>Empresa 100% Brasileira</span>
             </div>
             <div className="hidden md:block w-px h-4 bg-white/10" />
-            <div className="flex items-center gap-2 text-sm premium-body">
-              <BadgeCheck className="w-5 h-5 text-emerald-500" />
+            <div className="flex items-center gap-2 text-sm font-body text-muted-foreground">
+              <BadgeCheck className="w-5 h-5 text-emerald-500" strokeWidth={1.5} />
               <span>Sem mensalidade fixa</span>
             </div>
             <div className="hidden md:block w-px h-4 bg-white/10" />
-            <div className="flex items-center gap-2 text-sm premium-body">
-              <BadgeCheck className="w-5 h-5 text-emerald-500" />
+            <div className="flex items-center gap-2 text-sm font-body text-muted-foreground">
+              <BadgeCheck className="w-5 h-5 text-emerald-500" strokeWidth={1.5} />
               <span>Entrega instantânea garantida</span>
             </div>
             <div className="hidden md:block w-px h-4 bg-white/10" />
-            <div className="flex items-center gap-2 text-sm premium-body">
-              <BadgeCheck className="w-5 h-5 text-emerald-500" />
+            <div className="flex items-center gap-2 text-sm font-body text-muted-foreground">
+              <BadgeCheck className="w-5 h-5 text-emerald-500" strokeWidth={1.5} />
               <span>PIX em tempo real</span>
             </div>
           </motion.div>
@@ -1039,10 +1040,10 @@ export default function Landing() {
       <section id="faq" className="py-24 px-4">
         <div className="container mx-auto">
           <ScrollReveal className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl mb-4 premium-heading">
+            <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
               Perguntas Frequentes
             </h2>
-            <p className="premium-body text-lg max-w-2xl mx-auto">
+            <p className="font-body text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
               Tire suas dúvidas sobre o Conversy.
             </p>
           </ScrollReveal>
@@ -1054,12 +1055,12 @@ export default function Landing() {
                   <AccordionItem 
                     key={index} 
                     value={`item-${index}`}
-                    className="glass-premium border-0 rounded-2xl overflow-hidden data-[state=open]:ring-1 data-[state=open]:ring-primary/20"
+                    className="landing-feature-card !p-0 border-0 rounded-2xl overflow-hidden data-[state=open]:ring-1 data-[state=open]:ring-primary/30"
                   >
-                    <AccordionTrigger className="text-left hover:no-underline hover:text-primary transition-colors py-6 text-base px-6 premium-heading font-medium">
+                    <AccordionTrigger className="text-left hover:no-underline hover:text-primary transition-colors duration-300 py-6 text-base px-6 font-display font-medium">
                       {faq.question}
                     </AccordionTrigger>
-                    <AccordionContent className="premium-body leading-relaxed pb-6 px-6">
+                    <AccordionContent className="font-body text-muted-foreground leading-relaxed pb-6 px-6">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -1078,7 +1079,7 @@ export default function Landing() {
               whileHover={{ scale: 1.01 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
-              <div className="glass-premium p-10 md:p-16 text-center relative overflow-hidden rounded-[2rem]">
+              <div className="landing-feature-card !p-10 md:!p-16 text-center relative overflow-hidden rounded-[2rem]">
                 {/* Animated background elements */}
                 <motion.div 
                   className="absolute top-0 right-0 w-80 h-80 bg-primary/15 rounded-full blur-[100px]"
@@ -1099,7 +1100,7 @@ export default function Landing() {
                 
                 <div className="relative z-10">
                   <motion.h2 
-                    className="text-3xl md:text-5xl mb-5 premium-heading"
+                    className="text-3xl md:text-5xl mb-5 font-display font-bold tracking-tight"
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -1108,7 +1109,7 @@ export default function Landing() {
                     Pronto para começar?
                   </motion.h2>
                   <motion.p 
-                    className="premium-body text-lg max-w-xl mx-auto mb-10"
+                    className="font-body text-muted-foreground text-lg max-w-xl mx-auto mb-10 leading-relaxed"
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -1129,13 +1130,13 @@ export default function Landing() {
                         whileHover={{ scale: 1.05 }} 
                         whileTap={{ scale: 0.95 }}
                       >
-                        <Button size="lg" className="gap-2 text-base px-10 h-14 cta-button cta-shine rounded-xl">
+                        <Button size="lg" className="gap-2 text-base px-10 h-14 font-display font-medium cta-shine btn-premium rounded-xl">
                           Criar Conta Grátis
                           <motion.div
                             animate={{ x: [0, 5, 0] }}
                             transition={{ duration: 1.5, repeat: Infinity }}
                           >
-                            <ArrowRight className="w-5 h-5" />
+                            <ArrowRight className="w-5 h-5" strokeWidth={1.5} />
                           </motion.div>
                         </Button>
                       </motion.div>
@@ -1143,7 +1144,7 @@ export default function Landing() {
                   </motion.div>
                   
                   <motion.div 
-                    className="flex flex-wrap justify-center gap-8 text-sm premium-body"
+                    className="flex flex-wrap justify-center gap-8 text-sm font-body text-muted-foreground"
                     variants={staggerContainer}
                     initial="hidden"
                     whileInView="visible"
@@ -1169,7 +1170,7 @@ export default function Landing() {
                             delay: 0.3 + index * 0.1 
                           }}
                         >
-                          <item.icon className="w-5 h-5 text-primary" />
+                          <item.icon className="w-5 h-5 text-primary" strokeWidth={1.5} />
                         </motion.div>
                         {item.text}
                       </motion.div>
@@ -1245,7 +1246,7 @@ export default function Landing() {
 
             {/* Links Column */}
             <div>
-              <h4 className="font-medium mb-4">Plataforma</h4>
+              <h4 className="font-display font-semibold mb-4">Plataforma</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
                   <Link to="/auth" className="hover:text-primary transition-colors">
@@ -1272,7 +1273,7 @@ export default function Landing() {
 
             {/* Support Column */}
             <div>
-              <h4 className="font-medium mb-4">Suporte</h4>
+              <h4 className="font-display font-semibold mb-4">Suporte</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
                   <a href="#" className="hover:text-primary transition-colors flex items-center gap-1">
@@ -1302,7 +1303,7 @@ export default function Landing() {
 
             {/* Legal Column */}
             <div>
-              <h4 className="font-medium mb-4">Legal</h4>
+              <h4 className="font-display font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
                   <Link to="/termos-de-uso" className="hover:text-primary transition-colors">
@@ -1371,9 +1372,9 @@ export default function Landing() {
         transition={{ delay: 1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       >
         <Link to="/auth" className="block">
-          <Button className="w-full h-14 text-lg gap-2 shadow-lg shadow-primary/30 cta-button cta-shine rounded-xl">
+          <Button className="w-full h-14 text-lg gap-2 shadow-lg shadow-primary/30 font-display font-medium cta-shine btn-premium rounded-xl">
             Começar Grátis Agora
-            <ArrowRight className="w-5 h-5" />
+            <ArrowRight className="w-5 h-5" strokeWidth={1.5} />
           </Button>
         </Link>
       </motion.div>
