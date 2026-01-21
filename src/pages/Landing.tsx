@@ -30,6 +30,7 @@ import { motion, useInView, Variants } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import { AnimatedCounter } from "@/components/landing/AnimatedCounter";
 import conversyLogo from "@/assets/conversy-logo.png";
+import unipayLogo from "@/assets/unipay-logo.png";
 
 // Lazy load heavy components
 const DemoModal = lazy(() => import("@/components/landing/DemoModal").then(m => ({ default: m.DemoModal })));
@@ -275,13 +276,14 @@ export default function Landing() {
       >
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <motion.div 
-            className="flex items-center gap-2"
+            className="flex items-center"
             whileHover={{ scale: 1.02 }}
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-              <Send className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg">TeleGateway</span>
+            <img 
+              src={conversyLogo} 
+              alt="Conversy" 
+              className="h-8 w-auto object-contain"
+            />
           </motion.div>
 
           {/* Desktop Navigation */}
@@ -310,10 +312,11 @@ export default function Landing() {
               <SheetContent side="right" className="w-80 bg-background border-border">
                 <div className="flex flex-col gap-6 mt-8">
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-                      <Send className="w-4 h-4 text-primary-foreground" />
-                    </div>
-                    <span className="font-bold text-lg">TeleGateway</span>
+                    <img 
+                      src={conversyLogo} 
+                      alt="Conversy" 
+                      className="h-8 w-auto object-contain"
+                    />
                   </div>
 
                   <nav className="flex flex-col gap-4">
@@ -1158,13 +1161,14 @@ export default function Landing() {
             {/* Brand Column */}
             <div className="col-span-2 md:col-span-1">
               <motion.div 
-                className="flex items-center gap-2 mb-4"
+                className="flex items-center mb-4"
                 whileHover={{ scale: 1.02 }}
               >
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-                  <Send className="w-4 h-4 text-primary-foreground" />
-                </div>
-                <span className="font-bold text-lg">TeleGateway</span>
+                <img 
+                  src={conversyLogo} 
+                  alt="Conversy" 
+                  className="h-8 w-auto object-contain"
+                />
               </motion.div>
               <p className="text-sm text-muted-foreground mb-4">
                 Automatize suas vendas no Telegram com pagamento PIX, entrega instantânea e recuperação de carrinho.
@@ -1302,15 +1306,15 @@ export default function Landing() {
                 whileTap={{ scale: 0.98 }}
               >
                 <img 
-                  src={conversyLogo} 
-                  alt="Conversy" 
+                  src={unipayLogo} 
+                  alt="UniPay" 
                   className="h-6 w-auto object-contain"
                   loading="lazy"
                   decoding="async"
                 />
                 <div className="h-4 w-px bg-border/50" />
                 <div className="flex items-center gap-1 text-xs text-emerald-400">
-                  <span>Parceiro de Pagamentos</span>
+                  <span>Gateway de Pagamentos</span>
                   <ExternalLink className="w-3 h-3" />
                 </div>
               </motion.a>
