@@ -564,7 +564,7 @@ export default function Landing() {
             <Link to="/auth" className="w-full sm:w-auto">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base cta-button cta-shine rounded-xl">
-                  Criar Minha Loja
+                  Começar Agora
                   <motion.div
                     animate={{ x: [0, 5, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
@@ -706,7 +706,7 @@ export default function Landing() {
               Como Funciona
             </h2>
             <p className="premium-body text-lg max-w-2xl mx-auto">
-              Em apenas 3 passos simples, sua loja estará pronta para receber vendas.
+              Em apenas 3 passos simples, seu negócio estará pronto para receber vendas.
             </p>
           </ScrollReveal>
           
@@ -1114,7 +1114,7 @@ export default function Landing() {
                     viewport={{ once: true }}
                     transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    Crie sua loja gratuita agora e comece a vender em minutos. Sem taxas mensais, pague apenas por venda.
+                    Crie seu negócio gratuito agora e comece a vender em minutos. Sem taxas mensais, pague apenas por venda.
                   </motion.p>
                   
                   <motion.div 
