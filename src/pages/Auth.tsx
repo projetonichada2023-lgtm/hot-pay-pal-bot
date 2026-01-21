@@ -223,7 +223,7 @@ const Auth = () => {
             <Bot className="w-8 h-8 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl font-bold">
-            <span className="gradient-text">TeleGateway</span>
+            <span className="gradient-text">Conversy</span>
           </CardTitle>
           <CardDescription className="text-muted-foreground">
             {view === 'forgot-password' && 'Recupere sua senha'}

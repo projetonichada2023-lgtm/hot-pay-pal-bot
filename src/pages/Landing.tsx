@@ -29,7 +29,7 @@ import { Link } from "react-router-dom";
 import { motion, useInView, Variants } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import { AnimatedCounter } from "@/components/landing/AnimatedCounter";
-import unipayLogo from "@/assets/unipay-logo.png";
+import conversyLogo from "@/assets/conversy-logo.png";
 
 // Lazy load heavy components
 const DemoModal = lazy(() => import("@/components/landing/DemoModal").then(m => ({ default: m.DemoModal })));
@@ -136,7 +136,7 @@ const testimonials = [
       handle: "@rafaelsantos",
       avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face&auto=format&q=75"
     },
-    text: "Migrei do WhatsApp para o Telegram com o TeleGateway e minhas vendas aumentaram 80%. A automação é outro nível!"
+    text: "Migrei do WhatsApp para o Telegram com o Conversy e minhas vendas aumentaram 80%. A automação é outro nível!"
   },
   {
     author: {
@@ -520,8 +520,8 @@ export default function Landing() {
               whileTap={{ scale: 0.98 }}
             >
               <img 
-                src={unipayLogo} 
-                alt="UniPay - Gateway de Pagamentos" 
+                src={conversyLogo} 
+                alt="Conversy - Automação de Vendas" 
                 className="h-8 w-auto object-contain"
                 loading="lazy"
                 decoding="async"
@@ -1302,8 +1302,8 @@ export default function Landing() {
                 whileTap={{ scale: 0.98 }}
               >
                 <img 
-                  src={unipayLogo} 
-                  alt="UniPay - Gateway de Pagamentos" 
+                  src={conversyLogo} 
+                  alt="Conversy" 
                   className="h-6 w-auto object-contain"
                   loading="lazy"
                   decoding="async"
@@ -1317,7 +1317,7 @@ export default function Landing() {
 
               {/* Copyright */}
               <p className="text-sm text-muted-foreground">
-                © 2025 TeleGateway. Todos os direitos reservados.
+                © 2025 Conversy. Todos os direitos reservados.
               </p>
             </div>
           </div>

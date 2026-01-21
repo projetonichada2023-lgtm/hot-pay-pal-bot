@@ -1,11 +1,19 @@
-/* Font loading optimized - only essential weights */
+/* Clash Display font loading */
 @font-face {
-  font-family: 'Space Grotesk';
+  font-family: 'Clash Display';
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url('https://fonts.gstatic.com/s/spacegrotesk/v16/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj7oUXskPMBBSSJLm2E.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url('https://fonts.cdnfonts.com/s/69383/ClashDisplay-Variable.woff2') format('woff2');
+}
+
+/* Archive font loading */
+@font-face {
+  font-family: 'Archive';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('https://fonts.cdnfonts.com/s/13686/Archive.woff') format('woff');
 }
 
 @tailwind base;
@@ -13,27 +21,35 @@
 @tailwind utilities;
 
 @layer base {
-  /* Light Mode */
+  /* Light Mode - Conversy Brand */
   :root {
     --background: 0 0% 98%;
-    --foreground: 220 20% 10%;
+    --foreground: 0 0% 0%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
+    --card-foreground: 0 0% 0%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
+    --popover-foreground: 0 0% 0%;
 
-    --primary: 24 100% 50%;
+    /* Conversy Primary: #F08936 (HSL: 27, 86%, 58%) */
+    --primary: 27 86% 58%;
     --primary-foreground: 0 0% 100%;
 
+    /* Conversy Primary Dark: #C46B4E (HSL: 15, 48%, 54%) */
+    --primary-dark: 15 48% 54%;
+
+    /* Conversy Primary Light: #F1955E (HSL: 25, 84%, 65%) */
+    --primary-light: 25 84% 65%;
+
     --secondary: 220 15% 94%;
-    --secondary-foreground: 220 20% 10%;
+    --secondary-foreground: 0 0% 0%;
 
     --muted: 220 15% 92%;
     --muted-foreground: 220 10% 45%;
 
-    --accent: 350 85% 55%;
+    /* Accent usando laranja complementar */
+    --accent: 15 48% 54%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -41,7 +57,7 @@
 
     --border: 220 15% 88%;
     --input: 220 15% 88%;
-    --ring: 24 100% 50%;
+    --ring: 27 86% 58%;
 
     --radius: 0.75rem;
 
@@ -49,72 +65,81 @@
     --warning: 40 95% 50%;
     --telegram: 200 85% 50%;
 
-    --gradient-hot: linear-gradient(135deg, hsl(24, 100%, 50%) 0%, hsl(350, 85%, 55%) 100%);
+    /* Conversy gradients */
+    --gradient-hot: linear-gradient(135deg, hsl(27, 86%, 58%) 0%, hsl(15, 48%, 54%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(0, 0%, 100%) 0%, hsl(220, 15%, 96%) 100%);
-    --gradient-glow: radial-gradient(circle at center, hsl(24, 100%, 55%, 0.1) 0%, transparent 70%);
+    --gradient-glow: radial-gradient(circle at center, hsl(27, 86%, 58%, 0.1) 0%, transparent 70%);
 
-    --shadow-hot: 0 4px 30px hsl(24, 100%, 55%, 0.2);
+    --shadow-hot: 0 4px 30px hsl(27, 86%, 58%, 0.25);
     --shadow-card: 0 4px 20px hsl(220, 20%, 10%, 0.08);
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 20% 10%;
-    --sidebar-primary: 24 100% 50%;
+    --sidebar-foreground: 0 0% 0%;
+    --sidebar-primary: 27 86% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 15% 94%;
-    --sidebar-accent-foreground: 220 20% 10%;
+    --sidebar-accent-foreground: 0 0% 0%;
     --sidebar-border: 220 15% 90%;
-    --sidebar-ring: 24 100% 50%;
+    --sidebar-ring: 27 86% 58%;
   }
 
-  /* Dark Mode */
+  /* Dark Mode - Conversy Brand */
   .dark {
-    --background: 220 20% 6%;
+    --background: 0 0% 5%;
     --foreground: 0 0% 98%;
 
-    --card: 220 18% 10%;
+    --card: 0 0% 8%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 220 18% 10%;
+    --popover: 0 0% 8%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 24 100% 55%;
+    /* Conversy Primary: #F08936 */
+    --primary: 27 86% 58%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 15% 16%;
+    /* Conversy Primary Dark: #C46B4E */
+    --primary-dark: 15 48% 54%;
+
+    /* Conversy Primary Light: #F1955E */
+    --primary-light: 25 84% 65%;
+
+    --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 220 15% 20%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 350 85% 55%;
+    --accent: 25 84% 65%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 18%;
-    --input: 220 15% 18%;
-    --ring: 24 100% 55%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 27 86% 58%;
 
     --success: 145 65% 45%;
     --warning: 40 95% 55%;
     --telegram: 200 85% 50%;
 
-    --gradient-hot: linear-gradient(135deg, hsl(24, 100%, 55%) 0%, hsl(350, 85%, 55%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(220, 18%, 12%) 0%, hsl(220, 18%, 8%) 100%);
-    --gradient-glow: radial-gradient(circle at center, hsl(24, 100%, 55%, 0.15) 0%, transparent 70%);
+    /* Conversy gradients - dark mode */
+    --gradient-hot: linear-gradient(135deg, hsl(27, 86%, 58%) 0%, hsl(15, 48%, 54%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0, 0%, 10%) 0%, hsl(0, 0%, 6%) 100%);
+    --gradient-glow: radial-gradient(circle at center, hsl(27, 86%, 58%, 0.15) 0%, transparent 70%);
 
-    --shadow-hot: 0 4px 30px hsl(24, 100%, 55%, 0.25);
+    --shadow-hot: 0 4px 30px hsl(27, 86%, 58%, 0.3);
     --shadow-card: 0 8px 32px hsl(0, 0%, 0%, 0.4);
 
-    --sidebar-background: 220 18% 8%;
+    --sidebar-background: 0 0% 6%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 24 100% 55%;
+    --sidebar-primary: 27 86% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 14%;
+    --sidebar-accent: 0 0% 12%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 220 15% 16%;
-    --sidebar-ring: 24 100% 55%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 27 86% 58%;
   }
 }
 
@@ -125,7 +150,12 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Clash Display', 'Archive', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Clash Display', system-ui, sans-serif;
+    font-weight: 600;
   }
 
   code, .mono {
