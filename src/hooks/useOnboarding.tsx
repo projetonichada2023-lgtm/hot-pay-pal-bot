@@ -14,7 +14,7 @@ export const tourSteps: TourStep[] = [
   {
     id: 'welcome',
     target: '[data-tour="sidebar-logo"]',
-    title: 'Bem-vindo ao TeleGateway! 🚀',
+    title: 'Bem-vindo ao Conversy! 🚀',
     content: 'Esta é sua central de vendas no Telegram. Vamos fazer um tour rápido para você conhecer tudo!',
     position: 'right',
   },

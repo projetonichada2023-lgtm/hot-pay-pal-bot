@@ -14,7 +14,7 @@ self.addEventListener('push', function(event) {
     data = event.data.json();
   } catch (e) {
     data = {
-      title: 'TeleGateway',
+      title: 'Conversy',
       body: event.data.text(),
       icon: '/pwa-192x192.png',
     };
