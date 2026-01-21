@@ -22,7 +22,13 @@ import {
   BookOpen,
   Mail,
   ExternalLink,
-  Menu
+  Menu,
+  Clock,
+  CreditCard,
+  Truck,
+  BarChart3,
+  Users,
+  Gift
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link } from "react-router-dom";
@@ -83,19 +89,85 @@ const features = [
 const steps = [
   {
     number: "01",
+    icon: Bot,
     title: "Configure seu Bot",
-    description: "Conecte seu bot do Telegram e personalize as mensagens."
+    description: "Conecte seu bot do Telegram em poucos cliques e personalize todas as mensagens de atendimento."
   },
   {
     number: "02",
+    icon: ShoppingCart,
     title: "Cadastre Produtos",
-    description: "Adicione seus produtos digitais com preços e descrições."
+    description: "Adicione seus produtos digitais com preços, descrições e configure entrega automática."
   },
   {
     number: "03",
+    icon: CreditCard,
     title: "Receba Vendas",
-    description: "Seus clientes compram direto no Telegram com PIX."
+    description: "Seus clientes compram direto no Telegram com PIX. Entrega e confirmação automáticas."
   }
+];
+
+const benefits = [
+  { 
+    feature: "Automação 100% sem código", 
+    conversy: true, 
+    whatsapp: false, 
+    others: "partial" 
+  },
+  { 
+    feature: "Bot próprio personalizado", 
+    conversy: true, 
+    whatsapp: false, 
+    others: false 
+  },
+  { 
+    feature: "PIX automático integrado", 
+    conversy: true, 
+    whatsapp: false, 
+    others: true 
+  },
+  { 
+    feature: "Entrega instantânea", 
+    conversy: true, 
+    whatsapp: false, 
+    others: true 
+  },
+  { 
+    feature: "Recuperação de carrinho", 
+    conversy: true, 
+    whatsapp: "partial", 
+    others: true 
+  },
+  { 
+    feature: "Funil de upsell automático", 
+    conversy: true, 
+    whatsapp: false, 
+    others: "partial" 
+  },
+  { 
+    feature: "Sem mensalidade fixa", 
+    conversy: true, 
+    whatsapp: true, 
+    others: false 
+  },
+  { 
+    feature: "Taxa por transação baixa", 
+    conversy: true, 
+    whatsapp: true, 
+    others: false 
+  },
+  { 
+    feature: "Chat direto com cliente", 
+    conversy: true, 
+    whatsapp: true, 
+    others: false 
+  },
+  { 
+    feature: "Acesso a grupos automático", 
+    conversy: true, 
+    whatsapp: false, 
+    others: false 
+  },
 ];
 
 const testimonials = [
@@ -105,7 +177,7 @@ const testimonials = [
       handle: "@lucasmendes",
       avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face&auto=format&q=75"
     },
-    text: "O TeleGateway revolucionou minhas vendas. Antes eu perdia horas respondendo mensagens, agora tudo é automático. Meu faturamento triplicou em 2 meses!"
+    text: "O Conversy revolucionou minhas vendas. Antes eu perdia horas respondendo mensagens, agora tudo é automático. Meu faturamento triplicou em 2 meses!"
   },
   {
     author: {
@@ -156,7 +228,7 @@ const faqs = [
   },
   {
     question: "Preciso ter conhecimento técnico?",
-    answer: "Não! O TeleGateway foi criado para ser simples. Você só precisa criar um bot no Telegram (com um clique), cadastrar seus produtos e pronto. Não precisa programar nada."
+    answer: "Não! O Conversy foi criado para ser simples. Você só precisa criar um bot no Telegram (com um clique), cadastrar seus produtos e pronto. Não precisa programar nada."
   },
   {
     question: "Quais tipos de produtos posso vender?",
@@ -254,6 +326,29 @@ function ScrollReveal({
   );
 }
 
+// Render status icon
+function StatusIcon({ status }: { status: boolean | string }) {
+  if (status === true) {
+    return (
+      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+        <CheckCircle2 className="w-4 h-4 text-primary" />
+      </div>
+    );
+  }
+  if (status === "partial") {
+    return (
+      <div className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center">
+        <Minus className="w-4 h-4 text-yellow-500" />
+      </div>
+    );
+  }
+  return (
+    <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+      <X className="w-4 h-4 text-muted-foreground" />
+    </div>
+  );
+}
+
 export default function Landing() {
   const heroRef = useRef(null);
   const heroInView = useInView(heroRef, { once: true });
@@ -269,7 +364,7 @@ export default function Landing() {
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       {/* Header */}
       <motion.header 
-        className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50"
+        className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-xl border-b border-border/30"
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
@@ -287,13 +382,28 @@ export default function Landing() {
           </motion.div>
 
           {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-8">
+            <a href="#como-funciona" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Como Funciona
+            </a>
+            <a href="#beneficios" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Benefícios
+            </a>
+            <a href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              FAQ
+            </a>
+          </nav>
+
+          {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
             <Link to="/auth">
-              <Button variant="ghost" size="sm">Entrar</Button>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                Entrar
+              </Button>
             </Link>
             <Link to="/auth">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button size="sm" className="gap-2">
+                <Button size="sm" className="gap-2 cta-button rounded-lg">
                   Começar Grátis
                   <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -322,28 +432,28 @@ export default function Landing() {
                   <nav className="flex flex-col gap-4">
                     <a 
                       href="#features" 
-                      className="text-lg font-medium hover:text-primary transition-colors"
+                      className="text-lg hover:text-primary transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Recursos
                     </a>
                     <a 
-                      href="#how-it-works" 
-                      className="text-lg font-medium hover:text-primary transition-colors"
+                      href="#como-funciona" 
+                      className="text-lg hover:text-primary transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Como Funciona
                     </a>
                     <a 
-                      href="#testimonials" 
-                      className="text-lg font-medium hover:text-primary transition-colors"
+                      href="#beneficios" 
+                      className="text-lg hover:text-primary transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Depoimentos
+                      Benefícios
                     </a>
                     <a 
                       href="#faq" 
-                      className="text-lg font-medium hover:text-primary transition-colors"
+                      className="text-lg hover:text-primary transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       FAQ
@@ -352,12 +462,12 @@ export default function Landing() {
 
                   <div className="border-t border-border pt-6 mt-2 flex flex-col gap-3">
                     <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="outline" className="w-full justify-center">
+                      <Button variant="outline" className="w-full justify-center rounded-lg">
                         Entrar
                       </Button>
                     </Link>
                     <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                      <Button className="w-full justify-center gap-2">
+                      <Button className="w-full justify-center gap-2 cta-button rounded-lg">
                         Começar Grátis
                         <ArrowRight className="w-4 h-4" />
                       </Button>
@@ -367,7 +477,7 @@ export default function Landing() {
                   {/* Mobile Demo Button */}
                   <Button 
                     variant="secondary" 
-                    className="w-full gap-2 mt-2"
+                    className="w-full gap-2 mt-2 rounded-lg"
                     onClick={() => {
                       setMobileMenuOpen(false);
                       setDemoOpen(true);
@@ -389,12 +499,12 @@ export default function Landing() {
         
         {/* Animated background blobs - hidden on mobile for performance */}
         <motion.div 
-          className="hidden md:block absolute top-20 left-1/4 w-72 h-72 bg-primary/10 rounded-full blur-2xl will-change-transform"
+          className="hidden md:block absolute top-20 left-1/4 w-72 h-72 bg-primary/10 rounded-full blur-3xl will-change-transform"
           animate={{ y: [-10, 10, -10] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div 
-          className="hidden md:block absolute top-40 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-2xl will-change-transform"
+          className="hidden md:block absolute top-40 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl will-change-transform"
           animate={{ y: [10, -10, 10] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         />
@@ -406,21 +516,12 @@ export default function Landing() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary mb-6"
           >
-            {/* Disabled spinning animation on mobile */}
-            <Zap className="w-4 h-4 md:animate-none" />
-            <span className="hidden md:inline">
-              <motion.span
-                animate={{ opacity: [1, 0.7, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                Automatize suas vendas no Telegram
-              </motion.span>
-            </span>
-            <span className="md:hidden">Automatize suas vendas no Telegram</span>
+            <Zap className="w-4 h-4" />
+            <span>Automatize suas vendas no Telegram</span>
           </motion.div>
           
           <motion.h1 
-            className="text-4xl md:text-6xl lg:text-7xl font-bold max-w-4xl mx-auto leading-tight mb-6"
+            className="text-4xl md:text-6xl lg:text-7xl max-w-4xl mx-auto leading-tight mb-6"
             initial={{ opacity: 0, y: 40 }}
             animate={heroInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
@@ -453,7 +554,7 @@ export default function Landing() {
           >
             <Link to="/auth" className="w-full sm:w-auto">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base">
+                <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base cta-button rounded-xl">
                   Criar Minha Loja
                   <motion.div
                     animate={{ x: [0, 5, 0] }}
@@ -468,7 +569,7 @@ export default function Landing() {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base"
+                className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base rounded-xl border-border/50"
                 onClick={() => setDemoOpen(true)}
               >
                 <MessageCircle className="w-5 h-5" />
@@ -540,10 +641,10 @@ export default function Landing() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-4 bg-muted/30">
+      <section id="features" className="py-20 px-4 bg-card/30">
         <div className="container mx-auto">
           <ScrollReveal className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            <h2 className="text-3xl md:text-4xl mb-4">
               Tudo que você precisa para vender
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -567,7 +668,7 @@ export default function Landing() {
                   whileHover={{ y: -8, scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 >
-                  <Card className="p-6 bg-card/50 backdrop-blur border-border/50 hover:border-primary/50 transition-colors duration-300 hover:shadow-lg hover:shadow-primary/5 group h-full">
+                  <Card className="p-6 bg-card/50 backdrop-blur border-border/30 hover:border-primary/50 transition-colors duration-300 hover:shadow-lg hover:shadow-primary/5 group h-full rounded-2xl">
                     <motion.div 
                       className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors"
                       whileHover={{ rotate: [0, -10, 10, 0] }}
@@ -575,7 +676,7 @@ export default function Landing() {
                     >
                       <feature.icon className="w-6 h-6 text-primary" />
                     </motion.div>
-                    <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                    <h3 className="text-lg mb-2">{feature.title}</h3>
                     <p className="text-muted-foreground text-sm">{feature.description}</p>
                   </Card>
                 </motion.div>
@@ -585,11 +686,11 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* How it Works */}
-      <section className="py-20 px-4">
+      {/* How it Works - Enhanced */}
+      <section id="como-funciona" className="py-20 px-4">
         <div className="container mx-auto">
-          <ScrollReveal className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <ScrollReveal className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl mb-4">
               Como Funciona
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -597,33 +698,39 @@ export default function Landing() {
             </p>
           </ScrollReveal>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {steps.map((step, index) => (
               <ScrollReveal 
                 key={step.number}
                 variants={index === 0 ? fadeInLeft : index === 2 ? fadeInRight : fadeInUp}
               >
                 <motion.div 
-                  className="text-center"
+                  className="relative"
                   whileHover={{ y: -5 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <motion.div 
-                    className="text-6xl font-bold text-primary/20 mb-4"
-                    initial={{ scale: 0, rotate: -180 }}
-                    whileInView={{ scale: 1, rotate: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ 
-                      type: "spring", 
-                      stiffness: 150, 
-                      damping: 15,
-                      delay: index * 0.2 
-                    }}
-                  >
-                    {step.number}
-                  </motion.div>
-                  <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                  <p className="text-muted-foreground">{step.description}</p>
+                  {/* Step Card */}
+                  <Card className="p-8 bg-card/50 backdrop-blur border-border/30 rounded-2xl text-center h-full">
+                    <motion.div 
+                      className="text-7xl font-bold text-primary/10 absolute top-4 right-4"
+                      initial={{ scale: 0, rotate: -180 }}
+                      whileInView={{ scale: 1, rotate: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ 
+                        type: "spring", 
+                        stiffness: 150, 
+                        damping: 15,
+                        delay: index * 0.2 
+                      }}
+                    >
+                      {step.number}
+                    </motion.div>
+                    <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 mx-auto">
+                      <step.icon className="w-8 h-8 text-primary" />
+                    </div>
+                    <h3 className="text-xl mb-3">{step.title}</h3>
+                    <p className="text-muted-foreground">{step.description}</p>
+                  </Card>
                 </motion.div>
               </ScrollReveal>
             ))}
@@ -642,12 +749,91 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Benefits Comparison Table */}
+      <section id="beneficios" className="py-20 px-4 bg-card/30">
+        <div className="container mx-auto">
+          <ScrollReveal className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl mb-4">
+              Por que escolher o Conversy?
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Compare e veja as vantagens de vender no Telegram com automação.
+            </p>
+          </ScrollReveal>
+
+          <ScrollReveal>
+            <div className="max-w-4xl mx-auto overflow-hidden rounded-2xl border border-border/30 bg-card/50 backdrop-blur">
+              {/* Table Header */}
+              <div className="grid grid-cols-4 bg-muted/30 border-b border-border/30">
+                <div className="p-4 md:p-6 font-medium text-sm md:text-base">Recurso</div>
+                <div className="p-4 md:p-6 text-center">
+                  <div className="inline-flex flex-col items-center gap-1">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                      <Send className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
+                    </div>
+                    <span className="font-bold text-sm md:text-base text-primary">Conversy</span>
+                  </div>
+                </div>
+                <div className="p-4 md:p-6 text-center">
+                  <div className="inline-flex flex-col items-center gap-1">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-emerald-600 flex items-center justify-center">
+                      <MessageCircle className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                    </div>
+                    <span className="font-medium text-sm md:text-base text-muted-foreground">WhatsApp</span>
+                  </div>
+                </div>
+                <div className="p-4 md:p-6 text-center">
+                  <div className="inline-flex flex-col items-center gap-1">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-muted flex items-center justify-center">
+                      <ShoppingCart className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
+                    </div>
+                    <span className="font-medium text-sm md:text-base text-muted-foreground">Hotmart/Kiwify</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table Rows */}
+              {benefits.map((row, index) => (
+                <motion.div
+                  key={row.feature}
+                  className={`grid grid-cols-4 border-b border-border/20 last:border-b-0 ${
+                    index % 2 === 0 ? "bg-transparent" : "bg-muted/10"
+                  }`}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <div className="p-4 md:p-5 text-sm md:text-base">{row.feature}</div>
+                  <div className="p-4 md:p-5 flex justify-center items-center">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      whileInView={{ scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ type: "spring", stiffness: 500, delay: index * 0.05 + 0.1 }}
+                    >
+                      <StatusIcon status={row.conversy} />
+                    </motion.div>
+                  </div>
+                  <div className="p-4 md:p-5 flex justify-center items-center">
+                    <StatusIcon status={row.whatsapp} />
+                  </div>
+                  <div className="p-4 md:p-5 flex justify-center items-center">
+                    <StatusIcon status={row.others} />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
       {/* Para Quem é Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto">
           <ScrollReveal className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Para Quem é o TeleGateway?
+            <h2 className="text-3xl md:text-4xl mb-4">
+              Para Quem é o Conversy?
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               Ideal para quem quer vender produtos digitais de forma automatizada e profissional.
@@ -669,11 +855,11 @@ export default function Landing() {
                 className="relative group"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <Card className="relative p-8 bg-card/50 backdrop-blur border-border/50 hover:border-violet-500/50 transition-all duration-300 h-full">
+                <Card className="relative p-8 bg-card/50 backdrop-blur border-border/30 hover:border-violet-500/50 transition-all duration-300 h-full rounded-2xl">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mb-6 shadow-lg shadow-violet-500/25">
                     <TrendingUp className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold mb-3">Infoprodutores</h3>
+                  <h3 className="text-xl mb-3">Infoprodutores</h3>
                   <p className="text-muted-foreground mb-4">
                     Venda cursos, e-books, mentorias e templates direto no Telegram com entrega automática.
                   </p>
@@ -697,11 +883,11 @@ export default function Landing() {
                 className="relative group"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <Card className="relative p-8 bg-card/50 backdrop-blur border-border/50 hover:border-cyan-500/50 transition-all duration-300 h-full">
+                <Card className="relative p-8 bg-card/50 backdrop-blur border-border/30 hover:border-cyan-500/50 transition-all duration-300 h-full rounded-2xl">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center mb-6 shadow-lg shadow-cyan-500/25">
                     <MessageCircle className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold mb-3">Criadores de Conteúdo</h3>
+                  <h3 className="text-xl mb-3">Criadores de Conteúdo</h3>
                   <p className="text-muted-foreground mb-4">
                     Monetize sua audiência vendendo conteúdo exclusivo direto onde ela já está.
                   </p>
@@ -725,11 +911,11 @@ export default function Landing() {
                 className="relative group"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <Card className="relative p-8 bg-card/50 backdrop-blur border-border/50 hover:border-amber-500/50 transition-all duration-300 h-full">
+                <Card className="relative p-8 bg-card/50 backdrop-blur border-border/30 hover:border-amber-500/50 transition-all duration-300 h-full rounded-2xl">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-6 shadow-lg shadow-amber-500/25">
                     <Shield className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold mb-3">Comunidades VIP</h3>
+                  <h3 className="text-xl mb-3">Comunidades VIP</h3>
                   <p className="text-muted-foreground mb-4">
                     Gerencie acessos a grupos exclusivos com cobrança recorrente ou única.
                   </p>
@@ -748,216 +934,45 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Comparison Section */}
-      <section className="py-20 px-4 bg-muted/30">
+      {/* Trust Section */}
+      <section className="py-20 px-4 bg-card/30">
         <div className="container mx-auto">
           <ScrollReveal className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Por que escolher o TeleGateway?
+            <h2 className="text-3xl md:text-4xl mb-4">
+              Segurança em Primeiro Lugar
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Compare e veja as vantagens de vender no Telegram com automação.
+              Seus pagamentos e dados estão protegidos com a mais alta tecnologia.
             </p>
           </ScrollReveal>
 
-          <ScrollReveal>
-            <div className="max-w-4xl mx-auto overflow-hidden rounded-2xl border border-border/50 bg-card/50 backdrop-blur">
-              {/* Table Header */}
-              <div className="grid grid-cols-4 bg-muted/50 border-b border-border/50">
-                <div className="p-4 md:p-6 font-semibold text-sm md:text-base">Recurso</div>
-                <div className="p-4 md:p-6 text-center">
-                  <div className="inline-flex flex-col items-center gap-1">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-                      <Send className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
-                    </div>
-                    <span className="font-bold text-sm md:text-base text-primary">TeleGateway</span>
-                  </div>
-                </div>
-                <div className="p-4 md:p-6 text-center">
-                  <div className="inline-flex flex-col items-center gap-1">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-emerald-600 flex items-center justify-center">
-                      <MessageCircle className="w-4 h-4 md:w-5 md:h-5 text-white" />
-                    </div>
-                    <span className="font-medium text-sm md:text-base text-muted-foreground">WhatsApp</span>
-                  </div>
-                </div>
-                <div className="p-4 md:p-6 text-center">
-                  <div className="inline-flex flex-col items-center gap-1">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-muted flex items-center justify-center">
-                      <ShoppingCart className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
-                    </div>
-                    <span className="font-medium text-sm md:text-base text-muted-foreground">Hotmart/Kiwify</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Table Rows */}
-              {[
-                { feature: "Automação 100% sem código", telegateway: true, whatsapp: false, others: "partial" },
-                { feature: "Bot próprio personalizado", telegateway: true, whatsapp: false, others: false },
-                { feature: "PIX automático integrado", telegateway: true, whatsapp: false, others: true },
-                { feature: "Entrega instantânea", telegateway: true, whatsapp: false, others: true },
-                { feature: "Recuperação de carrinho", telegateway: true, whatsapp: "partial", others: true },
-                { feature: "Funil de upsell automático", telegateway: true, whatsapp: false, others: "partial" },
-                { feature: "Sem mensalidade fixa", telegateway: true, whatsapp: true, others: false },
-                { feature: "Taxa por transação baixa", telegateway: true, whatsapp: true, others: false },
-                { feature: "Chat direto com cliente", telegateway: true, whatsapp: true, others: false },
-                { feature: "Acesso a grupos automático", telegateway: true, whatsapp: false, others: false },
-              ].map((row, index) => (
-                <motion.div
-                  key={row.feature}
-                  className={`grid grid-cols-4 border-b border-border/30 last:border-b-0 ${
-                    index % 2 === 0 ? "bg-transparent" : "bg-muted/20"
-                  }`}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <div className="p-4 md:p-5 text-sm md:text-base font-medium">{row.feature}</div>
-                  <div className="p-4 md:p-5 flex justify-center items-center">
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      whileInView={{ scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ type: "spring", stiffness: 500, delay: index * 0.05 + 0.1 }}
-                      className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-emerald-500/20 flex items-center justify-center"
-                    >
-                      <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-emerald-500" />
-                    </motion.div>
-                  </div>
-                  <div className="p-4 md:p-5 flex justify-center items-center">
-                    {row.whatsapp === true ? (
-                      <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                        <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-emerald-500" />
-                      </div>
-                    ) : row.whatsapp === "partial" ? (
-                      <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-amber-500/20 flex items-center justify-center">
-                        <Minus className="w-4 h-4 md:w-5 md:h-5 text-amber-500" />
-                      </div>
-                    ) : (
-                      <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-destructive/20 flex items-center justify-center">
-                        <X className="w-4 h-4 md:w-5 md:h-5 text-destructive" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4 md:p-5 flex justify-center items-center">
-                    {row.others === true ? (
-                      <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                        <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-emerald-500" />
-                      </div>
-                    ) : row.others === "partial" ? (
-                      <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-amber-500/20 flex items-center justify-center">
-                        <Minus className="w-4 h-4 md:w-5 md:h-5 text-amber-500" />
-                      </div>
-                    ) : (
-                      <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-destructive/20 flex items-center justify-center">
-                        <X className="w-4 h-4 md:w-5 md:h-5 text-destructive" />
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Legend */}
-            <div className="flex flex-wrap justify-center gap-6 mt-6 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                </div>
-                <span>Incluso</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center">
-                  <Minus className="w-3 h-3 text-amber-500" />
-                </div>
-                <span>Parcial / Manual</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-destructive/20 flex items-center justify-center">
-                  <X className="w-3 h-3 text-destructive" />
-                </div>
-                <span>Não disponível</span>
-              </div>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* Trust Badges Section */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto">
           <motion.div 
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
+            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto"
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
+            viewport={{ once: true, margin: "-100px" }}
           >
-            {/* Security Badge */}
-            <motion.div variants={scaleIn}>
+            {[
+              { icon: Lock, title: "Dados Criptografados", desc: "SSL 256-bit em todas as transações", color: "emerald" },
+              { icon: Shield, title: "LGPD Compliant", desc: "Conformidade total com a lei brasileira", color: "blue" },
+              { icon: Headphones, title: "Suporte 24/7", desc: "Atendimento prioritário via Telegram", color: "violet" },
+              { icon: Activity, title: "+5.000/dia", desc: "Transações processadas diariamente", color: "amber" },
+            ].map((item, index) => (
               <motion.div
-                whileHover={{ y: -4, scale: 1.02 }}
-                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 text-center"
+                key={item.title}
+                variants={fadeInUp}
+                className="flex items-center gap-4 p-5 rounded-2xl bg-card/50 border border-border/30"
               >
-                <div className="w-14 h-14 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                  <Shield className="w-7 h-7 text-emerald-500" />
+                <div className={`w-14 h-14 rounded-xl bg-${item.color}-500/20 flex items-center justify-center shrink-0`}>
+                  <item.icon className={`w-7 h-7 text-${item.color}-500`} />
                 </div>
                 <div>
-                  <p className="font-bold text-lg">100% Seguro</p>
-                  <p className="text-sm text-muted-foreground">Pagamentos criptografados</p>
+                  <p className="font-bold">{item.title}</p>
+                  <p className="text-sm text-muted-foreground">{item.desc}</p>
                 </div>
               </motion.div>
-            </motion.div>
-
-            {/* Data Protection Badge */}
-            <motion.div variants={scaleIn}>
-              <motion.div
-                whileHover={{ y: -4, scale: 1.02 }}
-                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20 text-center"
-              >
-                <div className="w-14 h-14 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                  <Lock className="w-7 h-7 text-blue-500" />
-                </div>
-                <div>
-                  <p className="font-bold text-lg">Dados Protegidos</p>
-                  <p className="text-sm text-muted-foreground">LGPD Compliance</p>
-                </div>
-              </motion.div>
-            </motion.div>
-
-            {/* Support Badge */}
-            <motion.div variants={scaleIn}>
-              <motion.div
-                whileHover={{ y: -4, scale: 1.02 }}
-                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-violet-500/10 to-violet-500/5 border border-violet-500/20 text-center"
-              >
-                <div className="w-14 h-14 rounded-xl bg-violet-500/20 flex items-center justify-center">
-                  <Headphones className="w-7 h-7 text-violet-500" />
-                </div>
-                <div>
-                  <p className="font-bold text-lg">Suporte Brasileiro</p>
-                  <p className="text-sm text-muted-foreground">Atendimento humanizado</p>
-                </div>
-              </motion.div>
-            </motion.div>
-
-            {/* Transactions Badge */}
-            <motion.div variants={scaleIn}>
-              <motion.div
-                whileHover={{ y: -4, scale: 1.02 }}
-                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/20 text-center"
-              >
-                <div className="w-14 h-14 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                  <Activity className="w-7 h-7 text-amber-500" />
-                </div>
-                <div>
-                  <p className="font-bold text-lg">+5.000/dia</p>
-                  <p className="text-sm text-muted-foreground">Transações processadas</p>
-                </div>
-              </motion.div>
-            </motion.div>
+            ))}
           </motion.div>
 
           {/* Additional trust indicators */}
@@ -995,20 +1010,20 @@ export default function Landing() {
       <Suspense fallback={<SectionLoader />}>
         <TestimonialsSection
           title="O que nossos clientes dizem"
-          description="Milhares de empreendedores já transformaram suas vendas com o TeleGateway."
+          description="Milhares de empreendedores já transformaram suas vendas com o Conversy."
           testimonials={testimonials}
         />
       </Suspense>
 
       {/* FAQ Section */}
-      <section className="py-20 px-4">
+      <section id="faq" className="py-20 px-4">
         <div className="container mx-auto">
           <ScrollReveal className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            <h2 className="text-3xl md:text-4xl mb-4">
               Perguntas Frequentes
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Tire suas dúvidas sobre o TeleGateway.
+              Tire suas dúvidas sobre o Conversy.
             </p>
           </ScrollReveal>
           
@@ -1019,12 +1034,12 @@ export default function Landing() {
                   <AccordionItem 
                     key={index} 
                     value={`item-${index}`}
-                    className="border-border/50 data-[state=open]:border-primary/30"
+                    className="border-border/30 data-[state=open]:border-primary/30 rounded-lg mb-2"
                   >
-                    <AccordionTrigger className="text-left hover:no-underline hover:text-primary transition-colors py-5 text-base font-medium">
+                    <AccordionTrigger className="text-left hover:no-underline hover:text-primary transition-colors py-5 text-base px-4">
                       {faq.question}
                     </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground leading-relaxed pb-5">
+                    <AccordionContent className="text-muted-foreground leading-relaxed pb-5 px-4">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -1043,7 +1058,7 @@ export default function Landing() {
               whileHover={{ scale: 1.01 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
-              <Card className="p-8 md:p-12 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 text-center relative overflow-hidden">
+              <Card className="p-8 md:p-12 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 text-center relative overflow-hidden rounded-3xl">
                 {/* Animated background elements */}
                 <motion.div 
                   className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl"
@@ -1064,7 +1079,7 @@ export default function Landing() {
                 
                 <div className="relative z-10">
                   <motion.h2 
-                    className="text-3xl md:text-4xl font-bold mb-4"
+                    className="text-3xl md:text-4xl mb-4"
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -1094,7 +1109,7 @@ export default function Landing() {
                         whileHover={{ scale: 1.05 }} 
                         whileTap={{ scale: 0.95 }}
                       >
-                        <Button size="lg" className="gap-2 text-base px-8">
+                        <Button size="lg" className="gap-2 text-base px-8 cta-button rounded-xl">
                           Criar Conta Grátis
                           <motion.div
                             animate={{ x: [0, 5, 0] }}
@@ -1149,7 +1164,7 @@ export default function Landing() {
 
       {/* Footer */}
       <motion.footer 
-        className="py-12 px-4 border-t border-border/50 bg-muted/20"
+        className="py-12 px-4 border-t border-border/30 bg-card/20"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
@@ -1176,30 +1191,30 @@ export default function Landing() {
               {/* Social Media */}
               <div className="flex items-center gap-3">
                 <motion.a
-                  href="https://instagram.com/telegateway"
+                  href="https://instagram.com/conversy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-lg bg-muted/50 hover:bg-primary/20 flex items-center justify-center transition-colors"
+                  className="w-9 h-9 rounded-lg bg-muted/30 hover:bg-primary/20 flex items-center justify-center transition-colors"
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   <Instagram className="w-4 h-4" />
                 </motion.a>
                 <motion.a
-                  href="https://youtube.com/@telegateway"
+                  href="https://youtube.com/@conversy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-lg bg-muted/50 hover:bg-primary/20 flex items-center justify-center transition-colors"
+                  className="w-9 h-9 rounded-lg bg-muted/30 hover:bg-primary/20 flex items-center justify-center transition-colors"
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   <Youtube className="w-4 h-4" />
                 </motion.a>
                 <motion.a
-                  href="https://t.me/telegateway"
+                  href="https://t.me/conversy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-lg bg-muted/50 hover:bg-primary/20 flex items-center justify-center transition-colors"
+                  className="w-9 h-9 rounded-lg bg-muted/30 hover:bg-primary/20 flex items-center justify-center transition-colors"
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -1210,7 +1225,7 @@ export default function Landing() {
 
             {/* Links Column */}
             <div>
-              <h4 className="font-semibold mb-4">Plataforma</h4>
+              <h4 className="font-medium mb-4">Plataforma</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
                   <Link to="/auth" className="hover:text-primary transition-colors">
@@ -1237,7 +1252,7 @@ export default function Landing() {
 
             {/* Support Column */}
             <div>
-              <h4 className="font-semibold mb-4">Suporte</h4>
+              <h4 className="font-medium mb-4">Suporte</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
                   <a href="#" className="hover:text-primary transition-colors flex items-center gap-1">
@@ -1246,19 +1261,19 @@ export default function Landing() {
                   </a>
                 </li>
                 <li>
-                  <a href="https://t.me/telegateway_suporte" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors flex items-center gap-1">
+                  <a href="https://t.me/conversy_suporte" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors flex items-center gap-1">
                     <Send className="w-3 h-3" />
                     Suporte Telegram
                   </a>
                 </li>
                 <li>
-                  <a href="mailto:suporte@telegateway.com" className="hover:text-primary transition-colors flex items-center gap-1">
+                  <a href="mailto:suporte@conversy.com.br" className="hover:text-primary transition-colors flex items-center gap-1">
                     <Mail className="w-3 h-3" />
                     Email
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-primary transition-colors">
+                  <a href="#faq" className="hover:text-primary transition-colors">
                     FAQ
                   </a>
                 </li>
@@ -1267,7 +1282,7 @@ export default function Landing() {
 
             {/* Legal Column */}
             <div>
-              <h4 className="font-semibold mb-4">Legal</h4>
+              <h4 className="font-medium mb-4">Legal</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
                   <Link to="/termos-de-uso" className="hover:text-primary transition-colors">
@@ -1294,7 +1309,7 @@ export default function Landing() {
           </div>
 
           {/* Divider */}
-          <div className="border-t border-border/50 pt-8">
+          <div className="border-t border-border/30 pt-8">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               {/* UniPay Partnership */}
               <motion.a
@@ -1330,13 +1345,13 @@ export default function Landing() {
 
       {/* Mobile Floating CTA */}
       <motion.div 
-        className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-lg border-t border-border/50 md:hidden z-40"
+        className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-lg border-t border-border/30 md:hidden z-40"
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 1, duration: 0.5 }}
       >
         <Link to="/auth" className="block">
-          <Button className="w-full h-14 text-lg gap-2 shadow-lg shadow-primary/25">
+          <Button className="w-full h-14 text-lg gap-2 shadow-lg shadow-primary/25 cta-button rounded-xl">
             Começar Grátis Agora
             <ArrowRight className="w-5 h-5" />
           </Button>
