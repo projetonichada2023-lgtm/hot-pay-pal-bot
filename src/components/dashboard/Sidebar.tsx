@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Client } from '@/hooks/useClient';
 import { Button } from '@/components/ui/button';
-import { NotificationBadge } from './NotificationBadge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BotSelector } from '@/components/bots/BotSelector';
 import conversyLogo from '@/assets/conversy-logo.png';
@@ -16,7 +15,6 @@ import {
   Package, 
   Users, 
   ShoppingCart,
-  Bot,
   LogOut,
   Menu,
   X,
@@ -112,26 +110,26 @@ export const Sidebar = ({ client }: SidebarProps) => {
       <Button
         variant="ghost"
         size="icon"
-        className="fixed top-4 left-4 z-50 md:hidden"
+        className="fixed top-4 left-4 z-50 md:hidden bg-background/80 backdrop-blur-sm border border-border/50"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
       >
-        {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        {isMobileOpen ? <X className="w-5 h-5" strokeWidth={1.5} /> : <Menu className="w-5 h-5" strokeWidth={1.5} />}
       </Button>
 
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed md:relative z-40 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300',
+          'fixed md:relative z-40 h-screen bg-black border-r border-border/50 transition-all duration-300',
           isMobileOpen ? 'w-64 translate-x-0' : '-translate-x-full md:translate-x-0',
           !isMobileOpen && (isCollapsed ? 'md:w-16' : 'md:w-64')
         )}
       >
-        <div className="flex flex-col h-full p-2 md:p-4">
+        <div className="flex flex-col h-full p-3 md:p-4">
           {/* Logo Conversy */}
           <div 
             className={cn(
-              "flex items-center mb-4 pb-4 border-b border-sidebar-border",
-              isCollapsed ? "justify-center" : "px-2"
+              "flex items-center mb-6 pb-4 border-b border-border/30",
+              isCollapsed ? "justify-center" : "px-1"
             )}
             data-tour="sidebar-logo"
           >
@@ -140,7 +138,7 @@ export const Sidebar = ({ client }: SidebarProps) => {
               alt="Conversy" 
               className={cn(
                 "object-contain",
-                isCollapsed ? "h-8 w-8" : "h-8"
+                isCollapsed ? "h-8 w-8" : "h-7"
               )}
             />
           </div>
@@ -152,15 +150,15 @@ export const Sidebar = ({ client }: SidebarProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="hidden md:flex self-end mb-2 h-8 w-8 text-muted-foreground hover:text-foreground"
+            className="hidden md:flex self-end mb-3 h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted/50"
             onClick={toggleCollapse}
           >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {isCollapsed ? <ChevronRight className="w-4 h-4" strokeWidth={1.5} /> : <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />}
           </Button>
 
           {/* Navigation */}
           <ScrollArea className="flex-1 -mx-2 px-2">
-            <nav className="space-y-1">
+            <nav className="space-y-0.5">
               {menuItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 const getTourAttribute = () => {
@@ -177,58 +175,61 @@ export const Sidebar = ({ client }: SidebarProps) => {
                     key={item.path}
                     variant="ghost"
                     className={cn(
-                      'w-full h-10 md:h-11',
+                      'w-full h-10 transition-all duration-200',
                       isCollapsed ? 'justify-center px-2' : 'justify-start gap-3 px-3',
                       isActive 
-                        ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
-                        : 'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50'
+                        ? 'bg-primary/10 text-primary border-l-2 border-primary rounded-l-none' 
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/30 border-l-2 border-transparent'
                     )}
                     onClick={() => handleNavigate(item.path)}
                     title={isCollapsed ? item.label : undefined}
                     {...(tourAttr ? { 'data-tour': tourAttr } : {})}
                   >
-                    <item.icon className={cn('w-5 h-5 shrink-0', isActive && 'text-primary')} />
-                    {!isCollapsed && <span className="truncate">{item.label}</span>}
+                    <item.icon className={cn('w-[18px] h-[18px] shrink-0', isActive && 'text-primary')} strokeWidth={1.5} />
+                    {!isCollapsed && <span className="text-sm font-medium truncate">{item.label}</span>}
                   </Button>
                 );
               })}
             </nav>
           </ScrollArea>
 
-          {/* Theme Toggle */}
-          <Button
-            variant="ghost"
-            className={cn(
-              "h-10 md:h-11 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 mb-2",
-              isCollapsed ? "justify-center px-2 w-full" : "justify-start gap-3 w-full"
-            )}
-            onClick={toggleTheme}
-            title={isCollapsed ? (isDark ? 'Modo Claro' : 'Modo Escuro') : undefined}
-          >
-            {isDark ? <Sun className="w-5 h-5 shrink-0" /> : <Moon className="w-5 h-5 shrink-0" />}
-            {!isCollapsed && (isDark ? 'Modo Claro' : 'Modo Escuro')}
-          </Button>
+          {/* Bottom Actions */}
+          <div className="pt-4 mt-4 border-t border-border/30 space-y-1">
+            {/* Theme Toggle */}
+            <Button
+              variant="ghost"
+              className={cn(
+                "h-10 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all duration-200",
+                isCollapsed ? "justify-center px-2 w-full" : "justify-start gap-3 w-full"
+              )}
+              onClick={toggleTheme}
+              title={isCollapsed ? (isDark ? 'Modo Claro' : 'Modo Escuro') : undefined}
+            >
+              {isDark ? <Sun className="w-[18px] h-[18px] shrink-0" strokeWidth={1.5} /> : <Moon className="w-[18px] h-[18px] shrink-0" strokeWidth={1.5} />}
+              {!isCollapsed && <span className="text-sm font-medium">{isDark ? 'Modo Claro' : 'Modo Escuro'}</span>}
+            </Button>
 
-          {/* Logout */}
-          <Button
-            variant="ghost"
-            className={cn(
-              "h-10 md:h-11 text-muted-foreground hover:text-destructive hover:bg-destructive/10",
-              isCollapsed ? "justify-center px-2 w-full" : "justify-start gap-3 w-full"
-            )}
-            onClick={handleLogout}
-            title={isCollapsed ? 'Sair' : undefined}
-          >
-            <LogOut className="w-5 h-5 shrink-0" />
-            {!isCollapsed && 'Sair'}
-          </Button>
+            {/* Logout */}
+            <Button
+              variant="ghost"
+              className={cn(
+                "h-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200",
+                isCollapsed ? "justify-center px-2 w-full" : "justify-start gap-3 w-full"
+              )}
+              onClick={handleLogout}
+              title={isCollapsed ? 'Sair' : undefined}
+            >
+              <LogOut className="w-[18px] h-[18px] shrink-0" strokeWidth={1.5} />
+              {!isCollapsed && <span className="text-sm font-medium">Sair</span>}
+            </Button>
+          </div>
         </div>
       </aside>
 
       {/* Overlay for mobile */}
       {isMobileOpen && (
         <div 
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 md:hidden"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-30 md:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}

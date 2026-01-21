@@ -279,14 +279,14 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
   };
 
   return (
-    <div className="space-y-4 md:space-y-8">
+    <div className="space-y-5 md:space-y-8">
       {/* Header */}
       <motion.div className="dashboard-header" variants={headerVariants} initial="hidden" animate="visible">
-        <div className="relative z-10 flex flex-col gap-4 md:gap-6">
+        <div className="relative z-10 flex flex-col gap-5 md:gap-6">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <motion.h1
-                className="text-xl md:text-3xl font-bold tracking-tight"
+                className="section-title text-xl md:text-3xl tracking-tight"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
@@ -303,9 +303,14 @@ export const OverviewPage = ({ client }: OverviewPageProps) => {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3, type: 'spring' }}
             >
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
+              <div className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-full border',
+                client.webhook_configured 
+                  ? 'bg-success/10 border-success/30' 
+                  : 'bg-warning/10 border-warning/30'
+              )}>
                 <div className={cn('status-dot', client.webhook_configured ? 'bg-success' : 'bg-warning')} />
-                <span className="text-sm font-medium">Bot {client.webhook_configured ? 'Ativo' : 'Pendente'}</span>
+                <span className="text-sm font-medium">{client.webhook_configured ? 'Bot Ativo' : 'Pendente'}</span>
               </div>
             </motion.div>
           </div>
