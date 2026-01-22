@@ -45,6 +45,7 @@ const AccordionContent = lazy(() => import("@/components/ui/accordion").then(m =
 const AccordionItem = lazy(() => import("@/components/ui/accordion").then(m => ({ default: m.AccordionItem })));
 const AccordionTrigger = lazy(() => import("@/components/ui/accordion").then(m => ({ default: m.AccordionTrigger })));
 const TestimonialsSection = lazy(() => import("@/components/ui/testimonials-with-marquee").then(m => ({ default: m.TestimonialsSection })));
+const PricingSection = lazy(() => import("@/components/landing/PricingSection").then(m => ({ default: m.PricingSection })));
 
 // Loading fallback for lazy components
 const SectionLoader = () => (
@@ -952,6 +953,11 @@ export default function Landing() {
           </motion.div>
         </div>
       </section>
+
+      {/* Pricing Section - Premium */}
+      <Suspense fallback={<SectionLoader />}>
+        <PricingSection />
+      </Suspense>
 
       {/* Trust Section - Premium */}
       <section className="py-24 px-4 relative">
