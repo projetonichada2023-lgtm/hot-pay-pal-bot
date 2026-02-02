@@ -1158,6 +1158,39 @@ async function createOrder(clientId: string, customerId: string, productId: stri
 
   console.log('Order created with PIX:', { orderId: order.id, pixCode: pix.pixCode?.substring(0, 50) + '...' });
 
+  // Send push notification for new pending order (merchant dashboard)
+  try {
+    const { data: product } = await supabase
+      .from('products')
+      .select('name')
+      .eq('id', productId)
+      .maybeSingle();
+
+    const productName = product?.name || 'Produto';
+    const customerLabel = customerName || 'Cliente';
+
+    const pushRes = await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({
+        clientId,
+        title: '🛒 Novo Pedido!',
+        body: `${productName} - R$ ${Number(amount).toFixed(2)}\n${customerLabel}`,
+        url: '/dashboard/orders',
+        orderId: order.id,
+        type: 'order',
+      }),
+    });
+
+    const pushText = await pushRes.text();
+    console.log('Push notification for new order response:', pushRes.status, pushText);
+  } catch (pushError) {
+    console.error('Error sending push notification for new order:', pushError);
+  }
+
   return updatedOrder || { ...order, pix_code: pix.pixCode, pix_qrcode: pix.qrCodeUrl, payment_id: pix.paymentId };
 }
 
