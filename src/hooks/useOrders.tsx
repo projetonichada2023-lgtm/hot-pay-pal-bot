@@ -66,7 +66,8 @@ export const useOrders = (
       }
       
       if (botId) {
-        countQuery = countQuery.eq('bot_id', botId);
+        // Include orders with the specific bot OR orders without any bot assigned
+        countQuery = countQuery.or(`bot_id.eq.${botId},bot_id.is.null`);
       }
 
       const { count, error: countError } = await countQuery;
@@ -91,7 +92,8 @@ export const useOrders = (
       }
       
       if (botId) {
-        query = query.eq('bot_id', botId);
+        // Include orders with the specific bot OR orders without any bot assigned
+        query = query.or(`bot_id.eq.${botId},bot_id.is.null`);
       }
 
       const { data, error } = await query;
@@ -149,7 +151,8 @@ export const useOrderStats = (clientId: string, botId?: string | null) => {
         .eq('client_id', clientId);
 
       if (botId) {
-        query = query.eq('bot_id', botId);
+        // Include orders with the specific bot OR orders without any bot assigned
+        query = query.or(`bot_id.eq.${botId},bot_id.is.null`);
       }
 
       const { data, error } = await query;
