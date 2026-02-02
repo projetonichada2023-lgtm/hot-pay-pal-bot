@@ -2,11 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// Interface para dados públicos (sem token sensível)
 export interface ClientBot {
   id: string;
   client_id: string;
   name: string;
-  telegram_bot_token: string | null;
   telegram_bot_username: string | null;
   webhook_configured: boolean;
   is_active: boolean;
@@ -15,8 +15,13 @@ export interface ClientBot {
   updated_at: string;
 }
 
-export type ClientBotInsert = Omit<ClientBot, 'id' | 'created_at' | 'updated_at'>;
-export type ClientBotUpdate = Partial<Omit<ClientBot, 'id' | 'client_id' | 'created_at' | 'updated_at'>>;
+// Interface completa (apenas para operações de escrita)
+interface ClientBotFull extends ClientBot {
+  telegram_bot_token: string | null;
+}
+
+export type ClientBotInsert = Omit<ClientBotFull, 'id' | 'created_at' | 'updated_at'>;
+export type ClientBotUpdate = Partial<Omit<ClientBotFull, 'id' | 'client_id' | 'created_at' | 'updated_at'>>;
 
 export const useClientBots = (clientId: string | undefined) => {
   return useQuery({
@@ -24,9 +29,11 @@ export const useClientBots = (clientId: string | undefined) => {
     queryFn: async () => {
       if (!clientId) return [];
       
+      // Usa a tabela diretamente - RLS protege o acesso
+      // O usuário só vê seus próprios bots
       const { data, error } = await supabase
         .from('client_bots')
-        .select('*')
+        .select('id, client_id, name, telegram_bot_username, webhook_configured, is_active, is_primary, created_at, updated_at')
         .eq('client_id', clientId)
         .order('is_primary', { ascending: false })
         .order('created_at', { ascending: true });
@@ -44,9 +51,11 @@ export const usePrimaryBot = (clientId: string | undefined) => {
     queryFn: async () => {
       if (!clientId) return null;
       
+      // Usa a tabela diretamente - RLS protege o acesso
+      // O usuário só vê seus próprios bots
       const { data, error } = await supabase
         .from('client_bots')
-        .select('*')
+        .select('id, client_id, name, telegram_bot_username, webhook_configured, is_active, is_primary, created_at, updated_at')
         .eq('client_id', clientId)
         .eq('is_primary', true)
         .maybeSingle();

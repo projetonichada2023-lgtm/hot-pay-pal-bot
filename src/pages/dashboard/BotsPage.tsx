@@ -200,7 +200,7 @@ export const BotsPage = ({ client }: BotsPageProps) => {
               onSelect={() => setSelectedBot(bot)}
               onEdit={() => {
                 setConfiguringBot(bot.id);
-                setBotToken(bot.telegram_bot_token || '');
+                setBotToken(''); // Token não é exposto por segurança - usuário deve inserir novo valor
               }}
               onDelete={() => setDeleteDialogBot(bot.id)}
               onSetPrimary={() => handleSetPrimary(bot.id)}
