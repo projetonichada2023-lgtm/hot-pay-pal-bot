@@ -127,6 +127,8 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
     }
   };
 
+  const [isTestingPush, setIsTestingPush] = useState(false);
+
   const handleTogglePush = async () => {
     setIsPushLoading(true);
     try {
@@ -153,6 +155,62 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
     } catch (error) {
       console.error('Push toggle error:', error);
       toast({ title: 'Erro ao alterar notificações', variant: 'destructive' });
+    } finally {
+      setIsPushLoading(false);
+      const status = await checkPushSupport();
+      setPushSupport(status);
+    }
+  };
+
+  const handleTestPushNotification = async () => {
+    setIsTestingPush(true);
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          clientId: client.id,
+          type: 'sale',
+          title: '🔔 Teste de Notificação',
+          body: 'Se você está vendo isso, as notificações estão funcionando!',
+        },
+      });
+      
+      if (error) throw error;
+      
+      if (data?.sent > 0) {
+        toast({ 
+          title: 'Notificação enviada!', 
+          description: `Enviada para ${data.sent} dispositivo(s). Verifique seu telefone.` 
+        });
+      } else {
+        toast({ 
+          title: 'Nenhum dispositivo encontrado', 
+          description: data?.reason || 'Certifique-se de que as notificações estão ativas.',
+          variant: 'destructive' 
+        });
+      }
+    } catch (error) {
+      console.error('Test push error:', error);
+      toast({ title: 'Erro ao enviar teste', variant: 'destructive' });
+    } finally {
+      setIsTestingPush(false);
+    }
+  };
+
+  const handleRefreshSubscription = async () => {
+    setIsPushLoading(true);
+    try {
+      // First unsubscribe
+      await unsubscribeFromPush(client.id);
+      // Then resubscribe
+      const subscription = await subscribeToPush(client.id);
+      if (subscription) {
+        setPushSupport(prev => ({ ...prev, subscribed: true, permission: 'granted' }));
+        toast({ title: 'Notificações reconfiguradas!', description: 'Subscription atualizada com sucesso.' });
+      }
+    } catch (error) {
+      console.error('Refresh subscription error:', error);
+      toast({ title: 'Erro ao reconfigurar', variant: 'destructive' });
     } finally {
       setIsPushLoading(false);
       const status = await checkPushSupport();
@@ -442,15 +500,36 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
               </div>
 
               {pushSupport.subscribed && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={sendTestNotification}
-                  className="w-full"
-                >
-                  <Bell className="w-4 h-4 mr-2" />
-                  Enviar notificação de teste
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleTestPushNotification}
+                      disabled={isTestingPush}
+                      className="flex-1"
+                    >
+                      {isTestingPush ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <Bell className="w-4 h-4 mr-2" />
+                      )}
+                      Testar Push Real
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRefreshSubscription}
+                      disabled={isPushLoading}
+                      title="Reconfigurar subscription"
+                    >
+                      <RotateCcw className={`w-4 h-4 ${isPushLoading ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    O teste envia uma notificação push real para todos os dispositivos cadastrados
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
