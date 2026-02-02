@@ -26,10 +26,29 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 
   try {
-    const registration = await navigator.serviceWorker.register('/sw-push.js', {
-      scope: '/',
-    });
-    console.log('Service Worker registered:', registration);
+    // Check for existing registration first
+    let registration = await navigator.serviceWorker.getRegistration('/');
+    
+    // If there's an existing registration but it's not our push SW, unregister it
+    if (registration && !registration.active?.scriptURL.includes('sw-push.js')) {
+      console.log('Found different SW, unregistering...');
+      await registration.unregister();
+      registration = undefined;
+    }
+    
+    // Register our push service worker
+    if (!registration) {
+      registration = await navigator.serviceWorker.register('/sw-push.js', {
+        scope: '/',
+      });
+      console.log('Service Worker registered:', registration);
+    } else {
+      console.log('Using existing Service Worker:', registration);
+    }
+    
+    // Wait for the SW to be ready
+    await navigator.serviceWorker.ready;
+    
     return registration;
   } catch (error) {
     console.error('Service Worker registration failed:', error);

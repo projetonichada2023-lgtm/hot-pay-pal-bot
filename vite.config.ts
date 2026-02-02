@@ -15,7 +15,8 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "robots.txt"],
+      injectRegister: null, // Disable auto-injection to use custom sw-push.js
+      includeAssets: ["favicon.ico", "apple-touch-icon.png", "robots.txt", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
         name: "Conversy - Vendas no Telegram",
         short_name: "Conversy",
@@ -64,6 +65,8 @@ export default defineConfig(({ mode }) => ({
             },
           },
         ],
+        // Don't precache sw-push.js - it's registered separately
+        navigateFallbackDenylist: [/^\/sw-push\.js$/],
       },
     }),
   ].filter(Boolean),
