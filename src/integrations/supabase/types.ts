@@ -152,6 +152,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "affiliate_links_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "affiliate_links_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -313,6 +320,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bot_messages_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bot_messages_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -376,6 +390,13 @@ export type Database = {
             columns: ["bot_id"]
             isOneToOne: false
             referencedRelation: "client_bots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_recovery_messages_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots_public"
             referencedColumns: ["id"]
           },
           {
@@ -654,6 +675,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "facebook_events_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "facebook_events_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -795,6 +823,13 @@ export type Database = {
             columns: ["bot_id"]
             isOneToOne: false
             referencedRelation: "client_bots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots_public"
             referencedColumns: ["id"]
           },
           {
@@ -1046,6 +1081,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "products_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "products_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -1226,6 +1268,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "telegram_customers_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "telegram_customers_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -1277,6 +1326,13 @@ export type Database = {
             columns: ["bot_id"]
             isOneToOne: false
             referencedRelation: "client_bots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telegram_messages_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots_public"
             referencedColumns: ["id"]
           },
           {
@@ -1356,6 +1412,13 @@ export type Database = {
             columns: ["bot_id"]
             isOneToOne: false
             referencedRelation: "client_bots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tiktok_events_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots_public"
             referencedColumns: ["id"]
           },
           {
@@ -1440,6 +1503,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ttclid_mappings_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ttclid_mappings_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -1475,7 +1545,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      client_bots_public: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          is_primary: boolean | null
+          name: string | null
+          telegram_bot_username: string | null
+          updated_at: string | null
+          webhook_configured: boolean | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          name?: string | null
+          telegram_bot_username?: string | null
+          updated_at?: string | null
+          webhook_configured?: boolean | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          name?: string | null
+          telegram_bot_username?: string | null
+          updated_at?: string | null
+          webhook_configured?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_bots_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_my_affiliate_id: { Args: never; Returns: string }

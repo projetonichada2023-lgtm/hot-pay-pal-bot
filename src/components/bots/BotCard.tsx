@@ -74,12 +74,12 @@ export const BotCard = ({
             <span>Webhook</span>
           </div>
           <div className="flex items-center gap-1">
-            {bot.telegram_bot_token ? (
+            {bot.webhook_configured ? (
               <CheckCircle className="w-4 h-4 text-green-500" />
             ) : (
               <XCircle className="w-4 h-4 text-destructive" />
             )}
-            <span>Token</span>
+            <span>Configurado</span>
           </div>
         </div>
         
