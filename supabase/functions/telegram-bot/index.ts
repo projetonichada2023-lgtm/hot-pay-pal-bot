@@ -537,6 +537,28 @@ async function handleBuy(ctx: ClientContext, chatId: number, productId: string, 
     return;
   }
 
+  // Send push notification for new pending order
+  try {
+    const pushRes = await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({
+        clientId: ctx.clientId,
+        title: '🛒 Novo Pedido!',
+        body: `${product.name} - R$ ${Number(product.price).toFixed(2)}\n${customer.first_name || 'Cliente'}`,
+        url: '/dashboard/orders',
+        orderId: order.id,
+        type: 'order',
+      }),
+    });
+    console.log('Push notification for new order:', pushRes.status);
+  } catch (pushError) {
+    console.error('Error sending push notification for new order:', pushError);
+  }
+
   const [orderCreatedMsg, paymentInstructions] = await Promise.all([
     getBotMessage(ctx.clientId, 'order_created', '🛒 Pedido criado com sucesso! Efetue o pagamento para receber seu produto.'),
     getBotMessage(ctx.clientId, 'payment_instructions', 'Escaneie o QR Code ou copie o código PIX para realizar o pagamento.')
