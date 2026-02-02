@@ -13,6 +13,7 @@ import {
   FileText,
   Shield,
   Bell,
+  UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
   { icon: Users, label: "Clientes", path: "/admin/clients" },
+  { icon: UserCheck, label: "Afiliados", path: "/admin/affiliates" },
   { icon: ShoppingCart, label: "Pedidos", path: "/admin/orders" },
   { icon: DollarSign, label: "Financeiro", path: "/admin/financials" },
   { icon: CreditCard, label: "Assinaturas", path: "/admin/subscriptions" },
