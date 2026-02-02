@@ -44,11 +44,12 @@ export const useRealtimeNotifications = (clientId: string) => {
     return granted;
   }, []);
 
-  const formatPrice = (value: number) => {
+  const formatPrice = (value: number | string | null | undefined) => {
+    const n = typeof value === 'string' ? Number(value) : (value ?? 0);
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-    }).format(value);
+    }).format(Number.isFinite(n) ? n : 0);
   };
 
   const addNotification = useCallback((
@@ -120,7 +121,7 @@ export const useRealtimeNotifications = (clientId: string) => {
           filter: `client_id=eq.${clientId}`,
         },
         (payload) => {
-          const order = payload.new as { id: string; amount: number; status: string };
+          const order = payload.new as { id: string; amount: number | string; status: string };
           addNotification({
             type: 'new_order',
             title: '🛒 Novo Pedido!',
@@ -138,7 +139,7 @@ export const useRealtimeNotifications = (clientId: string) => {
         },
         (payload) => {
           const oldOrder = payload.old as { status: string };
-          const newOrder = payload.new as { id: string; amount: number; status: string };
+          const newOrder = payload.new as { id: string; amount: number | string; status: string };
           
           // Payment received
           if (oldOrder.status === 'pending' && newOrder.status === 'paid') {
