@@ -1167,7 +1167,6 @@ async function createOrder(clientId: string, customerId: string, productId: stri
       .maybeSingle();
 
     const productName = product?.name || 'Produto';
-    const customerLabel = customerName || 'Cliente';
 
     const pushRes = await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
       method: 'POST',
@@ -1178,7 +1177,7 @@ async function createOrder(clientId: string, customerId: string, productId: stri
       body: JSON.stringify({
         clientId,
         title: '🛒 Novo Pedido!',
-        body: `${productName} - R$ ${Number(amount).toFixed(2)}\n${customerLabel}`,
+        body: `${productName} - R$ ${Number(amount).toFixed(2)}`,
         url: '/dashboard/orders',
         orderId: order.id,
         type: 'order',
