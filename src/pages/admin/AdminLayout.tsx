@@ -10,6 +10,7 @@ import { AdminSettingsPage } from "./AdminSettingsPage";
 import { AdminAuditPage } from "./AdminAuditPage";
 import { AdminUsersPage } from "./AdminUsersPage";
 import AdminNotificationsPage from "./AdminNotificationsPage";
+import { AdminAffiliatesPage } from "./AdminAffiliatesPage";
 
 export const AdminLayout = () => {
   return (
@@ -19,6 +20,7 @@ export const AdminLayout = () => {
         <Routes>
           <Route path="/" element={<AdminDashboardPage />} />
           <Route path="/clients" element={<AdminClientsPage />} />
+          <Route path="/affiliates" element={<AdminAffiliatesPage />} />
           <Route path="/subscriptions" element={<AdminSubscriptionsPage />} />
           <Route path="/stats" element={<AdminStatsPage />} />
           <Route path="/orders" element={<AdminOrdersPage />} />
