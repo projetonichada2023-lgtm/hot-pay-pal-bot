@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { lazy, Suspense } from "react";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -16,6 +17,9 @@ import LGPD from "./pages/LGPD";
 import InstallApp from "./pages/InstallApp";
 import { AdminRoute } from "./components/admin/AdminRoute";
 import { AdminLayout } from "./pages/admin/AdminLayout";
+
+// Lazy load affiliate dashboard
+const AffiliateDashboard = lazy(() => import("./pages/affiliate/AffiliateDashboard"));
 
 const queryClient = new QueryClient();
 
@@ -37,6 +41,14 @@ const App = () => (
                 <AdminRoute>
                   <AdminLayout />
                 </AdminRoute>
+              }
+            />
+            <Route
+              path="/affiliate/*"
+              element={
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <AffiliateDashboard />
+                </Suspense>
               }
             />
             <Route path="/termos-de-uso" element={<TermsOfUse />} />

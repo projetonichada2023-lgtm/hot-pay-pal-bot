@@ -41,6 +41,187 @@ export type Database = {
         }
         Relationships: []
       }
+      affiliate_commissions: {
+        Row: {
+          affiliate_id: string
+          affiliate_link_id: string | null
+          amount: number
+          created_at: string | null
+          id: string
+          order_id: string | null
+          paid_at: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          affiliate_id: string
+          affiliate_link_id?: string | null
+          amount: number
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          paid_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          affiliate_id?: string
+          affiliate_link_id?: string | null
+          amount?: number
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          paid_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_commissions_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_commissions_affiliate_link_id_fkey"
+            columns: ["affiliate_link_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_commissions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_links: {
+        Row: {
+          affiliate_id: string
+          bot_id: string | null
+          clicks: number | null
+          code: string
+          conversions: number | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          product_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          affiliate_id: string
+          bot_id?: string | null
+          clicks?: number | null
+          code: string
+          conversions?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          product_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          affiliate_id?: string
+          bot_id?: string | null
+          clicks?: number | null
+          code?: string
+          conversions?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          product_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_links_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_links_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "client_bots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_links_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliates: {
+        Row: {
+          approved_at: string | null
+          client_id: string | null
+          commission_rate: number
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          pix_key: string | null
+          pix_key_type: string | null
+          status: Database["public"]["Enums"]["affiliate_status"]
+          total_earnings: number | null
+          total_referrals: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          client_id?: string | null
+          commission_rate?: number
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
+          status?: Database["public"]["Enums"]["affiliate_status"]
+          total_earnings?: number | null
+          total_referrals?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          client_id?: string | null
+          commission_rate?: number
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
+          status?: Database["public"]["Enums"]["affiliate_status"]
+          total_earnings?: number | null
+          total_referrals?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliates_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -1297,6 +1478,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_affiliate_id: { Args: never; Returns: string }
       get_my_bot_ids: { Args: never; Returns: string[] }
       get_my_client_id: { Args: never; Returns: string }
       has_role: {
@@ -1308,6 +1490,7 @@ export type Database = {
       }
     }
     Enums: {
+      affiliate_status: "pending" | "approved" | "rejected" | "suspended"
       app_role: "admin" | "client"
       billing_cycle: "monthly" | "yearly"
       order_status: "pending" | "paid" | "delivered" | "cancelled" | "refunded"
@@ -1446,6 +1629,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      affiliate_status: ["pending", "approved", "rejected", "suspended"],
       app_role: ["admin", "client"],
       billing_cycle: ["monthly", "yearly"],
       order_status: ["pending", "paid", "delivered", "cancelled", "refunded"],
