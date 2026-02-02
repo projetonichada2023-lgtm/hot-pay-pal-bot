@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesUpdate } from '@/integrations/supabase/types';
 
@@ -22,6 +23,35 @@ export const useOrders = (
   pageSize: number = 10,
   botId?: string | null
 ) => {
+  const queryClient = useQueryClient();
+
+  // Setup realtime subscription for orders
+  useEffect(() => {
+    if (!clientId) return;
+
+    const channel = supabase
+      .channel(`orders-${clientId}-${botId || 'all'}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `client_id=eq.${clientId}`,
+        },
+        () => {
+          // Invalidate orders queries to refetch
+          queryClient.invalidateQueries({ queryKey: ['orders', clientId] });
+          queryClient.invalidateQueries({ queryKey: ['order-stats', clientId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [clientId, botId, queryClient]);
+
   return useQuery({
     queryKey: ['orders', clientId, status, page, pageSize, botId],
     queryFn: async (): Promise<PaginatedOrdersResult> => {
