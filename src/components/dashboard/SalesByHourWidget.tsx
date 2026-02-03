@@ -21,7 +21,8 @@ export const SalesByHourWidget = ({ clientId, botId }: SalesByHourWidgetProps) =
         .in('status', ['paid', 'delivered']);
 
       if (botId) {
-        query = query.eq('bot_id', botId);
+        // Include orders with the selected bot OR legacy orders without bot assigned
+        query = query.or(`bot_id.eq.${botId},bot_id.is.null`);
       }
 
       const { data, error } = await query;
