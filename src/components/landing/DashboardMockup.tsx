@@ -37,90 +37,29 @@ export function DashboardMockup() {
   const shouldReduceMotion = useReducedMotion();
 
   return (
-    <>
-      {/* Mobile version - simplified */}
-      <div className="block md:hidden mt-8 px-4">
-        <motion.div
-          className="relative mx-auto max-w-sm"
-          initial={{ opacity: 0, y: 40, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-2xl blur-xl opacity-60" />
-          
-          <div className="relative bg-[rgba(10,10,10,0.9)] backdrop-blur-xl border border-white/[0.08] rounded-xl p-3 shadow-xl">
-            <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            
-            {/* Mini browser header */}
-            <div className="flex items-center gap-1.5 mb-3 pb-2 border-b border-white/[0.06]">
-              <div className="flex gap-1">
-                <div className="w-2 h-2 rounded-full bg-red-500/80" />
-                <div className="w-2 h-2 rounded-full bg-yellow-500/80" />
-                <div className="w-2 h-2 rounded-full bg-green-500/80" />
-              </div>
-              <div className="flex-1 mx-2">
-                <div className="bg-white/[0.04] rounded h-4 max-w-[120px] mx-auto flex items-center justify-center">
-                  <span className="text-[8px] text-muted-foreground font-mono">conversy.com.br</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Simplified metrics */}
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              {metrics.slice(0, 2).map((metric) => (
-                <div key={metric.label} className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <metric.icon className={`w-3 h-3 ${metric.color}`} strokeWidth={1.5} />
-                    <span className="text-[8px] text-emerald-400 font-medium">{metric.change}</span>
-                  </div>
-                  <p className="text-[8px] text-muted-foreground">{metric.label}</p>
-                  <p className="text-xs font-bold text-foreground">{metric.value}</p>
-                </div>
-              ))}
-            </div>
-            
-            {/* Mini chart */}
-            <div className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-2">
-              <span className="text-[9px] font-medium text-foreground mb-1 block">Vendas</span>
-              <svg viewBox="0 0 400 60" className="w-full h-10" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="chartGradientMobile" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path d={`${chartPath} L400,60 L0,60 Z`} fill="url(#chartGradientMobile)" />
-                <path d={chartPath} fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Desktop version - full 3D */}
-      <div className="dashboard-mockup-container hidden md:block mt-12 lg:mt-16" style={{ perspective: "1200px" }}>
-        <motion.div
-          className="dashboard-mockup relative mx-auto max-w-4xl"
-          initial={{ opacity: 0, y: 100, rotateX: 25, rotateY: -20, scale: 0.8 }}
-          animate={{ 
-            opacity: 1, 
-            y: shouldReduceMotion ? 0 : [-5, 5, -5], 
-            rotateX: shouldReduceMotion ? 8 : [8, 6, 8], 
-            rotateY: shouldReduceMotion ? -12 : [-12, -10, -12], 
-            scale: 1 
-          }}
-          transition={{
-            opacity: { duration: 1.2, delay: 0.8, ease: [0.16, 1, 0.3, 1] },
-            y: shouldReduceMotion ? { duration: 1.2, delay: 0.8 } : { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 },
-            rotateX: shouldReduceMotion ? { duration: 1.2, delay: 0.8 } : { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 },
-            rotateY: shouldReduceMotion ? { duration: 1.2, delay: 0.8 } : { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 },
-            scale: { duration: 1.2, delay: 0.8, ease: [0.16, 1, 0.3, 1] }
-          }}
-          style={{
-            transformStyle: "preserve-3d",
-            willChange: "transform"
-          }}
-        >
+    <div className="dashboard-mockup-container hidden md:block mt-12 lg:mt-16" style={{ perspective: "1200px" }}>
+      <motion.div
+        className="dashboard-mockup relative mx-auto max-w-4xl"
+        initial={{ opacity: 0, y: 100, rotateX: 25, rotateY: -20, scale: 0.8 }}
+        animate={{ 
+          opacity: 1, 
+          y: shouldReduceMotion ? 0 : [-5, 5, -5], 
+          rotateX: shouldReduceMotion ? 8 : [8, 6, 8], 
+          rotateY: shouldReduceMotion ? -12 : [-12, -10, -12], 
+          scale: 1 
+        }}
+        transition={{
+          opacity: { duration: 1.2, delay: 0.8, ease: [0.16, 1, 0.3, 1] },
+          y: shouldReduceMotion ? { duration: 1.2, delay: 0.8 } : { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 },
+          rotateX: shouldReduceMotion ? { duration: 1.2, delay: 0.8 } : { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 },
+          rotateY: shouldReduceMotion ? { duration: 1.2, delay: 0.8 } : { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 },
+          scale: { duration: 1.2, delay: 0.8, ease: [0.16, 1, 0.3, 1] }
+        }}
+        style={{
+          transformStyle: "preserve-3d",
+          willChange: "transform"
+        }}
+      >
         {/* Glow effect */}
         <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-3xl blur-2xl opacity-60" />
         
@@ -274,6 +213,5 @@ export function DashboardMockup() {
         </div>
       </motion.div>
     </div>
-    </>
   );
 }
