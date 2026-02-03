@@ -253,40 +253,40 @@ const faqs = [
   }
 ];
 
-// Animation variants - Premium stagger animations
+// Animation variants - Modern Dark SaaS with fade-in-up on scroll
 const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 50 },
+  hidden: { opacity: 0, y: 60 },
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] }
   }
 };
 
 const fadeInLeft: Variants = {
-  hidden: { opacity: 0, x: -50 },
+  hidden: { opacity: 0, x: -60 },
   visible: { 
     opacity: 1, 
     x: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] }
   }
 };
 
 const fadeInRight: Variants = {
-  hidden: { opacity: 0, x: 50 },
+  hidden: { opacity: 0, x: 60 },
   visible: { 
     opacity: 1, 
     x: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] }
   }
 };
 
 const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.9 },
+  hidden: { opacity: 0, scale: 0.85 },
   visible: { 
     opacity: 1, 
     scale: 1,
-    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
   }
 };
 
@@ -295,18 +295,18 @@ const staggerContainer: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.1
+      staggerChildren: 0.1,
+      delayChildren: 0.05
     }
   }
 };
 
 const staggerItem: Variants = {
-  hidden: { opacity: 0, y: 40 },
+  hidden: { opacity: 0, y: 50 },
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
   }
 };
 
@@ -371,10 +371,10 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
-      {/* Header */}
+    <div className="min-h-screen bg-[#0a0a0a] text-foreground overflow-x-hidden">
+      {/* Header - Modern Dark SaaS */}
       <motion.header 
-        className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-xl border-b border-border/30"
+        className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/[0.06]"
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
@@ -412,8 +412,8 @@ export default function Landing() {
               </Button>
             </Link>
             <Link to="/auth">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button size="sm" className="gap-2 cta-button rounded-lg">
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                <Button size="sm" className="gap-2 btn-gradient rounded-2xl">
                   Começar Grátis
                   <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -429,7 +429,7 @@ export default function Landing() {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-80 bg-background border-border">
+              <SheetContent side="right" className="w-80 bg-[#0a0a0a] border-white/[0.06]">
                 <div className="flex flex-col gap-6 mt-8">
                   <div className="flex items-center gap-2 mb-4">
                     <img 
@@ -470,14 +470,14 @@ export default function Landing() {
                     </a>
                   </nav>
 
-                  <div className="border-t border-border pt-6 mt-2 flex flex-col gap-3">
+                  <div className="border-t border-white/[0.06] pt-6 mt-2 flex flex-col gap-3">
                     <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="outline" className="w-full justify-center rounded-lg">
+                      <Button variant="outline" className="w-full justify-center rounded-2xl border-white/10">
                         Entrar
                       </Button>
                     </Link>
                     <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                      <Button className="w-full justify-center gap-2 cta-button rounded-lg">
+                      <Button className="w-full justify-center gap-2 btn-gradient rounded-2xl">
                         Começar Grátis
                         <ArrowRight className="w-4 h-4" />
                       </Button>
@@ -487,7 +487,7 @@ export default function Landing() {
                   {/* Mobile Demo Button */}
                   <Button 
                     variant="secondary" 
-                    className="w-full gap-2 mt-2 rounded-lg"
+                    className="w-full gap-2 mt-2 rounded-2xl bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.08]"
                     onClick={() => {
                       setMobileMenuOpen(false);
                       setDemoOpen(true);
@@ -503,9 +503,10 @@ export default function Landing() {
         </div>
       </motion.header>
 
-      {/* Hero Section */}
-      <section ref={heroRef} className="pt-32 pb-20 px-4 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
+      {/* Hero Section - Modern Dark SaaS */}
+      <section ref={heroRef} className="pt-32 pb-20 px-4 relative bg-[#0a0a0a]">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.03] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(27,87%,58%,0.08),transparent)]" />
         
         {/* Animated background blobs - hidden on mobile for performance */}
         <motion.div 
@@ -563,8 +564,8 @@ export default function Landing() {
             transition={{ duration: 0.7, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
           >
             <Link to="/auth" className="w-full sm:w-auto">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base font-display font-medium cta-shine btn-premium rounded-xl">
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base font-display font-medium btn-gradient rounded-2xl">
                   Começar Agora
                   <motion.div
                     animate={{ x: [0, 5, 0] }}
@@ -575,11 +576,11 @@ export default function Landing() {
                 </Button>
               </motion.div>
             </Link>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base font-display font-medium rounded-xl border-white/10 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300"
+                className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base font-display font-medium rounded-2xl border-white/10 hover:border-primary/40 hover:bg-white/[0.03] transition-all duration-300"
                 onClick={() => setDemoOpen(true)}
               >
                 <MessageCircle className="w-5 h-5" strokeWidth={1.5} />
@@ -650,10 +651,10 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features Section - Premium Glassmorphism Cards */}
-      <section id="features" className="py-24 px-4 relative">
+      {/* Features Section - Modern Dark SaaS */}
+      <section id="features" className="py-24 px-4 relative bg-[#0a0a0a]">
         {/* Subtle background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.015] to-transparent pointer-events-none" />
         
         <div className="container mx-auto relative z-10">
           <ScrollReveal className="text-center mb-16">
@@ -699,8 +700,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* How it Works - Enhanced Premium */}
-      <section id="como-funciona" className="py-24 px-4">
+      {/* How it Works - Modern Dark SaaS */}
+      <section id="como-funciona" className="py-24 px-4 bg-[#0a0a0a]">
         <div className="container mx-auto">
           <ScrollReveal className="text-center mb-20">
             <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
@@ -768,9 +769,9 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Benefits Comparison Table - Premium with Conversy Orange Glow */}
-      <section id="beneficios" className="py-24 px-4 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent pointer-events-none" />
+      {/* Benefits Comparison Table - Modern Dark SaaS */}
+      <section id="beneficios" className="py-24 px-4 relative bg-[#0a0a0a]">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.015] to-transparent pointer-events-none" />
         
         <div className="container mx-auto relative z-10">
           <ScrollReveal className="text-center mb-16">
@@ -848,8 +849,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Para Quem é Section - Premium */}
-      <section className="py-24 px-4">
+      {/* Para Quem é Section - Modern Dark SaaS */}
+      <section className="py-24 px-4 bg-[#0a0a0a]">
         <div className="container mx-auto">
           <ScrollReveal className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
@@ -959,9 +960,9 @@ export default function Landing() {
         <PricingSection />
       </Suspense>
 
-      {/* Trust Section - Premium */}
-      <section className="py-24 px-4 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent pointer-events-none" />
+      {/* Trust Section - Modern Dark SaaS */}
+      <section className="py-24 px-4 relative bg-[#0a0a0a]">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.015] to-transparent pointer-events-none" />
         
         <div className="container mx-auto relative z-10">
           <ScrollReveal className="text-center mb-16">
@@ -1042,8 +1043,8 @@ export default function Landing() {
         />
       </Suspense>
 
-      {/* FAQ Section - Premium */}
-      <section id="faq" className="py-24 px-4">
+      {/* FAQ Section - Modern Dark SaaS */}
+      <section id="faq" className="py-24 px-4 bg-[#0a0a0a]">
         <div className="container mx-auto">
           <ScrollReveal className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
@@ -1077,8 +1078,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA Section - Premium */}
-      <section className="py-24 px-4">
+      {/* CTA Section - Modern Dark SaaS */}
+      <section className="py-24 px-4 bg-[#0a0a0a]">
         <div className="container mx-auto">
           <ScrollReveal variants={scaleIn}>
             <motion.div
@@ -1136,7 +1137,7 @@ export default function Landing() {
                         whileHover={{ scale: 1.05 }} 
                         whileTap={{ scale: 0.95 }}
                       >
-                        <Button size="lg" className="gap-2 text-base px-10 h-14 font-display font-medium cta-shine btn-premium rounded-xl">
+                        <Button size="lg" className="gap-2 text-base px-10 h-14 font-display font-medium btn-gradient rounded-2xl">
                           Criar Conta Grátis
                           <motion.div
                             animate={{ x: [0, 5, 0] }}
@@ -1189,9 +1190,9 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* Footer - Modern Dark SaaS */}
       <motion.footer 
-        className="py-12 px-4 border-t border-border/30 bg-card/20"
+        className="py-12 px-4 border-t border-white/[0.06] bg-[#0a0a0a]"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
