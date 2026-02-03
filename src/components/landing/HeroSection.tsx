@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowRight, MessageCircle, Zap } from "lucide-react";
 import { AnimatedCounter } from "./AnimatedCounter";
+import { DashboardMockup } from "./DashboardMockup";
 import { scaleIn, staggerContainer } from "./shared/animations";
 import unipayLogo from "@/assets/unipay-logo.png";
 
@@ -100,6 +101,9 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
             </Button>
           </motion.div>
         </motion.div>
+
+        {/* Dashboard Mockup with 3D effect */}
+        <DashboardMockup />
 
         {/* Stats with animated counters */}
         <motion.div 
