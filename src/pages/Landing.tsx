@@ -531,19 +531,19 @@ export default function Landing() {
           </motion.div>
           
           <motion.h1 
-            className="text-4xl md:text-6xl lg:text-7xl max-w-5xl mx-auto leading-tight mb-6 font-display font-bold tracking-tight"
+            className="text-4xl md:text-6xl lg:text-7xl max-w-4xl mx-auto leading-tight mb-6 font-display font-bold tracking-tight"
             initial={{ opacity: 0, y: 50 }}
             animate={heroInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
-            Transforme seu Telegram em uma
+            Venda Produtos Digitais
             <motion.span 
               className="text-primary block mt-2"
               initial={{ opacity: 0, y: 50 }}
               animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.8, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
             >
-              Máquina de Vendas Automática
+              Direto no Telegram
             </motion.span>
           </motion.h1>
           
@@ -563,15 +563,8 @@ export default function Landing() {
             transition={{ duration: 0.7, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
           >
             <Link to="/auth" className="w-full sm:w-auto">
-              <motion.div 
-                whileHover={{ scale: 1.05 }} 
-                whileTap={{ scale: 0.95 }}
-                className="group"
-              >
-                <Button 
-                  size="lg" 
-                  className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base font-display font-medium rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_50px_hsl(var(--primary)/0.6)] transition-all duration-300"
-                >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base font-display font-medium cta-shine btn-premium rounded-xl">
                   Começar Agora
                   <motion.div
                     animate={{ x: [0, 5, 0] }}
@@ -595,56 +588,32 @@ export default function Landing() {
             </motion.div>
           </motion.div>
 
-          {/* Stats with animated counters and icons */}
+          {/* Stats with animated counters */}
           <motion.div 
-            className="flex flex-wrap justify-center gap-6 md:gap-12 max-w-3xl mx-auto mt-16"
+            className="grid grid-cols-3 gap-4 md:gap-8 max-w-2xl mx-auto mt-16"
             variants={staggerContainer}
             initial="hidden"
             animate={heroInView ? "visible" : "hidden"}
           >
-            <motion.div 
-              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm"
-              variants={scaleIn}
-            >
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Users className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            <motion.div className="text-center" variants={scaleIn}>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
+                <AnimatedCounter value={500} suffix="+" delay={0.8} duration={1.5} />
               </div>
-              <div className="text-left">
-                <div className="text-xl sm:text-2xl font-bold text-foreground">
-                  <AnimatedCounter value={500} suffix="+" delay={0.8} duration={1.5} />
-                </div>
-                <div className="text-xs text-muted-foreground">Negócios Ativos</div>
-              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground mt-1">Negócios Ativos</div>
             </motion.div>
             
-            <motion.div 
-              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm"
-              variants={scaleIn}
-            >
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            <motion.div className="text-center" variants={scaleIn}>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
+                <AnimatedCounter value={2} prefix="R$" suffix="M+" delay={0.9} duration={1.5} />
               </div>
-              <div className="text-left">
-                <div className="text-xl sm:text-2xl font-bold text-foreground">
-                  <AnimatedCounter value={2} prefix="R$" suffix="M+" delay={0.9} duration={1.5} />
-                </div>
-                <div className="text-xs text-muted-foreground">Vendas Processadas</div>
-              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground mt-1">Vendas Processadas</div>
             </motion.div>
             
-            <motion.div 
-              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm"
-              variants={scaleIn}
-            >
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <BadgeCheck className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            <motion.div className="text-center" variants={scaleIn}>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
+                <AnimatedCounter value={98} suffix="%" delay={1} duration={1.5} />
               </div>
-              <div className="text-left">
-                <div className="text-xl sm:text-2xl font-bold text-foreground">
-                  <AnimatedCounter value={98} suffix="%" delay={1} duration={1.5} />
-                </div>
-                <div className="text-xs text-muted-foreground">Satisfação</div>
-              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground mt-1">Satisfação</div>
             </motion.div>
           </motion.div>
 
