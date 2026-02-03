@@ -44,7 +44,8 @@ export const useFunnelStats = (clientId: string, botId?: string | null) => {
         .eq('client_id', clientId);
 
       if (botId) {
-        ordersQuery = ordersQuery.eq('bot_id', botId);
+        // Include orders with the selected bot OR legacy orders without bot assigned
+        ordersQuery = ordersQuery.or(`bot_id.eq.${botId},bot_id.is.null`);
       }
 
       const { data: orders, error } = await ordersQuery;
@@ -58,7 +59,8 @@ export const useFunnelStats = (clientId: string, botId?: string | null) => {
         .eq('client_id', clientId);
 
       if (botId) {
-        productsQuery = productsQuery.eq('bot_id', botId);
+        // Include products from the selected bot OR legacy products without bot assigned
+        productsQuery = productsQuery.or(`bot_id.eq.${botId},bot_id.is.null`);
       }
 
       const { data: products } = await productsQuery;

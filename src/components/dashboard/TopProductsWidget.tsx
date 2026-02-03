@@ -21,7 +21,8 @@ export const TopProductsWidget = ({ clientId, botId }: TopProductsWidgetProps) =
         .eq('is_active', true);
 
       if (botId) {
-        query = query.eq('bot_id', botId);
+        // Include products from the selected bot OR legacy products without bot assigned
+        query = query.or(`bot_id.eq.${botId},bot_id.is.null`);
       }
 
       const { data, error } = await query

@@ -28,7 +28,8 @@ export const OrderStatusWidget = ({ clientId, botId }: OrderStatusWidgetProps) =
         .eq('client_id', clientId);
 
       if (botId) {
-        query = query.eq('bot_id', botId);
+        // Include orders with the selected bot OR legacy orders without bot assigned
+        query = query.or(`bot_id.eq.${botId},bot_id.is.null`);
       }
 
       const { data, error } = await query;

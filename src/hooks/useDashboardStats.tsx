@@ -66,7 +66,8 @@ export const useDashboardStats = (clientId: string, dateRange: DateRange, botId?
         .eq('client_id', clientId);
 
       if (botId) {
-        ordersQuery = ordersQuery.eq('bot_id', botId);
+        // Include orders with the selected bot OR legacy orders without bot assigned
+        ordersQuery = ordersQuery.or(`bot_id.eq.${botId},bot_id.is.null`);
       }
 
       const { data: orders, error } = await ordersQuery;
@@ -80,7 +81,8 @@ export const useDashboardStats = (clientId: string, dateRange: DateRange, botId?
         .eq('client_id', clientId);
 
       if (botId) {
-        customersCountQuery = customersCountQuery.eq('bot_id', botId);
+        // Include customers from the selected bot OR legacy customers without bot assigned
+        customersCountQuery = customersCountQuery.or(`bot_id.eq.${botId},bot_id.is.null`);
       }
 
       const { count: customersTotal } = await customersCountQuery;
@@ -94,7 +96,8 @@ export const useDashboardStats = (clientId: string, dateRange: DateRange, botId?
         .lte('created_at', selectedEnd.toISOString());
 
       if (botId) {
-        newCustomersQuery = newCustomersQuery.eq('bot_id', botId);
+        // Include customers from the selected bot OR legacy customers without bot assigned
+        newCustomersQuery = newCustomersQuery.or(`bot_id.eq.${botId},bot_id.is.null`);
       }
 
       const { count: customersNew } = await newCustomersQuery;
@@ -175,7 +178,8 @@ export const useDashboardStats = (clientId: string, dateRange: DateRange, botId?
         .in('status', ['paid', 'delivered'] as const);
 
       if (botId) {
-        allOrdersQuery = allOrdersQuery.eq('bot_id', botId);
+        // Include orders with the selected bot OR legacy orders without bot assigned
+        allOrdersQuery = allOrdersQuery.or(`bot_id.eq.${botId},bot_id.is.null`);
       }
 
       const { data: allOrders } = await allOrdersQuery;
@@ -240,7 +244,8 @@ export const useSalesChart = (clientId: string, dateRange: DateRange, botId?: st
         .in('status', ['paid', 'delivered']);
 
       if (botId) {
-        query = query.eq('bot_id', botId);
+        // Include orders with the selected bot OR legacy orders without bot assigned
+        query = query.or(`bot_id.eq.${botId},bot_id.is.null`);
       }
 
       const { data: orders, error } = await query;
