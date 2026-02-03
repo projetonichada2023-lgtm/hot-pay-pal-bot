@@ -1,235 +1,163 @@
 
-
-# Correção das Políticas RLS Permissivas
+# Plano de Melhorias para a Landing Page
 
 ## Resumo
-
-Identificamos **9 políticas RLS** com expressões permissivas (`USING (true)` ou `WITH CHECK (true)`) que representam riscos de segurança. Além disso, há uma vulnerabilidade crítica onde tokens do Telegram ficam expostos.
-
----
-
-## Problemas Identificados
-
-### Vulnerabilidade Crítica
-
-| Tabela | Problema |
-|--------|----------|
-| `client_bots` | Tokens do Telegram expostos. A política "Service role can manage bots" usa `USING(true)` permitindo acesso irrestrito |
-
-### Políticas Permissivas (Risco Médio)
-
-| Tabela | Política | Tipo | Problema |
-|--------|----------|------|----------|
-| `affiliate_commissions` | Service role can insert commissions | INSERT | `WITH CHECK (true)` |
-| `client_bots` | Service role can manage bots | ALL | `USING (true)` + `WITH CHECK (true)` |
-| `facebook_events` | Service role can insert Facebook events | INSERT | `WITH CHECK (true)` |
-| `tiktok_events` | Service role can insert TikTok events | INSERT | `WITH CHECK (true)` |
-| `ttclid_mappings` | Service role can insert/select/update mappings | ALL | `USING (true)` |
-| `notification_templates` | Service role can read notification templates | SELECT | `USING (true)` |
-
-### Política Aceitável (Não será alterada)
-
-| Tabela | Política | Justificativa |
-|--------|----------|---------------|
-| `plan_limits` | Anyone can view plan limits | Dados públicos de planos/preços - intencional |
+A landing page atual tem uma base sólida com design "Modern Dark SaaS", mas pode ser significativamente melhorada em termos de organização do código, elementos visuais de prova social, e otimizações de conversão.
 
 ---
 
-## Solução
+## Fase 1: Refatoração Estrutural (Prioridade Alta)
 
-### Estratégia
+### 1.1 Dividir Landing.tsx em Componentes
+O arquivo atual tem **1398 linhas** e precisa ser modularizado.
 
-As Edge Functions já utilizam `SUPABASE_SERVICE_ROLE_KEY` que **bypassa RLS automaticamente**. Portanto, as políticas "Service role can..." são **desnecessárias** e representam brechas de segurança.
+**Novos componentes a criar:**
+- `src/components/landing/HeroSection.tsx` - Seção hero com stats
+- `src/components/landing/FeaturesSection.tsx` - Grid de funcionalidades
+- `src/components/landing/HowItWorksSection.tsx` - Passos de como funciona
+- `src/components/landing/ComparisonSection.tsx` - Tabela comparativa
+- `src/components/landing/TargetAudienceSection.tsx` - Para quem é
+- `src/components/landing/TrustSection.tsx` - Indicadores de confiança
+- `src/components/landing/FAQSection.tsx` - Perguntas frequentes
+- `src/components/landing/CTASection.tsx` - Call to action final
+- `src/components/landing/Footer.tsx` - Rodapé
+- `src/components/landing/MobileFloatingCTA.tsx` - CTA flutuante mobile
 
-A correção envolve:
-1. **Remover** políticas permissivas desnecessárias
-2. **Criar view** para esconder tokens sensíveis da tabela `client_bots`
-3. **Restringir** acesso a dados sensíveis apenas para proprietários
+**Benefícios:**
+- Manutenção facilitada
+- Melhor performance (code splitting)
+- Reutilização de componentes
 
 ---
 
-## Alterações no Banco de Dados
+## Fase 2: Elementos Visuais de Alto Impacto
 
-### 1. Tabela `client_bots` (Crítico)
+### 2.1 Adicionar Mockup do Dashboard no Hero
+- Screenshot/mockup do dashboard flutuante
+- Efeito 3D com perspectiva
+- Animação de entrada suave
+
+### 2.2 Vídeo de Demonstração
+- Player de vídeo incorporado (Loom/YouTube)
+- Thumbnail atraente com botão de play
+- Lazy loading para performance
+
+### 2.3 Screenshot do Bot em Ação
+- Preview visual do fluxo de compra no Telegram
+- Similar ao DemoModal mas como imagem estática
+
+---
+
+## Fase 3: Prova Social Aprimorada
+
+### 3.1 Logos de Clientes/Parceiros
+- Carrossel de logos de empresas usando a plataforma
+- Seção "Confiado por" com marquee animation
+
+### 3.2 Contador de Clientes em Tempo Real
+- Número de vendas processadas (atualizado via API)
+- Contador de usuários ativos
+- Badge "X vendas nas últimas 24h"
+
+### 3.3 Testemunhos com Vídeo
+- Depoimentos em vídeo curto
+- Fotos reais de clientes
+- Links para perfis reais (opcional)
+
+---
+
+## Fase 4: Otimizações de Conversão
+
+### 4.1 Toggle de Plano Mensal/Anual
+- Desconto de 20% para plano anual
+- Animação suave na troca
+- Cálculo de economia visível
+
+### 4.2 Banner de Urgência/Promoção
+- Barra no topo com oferta limitada
+- Countdown timer (se aplicável)
+- Fechável com localStorage
+
+### 4.3 Exit-Intent Popup
+- Detectar quando usuário vai sair
+- Oferecer lead magnet ou desconto
+- Captura de email
+
+### 4.4 Widget de Chat/Suporte
+- Integração com Telegram ou Crisp
+- Botão flutuante no canto inferior
+- Mensagem proativa após X segundos
+
+---
+
+## Fase 5: SEO e Performance
+
+### 5.1 Schema Markup para FAQs
+- Adicionar JSON-LD para FAQPage
+- Melhorar visibilidade no Google
+
+### 5.2 Otimizar Core Web Vitals
+- Preload de fontes críticas
+- Otimizar LCP (Largest Contentful Paint)
+- Reduzir CLS (Cumulative Layout Shift)
+
+### 5.3 Meta Tags Dinâmicas
+- OG tags mais descritivas
+- Imagem de preview personalizada
+
+---
+
+## Detalhes Técnicos
+
+### Estrutura de Arquivos Proposta
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│                     ANTES                               │
-├─────────────────────────────────────────────────────────┤
-│ Política "Service role can manage bots"                 │
-│ → USING(true) + WITH CHECK(true)                        │
-│ → Qualquer usuário pode ver tokens do Telegram!         │
-└─────────────────────────────────────────────────────────┘
-                           ↓
-┌─────────────────────────────────────────────────────────┐
-│                     DEPOIS                              │
-├─────────────────────────────────────────────────────────┤
-│ 1. Remover política "Service role can manage bots"      │
-│ 2. Criar VIEW client_bots_public (sem tokens)           │
-│ 3. Atualizar código para usar a view                    │
-└─────────────────────────────────────────────────────────┘
+src/components/landing/
+  ├── AnimatedCounter.tsx (existente)
+  ├── DemoModal.tsx (existente)
+  ├── PricingSection.tsx (existente)
+  ├── HeroSection.tsx (novo)
+  ├── FeaturesSection.tsx (novo)
+  ├── HowItWorksSection.tsx (novo)
+  ├── ComparisonSection.tsx (novo)
+  ├── TargetAudienceSection.tsx (novo)
+  ├── TrustSection.tsx (novo)
+  ├── FAQSection.tsx (novo)
+  ├── CTASection.tsx (novo)
+  ├── Footer.tsx (novo)
+  ├── MobileFloatingCTA.tsx (novo)
+  ├── Header.tsx (novo)
+  ├── PromoBar.tsx (novo - banner de urgência)
+  ├── ClientLogos.tsx (novo - logos de parceiros)
+  └── VideoSection.tsx (novo - vídeo de demo)
 ```
 
-**SQL:**
-```sql
--- Remover política permissiva
-DROP POLICY IF EXISTS "Service role can manage bots" ON public.client_bots;
+### Padrão para Novos Componentes
 
--- Criar view pública que esconde tokens sensíveis
-CREATE VIEW public.client_bots_public
-WITH (security_invoker = on) AS
-SELECT 
-  id,
-  client_id,
-  name,
-  telegram_bot_username,
-  webhook_configured,
-  is_active,
-  is_primary,
-  created_at,
-  updated_at
-FROM public.client_bots;
--- Exclui: telegram_bot_token
-```
-
-### 2. Tabela `affiliate_commissions`
-
-```sql
--- Remover política permissiva (service role já bypassa RLS)
-DROP POLICY IF EXISTS "Service role can insert commissions" 
-ON public.affiliate_commissions;
-```
-
-### 3. Tabela `facebook_events`
-
-```sql
--- Remover política permissiva
-DROP POLICY IF EXISTS "Service role can insert Facebook events" 
-ON public.facebook_events;
-```
-
-### 4. Tabela `tiktok_events`
-
-```sql
--- Remover política permissiva
-DROP POLICY IF EXISTS "Service role can insert TikTok events" 
-ON public.tiktok_events;
-```
-
-### 5. Tabela `ttclid_mappings`
-
-```sql
--- Remover políticas permissivas
-DROP POLICY IF EXISTS "Service role can insert mappings" 
-ON public.ttclid_mappings;
-
-DROP POLICY IF EXISTS "Service role can select mappings" 
-ON public.ttclid_mappings;
-
-DROP POLICY IF EXISTS "Service role can update mappings" 
-ON public.ttclid_mappings;
-```
-
-### 6. Tabela `notification_templates`
-
-```sql
--- Remover política permissiva
-DROP POLICY IF EXISTS "Service role can read notification templates" 
-ON public.notification_templates;
-
--- Adicionar política restritiva (apenas admins e usuários autenticados)
-CREATE POLICY "Authenticated users can read notification templates"
-ON public.notification_templates
-FOR SELECT
-TO authenticated
-USING (true);
-```
+Cada componente seguira o padrão:
+- Wrapper com `ScrollReveal` para animacoes
+- Props tipadas com TypeScript
+- Lazy loading quando apropriado
+- Responsividade mobile-first
 
 ---
 
-## Alterações no Código
+## Cronograma Sugerido
 
-### Hook `useClientBots.tsx`
-
-Modificar para usar a view `client_bots_public` nas queries de leitura, mantendo operações de escrita diretas na tabela (protegidas por RLS).
-
-```typescript
-// Queries de leitura usarão a view (sem tokens expostos)
-const { data } = await supabase
-  .from('client_bots_public')  // ← View sem tokens
-  .select('*')
-  .eq('client_id', clientId);
-
-// Operações de escrita continuam na tabela original
-// (protegidas por políticas RLS existentes)
-```
+| Fase | Descrição | Prioridade |
+|------|-----------|------------|
+| 1 | Refatoracao estrutural | Alta |
+| 2 | Elementos visuais | Media |
+| 3 | Prova social | Media |
+| 4 | Otimizacoes de conversao | Alta |
+| 5 | SEO e Performance | Baixa |
 
 ---
 
-## Impacto
+## Proximos Passos
 
-### Funcionalidades Preservadas
-
-| Componente | Status |
-|------------|--------|
-| Edge Functions (telegram-webhook, cart-recovery, etc.) | Sem impacto - usam service role |
-| Dashboard de clientes | Sem impacto - usam políticas existentes |
-| Painel admin | Sem impacto - usa `has_role()` |
-| Push notifications | Sem impacto |
-
-### Segurança Melhorada
-
-| Antes | Depois |
-|-------|--------|
-| Tokens Telegram expostos | Protegidos em view |
-| 9 políticas permissivas | 2 políticas (plan_limits e notification_templates para autenticados) |
-| Risco de vazamento de dados | Acesso restrito por proprietário |
-
----
-
-## Seção Técnica
-
-### Por que remover políticas "Service role"?
-
-O `service_role` do Supabase **já bypassa RLS por design**. Criar políticas `USING(true)` para "service role" é redundante e perigoso porque:
-
-1. **RLS é para `anon` e `authenticated`**: O service role nunca é avaliado por RLS
-2. **Cria brechas**: Políticas `USING(true)` se aplicam a todos os roles, não apenas service role
-3. **Prática incorreta**: O nome da política sugere restrição, mas `true` libera para todos
-
-### Fluxo de Dados Após Correção
-
-```text
-┌──────────────────────────────────────────────────────────────┐
-│                    FLUXO DE ACESSO                           │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Frontend (Dashboard)                                        │
-│       │                                                      │
-│       ▼                                                      │
-│  ┌─────────────────┐                                         │
-│  │ Supabase Client │ ──→ client_bots_public (view)           │
-│  │   (anon key)    │     └─ Sem telegram_bot_token           │
-│  └─────────────────┘                                         │
-│                                                              │
-│  Edge Functions (Backend)                                    │
-│       │                                                      │
-│       ▼                                                      │
-│  ┌─────────────────┐                                         │
-│  │ Service Role    │ ──→ client_bots (tabela completa)       │
-│  │   (bypassa RLS) │     └─ Acesso a telegram_bot_token      │
-│  └─────────────────┘                                         │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Resumo das Tarefas
-
-1. Criar migração SQL para remover 8 políticas permissivas
-2. Criar view `client_bots_public` sem tokens sensíveis
-3. Adicionar política para `notification_templates` (authenticated)
-4. Atualizar hook `useClientBots.tsx` para usar view
-5. Testar funcionalidades após mudanças
-
+1. **Refatorar** o Landing.tsx em componentes menores
+2. **Adicionar** mockup visual do dashboard no hero
+3. **Implementar** toggle mensal/anual na seção de preços
+4. **Criar** seção de logos de clientes/parceiros
+5. **Adicionar** banner de promoção no topo
