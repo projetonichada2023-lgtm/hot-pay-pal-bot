@@ -37,25 +37,24 @@ export function DashboardMockup() {
   const shouldReduceMotion = useReducedMotion();
 
   return (
-    <div className="dashboard-mockup-container hidden md:block mt-12 lg:mt-16">
+    <div className="dashboard-mockup-container hidden md:block mt-12 lg:mt-16" style={{ perspective: "1200px" }}>
       <motion.div
         className="dashboard-mockup relative mx-auto max-w-4xl"
-        variants={mockupVariants}
-        initial="hidden"
-        animate="visible"
-        {...(!shouldReduceMotion && {
-          animate: {
-            y: [-5, 5, -5],
-            rotateX: [8, 6, 8],
-            rotateY: [-12, -10, -12],
-          },
-          transition: {
-            duration: 6,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          }
-        })}
+        initial={{ opacity: 0, y: 100, rotateX: 25, rotateY: -20, scale: 0.8 }}
+        animate={{ 
+          opacity: 1, 
+          y: shouldReduceMotion ? 0 : [-5, 5, -5], 
+          rotateX: shouldReduceMotion ? 8 : [8, 6, 8], 
+          rotateY: shouldReduceMotion ? -12 : [-12, -10, -12], 
+          scale: 1 
+        }}
+        transition={{
+          opacity: { duration: 1.2, delay: 0.8, ease: [0.16, 1, 0.3, 1] },
+          y: shouldReduceMotion ? { duration: 1.2, delay: 0.8 } : { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 },
+          rotateX: shouldReduceMotion ? { duration: 1.2, delay: 0.8 } : { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 },
+          rotateY: shouldReduceMotion ? { duration: 1.2, delay: 0.8 } : { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 },
+          scale: { duration: 1.2, delay: 0.8, ease: [0.16, 1, 0.3, 1] }
+        }}
         style={{
           transformStyle: "preserve-3d",
           willChange: "transform"
