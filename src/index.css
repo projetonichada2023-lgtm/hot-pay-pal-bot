@@ -586,6 +586,16 @@
     color: hsl(var(--primary));
     border: 1px solid hsl(var(--primary) / 0.3);
   }
+
+  /* 3D Dashboard Mockup Container */
+  .dashboard-mockup-container {
+    perspective: 1200px;
+    perspective-origin: 50% 50%;
+  }
+
+  .dashboard-mockup {
+    transform-style: preserve-3d;
+  }
 }
 
 @layer utilities {
