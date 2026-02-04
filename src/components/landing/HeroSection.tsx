@@ -17,31 +17,33 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
   const heroInView = useInView(heroRef, { once: true });
 
   return (
-    <section ref={heroRef} className="pt-32 pb-20 px-4 relative overflow-hidden">
-      {/* Video Background - Apple Style */}
+    <section ref={heroRef} className="pt-32 pb-20 px-4 relative overflow-hidden min-h-screen">
+      {/* Image Background - Apple Style with Ken Burns effect */}
       <div className="absolute inset-0 z-0">
         <motion.div
-          initial={{ opacity: 0, scale: 1.1 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute inset-0"
+          initial={{ opacity: 0, scale: 1.15 }}
+          animate={{ 
+            opacity: 1, 
+            scale: [1.15, 1.05, 1.1],
+          }}
+          transition={{ 
+            opacity: { duration: 1.2, ease: [0.22, 1, 0.36, 1] },
+            scale: { duration: 25, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }
+          }}
+          className="absolute inset-0 will-change-transform"
         >
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
+          <img
+            src="/hero-bg.jpg"
+            alt=""
             className="w-full h-full object-cover"
-            poster="/hero-bg-poster.jpg"
-          >
-            <source src="/hero-bg.mp4" type="video/mp4" />
-          </video>
+            loading="eager"
+          />
         </motion.div>
         {/* Overlay gradients for readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/80 via-[#0a0a0a]/60 to-[#0a0a0a]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/40 via-transparent to-[#0a0a0a]/40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/70 via-[#0a0a0a]/50 to-[#0a0a0a]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/50 via-transparent to-[#0a0a0a]/50" />
         <motion.div 
-          className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_30%,transparent,#0a0a0a)]"
+          className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_40%,transparent,#0a0a0a)]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 2, delay: 0.5 }}
