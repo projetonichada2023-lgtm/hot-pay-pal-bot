@@ -1,197 +1,486 @@
 
+# Sistema de Cobranca Automatica de Taxas por Venda
 
-# Plano: Adicionar Mockup Visual do Dashboard no Hero
+## Resumo Executivo
 
-## Objetivo
-Adicionar um mockup visual flutuante do dashboard na seção Hero com efeito 3D de perspectiva e animação de entrada suave, aumentando o impacto visual e a credibilidade da landing page.
-
----
-
-## Visao Geral da Implementacao
-
-O mockup sera um componente React que simula a interface do dashboard real da aplicacao, utilizando elementos visuais similares aos componentes existentes (MetricCard, SalesChart) mas de forma estatica e estilizada para a landing page.
+Sistema de billing automatico que cobra R$ 0,70 por venda concluida (paid/delivered), permitindo que clientes paguem via saldo pre-carregado, cartao de credito ou PIX no dia seguinte. Inclui bloqueio automatico do bot apos inadimplencia e dashboard completo para administracao.
 
 ---
 
-## Componentes a Criar
-
-### 1. `src/components/landing/DashboardMockup.tsx`
-
-Componente principal contendo:
-- Container com efeito 3D de perspectiva CSS
-- Cards de metricas simulados (miniatura)
-- Grafico de vendas estilizado (SVG estatico)
-- Efeito de glassmorphism e bordas brilhantes
-- Animacao de flutuacao sutil continua
-
-### 2. Estrutura Visual do Mockup
+## Arquitetura do Sistema
 
 ```text
-+--------------------------------------------------+
-|  Dashboard Mockup (perspectiva 3D)               |
-|  +--------+  +--------+  +--------+  +--------+  |
-|  | Metrica|  | Metrica|  | Metrica|  | Metrica|  |
-|  | R$2.5k |  |  127   |  | 34.2%  |  | R$89   |  |
-|  +--------+  +--------+  +--------+  +--------+  |
-|                                                  |
-|  +--------------------------------------------+  |
-|  |                                            |  |
-|  |     [Grafico de Area - Vendas]             |  |
-|  |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~            |  |
-|  |                                            |  |
-|  +--------------------------------------------+  |
-|                                                  |
-|  +-------------------+  +--------------------+   |
-|  | Pedidos Recentes  |  | Produtos Top      |   |
-|  +-------------------+  +--------------------+   |
-+--------------------------------------------------+
++------------------+     +-------------------+     +------------------+
+|   Venda Paga     | --> | Registra Taxa     | --> | Debita do Saldo  |
+| (fastsoft-webhook)|    | (platform_fees)   |     | (se disponivel)  |
++------------------+     +-------------------+     +------------------+
+                                                           |
+                         +----------------------------------+
+                         v                                  v
+               [Saldo suficiente]              [Saldo insuficiente]
+                         |                                  |
+                         v                                  v
+               Taxa paga                        Acumula divida
+               automaticamente                  (debt_amount)
+                                                           |
++------------------+                             +---------v--------+
+|  CRON Diario     | <---------------------------| Cobranca Diaria  |
+|  00:05 BRT       |                             | (PIX ou Stripe)  |
++------------------+                             +------------------+
+         |
+         v
++------------------+     +------------------+
+| Verifica         | --> | Bloqueia bot se  |
+| Inadimplentes    |     | divida > X dias  |
++------------------+     +------------------+
 ```
 
 ---
 
-## Detalhes Tecnicos
+## Fase 1: Estrutura de Dados
 
-### Efeito 3D com CSS
+### 1.1 Nova Tabela: `client_balances`
 
-```css
-.dashboard-mockup-container {
-  perspective: 1200px;
-  perspective-origin: 50% 50%;
-}
+Armazena saldo e divida de cada cliente.
 
-.dashboard-mockup {
-  transform: rotateX(8deg) rotateY(-12deg) scale(0.95);
-  transform-style: preserve-3d;
+| Coluna | Tipo | Descricao |
+|--------|------|-----------|
+| id | uuid | PK |
+| client_id | uuid | FK para clients (unique) |
+| balance | numeric | Saldo pre-pago disponivel |
+| debt_amount | numeric | Divida acumulada pendente |
+| last_fee_date | timestamptz | Ultima data com taxas cobradas |
+| debt_started_at | timestamptz | Quando a divida comecou (para bloqueio) |
+| is_blocked | boolean | Se bot esta bloqueado por inadimplencia |
+| blocked_at | timestamptz | Data do bloqueio |
+| created_at | timestamptz | - |
+| updated_at | timestamptz | - |
+
+### 1.2 Nova Tabela: `platform_fees`
+
+Registra cada taxa cobrada por venda.
+
+| Coluna | Tipo | Descricao |
+|--------|------|-----------|
+| id | uuid | PK |
+| client_id | uuid | FK para clients |
+| order_id | uuid | FK para orders |
+| amount | numeric | Valor da taxa (0.70) |
+| status | text | pending / paid / deducted_from_balance |
+| paid_at | timestamptz | Quando foi paga |
+| created_at | timestamptz | - |
+
+### 1.3 Nova Tabela: `balance_transactions`
+
+Historico de todas as movimentacoes de saldo.
+
+| Coluna | Tipo | Descricao |
+|--------|------|-----------|
+| id | uuid | PK |
+| client_id | uuid | FK para clients |
+| type | text | credit / debit / fee_deduction |
+| amount | numeric | Valor da transacao |
+| description | text | Descricao da movimentacao |
+| reference_id | uuid | ID da taxa/pedido relacionado |
+| payment_method | text | pix / stripe / admin_adjustment |
+| created_at | timestamptz | - |
+
+### 1.4 Nova Tabela: `daily_fee_invoices`
+
+Faturas diarias consolidadas para cobranca.
+
+| Coluna | Tipo | Descricao |
+|--------|------|-----------|
+| id | uuid | PK |
+| client_id | uuid | FK para clients |
+| invoice_date | date | Data da fatura |
+| total_fees | numeric | Total de taxas do dia |
+| fees_count | integer | Quantidade de vendas |
+| status | text | pending / paid / overdue |
+| payment_id | text | ID do pagamento (PIX/Stripe) |
+| pix_code | text | Codigo PIX gerado |
+| due_date | date | Data limite para pagamento |
+| paid_at | timestamptz | Quando foi paga |
+| created_at | timestamptz | - |
+
+### 1.5 Alteracao: Tabela `clients`
+
+Adicionar colunas:
+
+| Coluna | Tipo | Descricao |
+|--------|------|-----------|
+| fee_rate | numeric | Taxa por venda (default 0.70, pode variar por plano) |
+| max_debt_days | integer | Dias antes de bloquear (default 3) |
+| stripe_customer_id | text | ID do cliente no Stripe |
+| default_payment_method | text | pix / stripe |
+
+---
+
+## Fase 2: Backend (Edge Functions)
+
+### 2.1 Modificar: `fastsoft-webhook/index.ts`
+
+Apos confirmar pagamento de venda:
+
+```typescript
+// Apos atualizar status para 'paid'
+await registerPlatformFee(clientId, orderId, feeRate);
+
+async function registerPlatformFee(clientId, orderId, rate = 0.70) {
+  // 1. Criar registro de taxa
+  const { data: fee } = await supabase
+    .from('platform_fees')
+    .insert({
+      client_id: clientId,
+      order_id: orderId,
+      amount: rate,
+      status: 'pending'
+    })
+    .select()
+    .single();
+  
+  // 2. Verificar saldo disponivel
+  const { data: balance } = await supabase
+    .from('client_balances')
+    .select('*')
+    .eq('client_id', clientId)
+    .single();
+  
+  if (balance && balance.balance >= rate) {
+    // Debitar do saldo
+    await supabase.from('client_balances')
+      .update({ balance: balance.balance - rate })
+      .eq('client_id', clientId);
+    
+    await supabase.from('platform_fees')
+      .update({ status: 'deducted_from_balance', paid_at: now })
+      .eq('id', fee.id);
+    
+    // Registrar transacao
+    await supabase.from('balance_transactions').insert({
+      client_id: clientId,
+      type: 'fee_deduction',
+      amount: -rate,
+      description: `Taxa de venda - Pedido #${orderId.slice(0,8)}`,
+      reference_id: fee.id
+    });
+  } else {
+    // Acumular na divida
+    const newDebt = (balance?.debt_amount || 0) + rate;
+    await supabase.from('client_balances')
+      .upsert({
+        client_id: clientId,
+        debt_amount: newDebt,
+        debt_started_at: balance?.debt_started_at || new Date()
+      });
+  }
 }
 ```
 
-### Animacao de Entrada (Framer Motion)
+### 2.2 Nova Function: `process-daily-fees/index.ts`
 
-- Delay inicial de 0.8s (apos hero text)
-- Duracao de 1s com easing suave
-- Movimento de baixo para cima com scale
-- Rotacao 3D progressiva
+Executada via CRON diariamente as 00:05 BRT.
 
 ```typescript
-const mockupVariants = {
-  hidden: {
-    opacity: 0,
-    y: 100,
-    rotateX: 25,
-    rotateY: -20,
-    scale: 0.8
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    rotateX: 8,
-    rotateY: -12,
-    scale: 1,
-    transition: {
-      duration: 1.2,
-      delay: 0.8,
-      ease: [0.16, 1, 0.3, 1]
+// Pseudo-codigo
+async function processDailyFees() {
+  // 1. Buscar clientes com divida pendente
+  const clients = await getClientsWithDebt();
+  
+  for (const client of clients) {
+    // 2. Consolidar taxas do dia anterior
+    const fees = await getPendingFees(client.id);
+    
+    if (fees.length > 0) {
+      // 3. Criar fatura diaria
+      const invoice = await createDailyInvoice(client.id, fees);
+      
+      // 4. Gerar cobranca (PIX ou Stripe)
+      if (client.default_payment_method === 'stripe') {
+        await chargeStripe(client, invoice);
+      } else {
+        await generatePixInvoice(client, invoice);
+      }
+      
+      // 5. Enviar notificacao
+      await notifyClient(client, invoice);
+    }
+  }
+  
+  // 6. Verificar inadimplentes
+  await checkAndBlockDelinquents();
+}
+
+async function checkAndBlockDelinquents() {
+  const delinquents = await supabase.from('client_balances')
+    .select('*, clients(*)')
+    .gt('debt_amount', 0)
+    .is('is_blocked', false);
+  
+  for (const d of delinquents) {
+    const daysSinceDebt = daysDiff(d.debt_started_at, now);
+    if (daysSinceDebt >= d.clients.max_debt_days) {
+      await supabase.from('client_balances')
+        .update({ is_blocked: true, blocked_at: now })
+        .eq('id', d.id);
+      
+      // Notificar admin e cliente
+      await notifyBlocked(d.clients);
     }
   }
 }
 ```
 
-### Animacao de Flutuacao Continua
+### 2.3 Nova Function: `add-balance/index.ts`
+
+Permite cliente adicionar saldo via PIX ou Stripe.
 
 ```typescript
-animate={{
-  y: [-5, 5, -5],
-  rotateX: [8, 6, 8],
-  rotateY: [-12, -10, -12]
-}}
-transition={{
-  duration: 6,
-  repeat: Infinity,
-  ease: "easeInOut"
-}}
+// POST: { clientId, amount, method: 'pix' | 'stripe' }
+if (method === 'stripe') {
+  // Criar Payment Intent
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: Math.round(amount * 100),
+    currency: 'brl',
+    customer: client.stripe_customer_id,
+    metadata: { client_id: clientId, type: 'balance_topup' }
+  });
+  return { clientSecret: paymentIntent.client_secret };
+} else {
+  // Gerar PIX via UniPay
+  const pix = await generatePix(amount, { client_id: clientId });
+  return { pixCode: pix.code, pixQrcode: pix.qrcode };
+}
+```
+
+### 2.4 Modificar: `telegram-bot/index.ts`
+
+Verificar bloqueio antes de processar comandos:
+
+```typescript
+// No inicio do handler
+const { data: balance } = await supabase
+  .from('client_balances')
+  .select('is_blocked')
+  .eq('client_id', clientId)
+  .single();
+
+if (balance?.is_blocked) {
+  return sendMessage(chatId, 
+    '⚠️ Este bot esta temporariamente suspenso.\n' +
+    'O proprietario precisa regularizar pendencias financeiras.');
+}
 ```
 
 ---
 
-## Alteracoes em Arquivos Existentes
+## Fase 3: Interface do Cliente
 
-### `src/components/landing/HeroSection.tsx`
-
-1. Importar o novo componente `DashboardMockup`
-2. Reorganizar layout para acomodar o mockup:
-   - Mobile: Mockup abaixo do CTA, antes dos stats
-   - Desktop: Layout side-by-side ou mockup abaixo centralizado
-3. Ajustar padding/spacing da secao
-
-### Layout Proposto (Desktop)
+### 3.1 Nova Pagina: `src/pages/dashboard/BalancePage.tsx`
 
 ```text
 +----------------------------------------------------------+
-|                     [Badge]                               |
-|                                                           |
-|              Venda Produtos Digitais                      |
-|              Direto no Telegram                           |
-|                                                           |
-|              [Descricao do produto]                       |
-|                                                           |
-|         [CTA Comecar]    [Ver Demo]                       |
-|                                                           |
-|         +-----------------------------------+              |
-|         |                                   |              |
-|         |    [Dashboard Mockup 3D]          |              |
-|         |                                   |              |
-|         +-----------------------------------+              |
-|                                                           |
-|     [500+ Negocios]  [R$2M+]  [98% Satisfacao]            |
-|                                                           |
-|              [UniPay Partnership Badge]                   |
+|  💰 Saldo e Taxas                                        |
++----------------------------------------------------------+
+|                                                          |
+|  +---------------+  +---------------+  +---------------+ |
+|  | Saldo Atual   |  | Taxas Hoje    |  | Divida        | |
+|  | R$ 45,00      |  | R$ 4,90 (7)   |  | R$ 0,00       | |
+|  +---------------+  +---------------+  +---------------+ |
+|                                                          |
+|  [Adicionar Saldo]  [Ver Historico]                      |
+|                                                          |
+|  📊 Resumo do Mes                                        |
+|  +--------------------------------------------------+   |
+|  | Vendas: 142  |  Taxas: R$ 99,40  |  Pago: R$ 85  |   |
+|  +--------------------------------------------------+   |
+|                                                          |
+|  📋 Ultimas Transacoes                                   |
+|  +--------------------------------------------------+   |
+|  | -R$ 0,70 | Taxa de venda #abc123 | Hoje 14:35    |   |
+|  | +R$ 50,00| Recarga PIX           | Ontem         |   |
+|  | -R$ 0,70 | Taxa de venda #def456 | Ontem         |   |
+|  +--------------------------------------------------+   |
+|                                                          |
++----------------------------------------------------------+
+```
+
+### 3.2 Componente: `AddBalanceDialog.tsx`
+
+Modal para adicionar saldo com opcoes:
+- PIX: Gera QR Code para pagamento
+- Cartao: Integra com Stripe Elements
+
+### 3.3 Alerta de Divida
+
+Banner vermelho no topo do dashboard quando cliente tem divida:
+
+```text
++----------------------------------------------------------+
+| ⚠️ Voce tem R$ 4,90 em taxas pendentes. [Pagar Agora]    |
 +----------------------------------------------------------+
 ```
 
 ---
 
-## Estilos Visuais
+## Fase 4: Interface Admin
 
-### Glassmorphism do Mockup
+### 4.1 Modificar: `AdminClientsPage.tsx`
 
-- Background: `rgba(10, 10, 10, 0.8)`
-- Backdrop blur: `blur(24px)`
-- Border: `1px solid rgba(255, 255, 255, 0.08)`
-- Box shadow com glow laranja sutil
+Adicionar colunas na tabela:
 
-### Elementos do Mockup
+| Coluna Nova | Descricao |
+|-------------|-----------|
+| Saldo | R$ X,XX com cor verde |
+| Divida | R$ X,XX com cor vermelha |
+| Status | Ativo / Bloqueado badge |
 
-- Mini metric cards com icones e valores fictícios
-- Grafico SVG estatico com gradiente laranja
-- Linhas de lista (pedidos recentes) como placeholders
-- Efeito de brilho no canto superior
+### 4.2 Nova Pagina: `AdminBillingPage.tsx`
+
+Dashboard financeiro completo:
+
+```text
++----------------------------------------------------------+
+|  💳 Financeiro - Taxas da Plataforma                     |
++----------------------------------------------------------+
+|                                                          |
+|  +---------------+  +---------------+  +---------------+ |
+|  | Taxas Hoje    |  | Taxas Mes     |  | Inadimplentes | |
+|  | R$ 87,50 (125)|  | R$ 2.450      |  | 3 clientes    | |
+|  +---------------+  +---------------+  +---------------+ |
+|                                                          |
+|  📈 Taxas por Dia (Grafico)                              |
+|  [========================================]               |
+|                                                          |
+|  📋 Clientes com Pendencias                              |
+|  +--------------------------------------------------+   |
+|  | Cliente     | Divida    | Desde    | Acao        |   |
+|  | Loja ABC    | R$ 12,60  | 2 dias   | [Cobrar]    |   |
+|  | Store XYZ   | R$ 45,50  | 5 dias   | [Bloqueado] |   |
+|  +--------------------------------------------------+   |
+|                                                          |
+|  📋 Ultimos Pagamentos de Taxa                           |
+|  +--------------------------------------------------+   |
+|  | Cliente     | Valor     | Metodo   | Data        |   |
+|  | Loja 123    | R$ 35,00  | PIX      | Hoje 10:00  |   |
+|  +--------------------------------------------------+   |
+|                                                          |
++----------------------------------------------------------+
+```
+
+### 4.3 Acoes Admin
+
+- Ajustar saldo manualmente (creditar/debitar)
+- Desbloquear cliente
+- Alterar taxa por venda
+- Ver historico completo
+- Enviar cobranca manual
 
 ---
 
-## Responsividade
+## Fase 5: Integracoes
 
-| Viewport | Comportamento |
-|----------|---------------|
-| Mobile (<640px) | Mockup oculto ou versao simplificada (apenas grafico) |
-| Tablet (640-1024px) | Mockup em escala menor, abaixo do CTA |
-| Desktop (>1024px) | Mockup em tamanho completo com efeito 3D |
+### 5.1 Stripe (Cartao de Credito)
+
+```text
+1. Cliente cadastra cartao (Stripe Elements)
+2. Salva payment method no Stripe Customer
+3. Cobranca automatica diaria (se configurado)
+4. Webhook recebe confirmacao
+5. Atualiza saldo/divida
+```
+
+### 5.2 UniPay (PIX)
+
+```text
+1. Gera PIX com valor da divida
+2. Envia para cliente (email/push)
+3. Webhook recebe confirmacao
+4. Atualiza saldo/divida
+```
+
+### 5.3 Notificacoes
+
+- Push notification quando divida > 0
+- Email diario com resumo de taxas
+- Alerta 24h antes do bloqueio
+- Notificacao de bloqueio
 
 ---
 
-## Performance
+## Fase 6: CRON Jobs
 
-1. **Lazy loading**: Mockup carrega apos hero text
-2. **will-change**: Aplicado para otimizar transforms
-3. **Reducao em mobile**: Versao simplificada ou hidden
-4. **prefers-reduced-motion**: Desativa flutuacao para usuarios sensíveis
+### 6.1 Consolidacao Diaria (00:05 BRT)
+
+```sql
+SELECT cron.schedule(
+  'process-daily-fees',
+  '5 3 * * *', -- 00:05 BRT = 03:05 UTC
+  $$
+  SELECT net.http_post(
+    url := 'https://[project].supabase.co/functions/v1/process-daily-fees',
+    headers := '{"Authorization": "Bearer [ANON_KEY]"}'::jsonb
+  );
+  $$
+);
+```
+
+### 6.2 Verificacao de Inadimplentes (06:00 BRT)
+
+```sql
+SELECT cron.schedule(
+  'check-delinquents',
+  '0 9 * * *', -- 06:00 BRT = 09:00 UTC
+  $$
+  SELECT net.http_post(
+    url := 'https://[project].supabase.co/functions/v1/check-delinquents',
+    headers := '{"Authorization": "Bearer [ANON_KEY]"}'::jsonb
+  );
+  $$
+);
+```
 
 ---
 
-## Arquivos Envolvidos
+## Arquivos a Criar/Modificar
 
-| Arquivo | Acao |
-|---------|------|
-| `src/components/landing/DashboardMockup.tsx` | Criar (novo) |
-| `src/components/landing/HeroSection.tsx` | Editar (adicionar mockup) |
-| `src/index.css` | Editar (adicionar estilos 3D) |
+| Arquivo | Acao | Descricao |
+|---------|------|-----------|
+| Migracao SQL | Criar | Tabelas client_balances, platform_fees, etc |
+| `supabase/functions/process-daily-fees/` | Criar | CRON de processamento diario |
+| `supabase/functions/add-balance/` | Criar | Adicionar saldo |
+| `supabase/functions/check-delinquents/` | Criar | Verificar inadimplentes |
+| `supabase/functions/stripe-billing-webhook/` | Criar | Webhook do Stripe |
+| `supabase/functions/fastsoft-webhook/` | Modificar | Registrar taxa apos venda |
+| `supabase/functions/telegram-bot/` | Modificar | Verificar bloqueio |
+| `src/pages/dashboard/BalancePage.tsx` | Criar | Pagina de saldo do cliente |
+| `src/components/balance/` | Criar | Componentes de saldo |
+| `src/pages/admin/AdminBillingPage.tsx` | Criar | Dashboard financeiro admin |
+| `src/pages/admin/AdminClientsPage.tsx` | Modificar | Adicionar colunas saldo/divida |
+| `src/hooks/useClientBalance.tsx` | Criar | Hook para saldo do cliente |
+| `src/hooks/useAdminBilling.tsx` | Criar | Hook para dados de billing |
+| `src/components/dashboard/DebtBanner.tsx` | Criar | Banner de alerta de divida |
 
+---
+
+## Configuracoes por Plano
+
+| Plano | Taxa por Venda | Dias para Bloqueio |
+|-------|----------------|-------------------|
+| Free | R$ 0,80 | 2 dias |
+| Basic | R$ 0,60 | 3 dias |
+| Pro | R$ 0,50 | 5 dias |
+| Enterprise | Customizado | Customizado |
+
+---
+
+## Proximos Passos
+
+1. Criar migracoes SQL com todas as tabelas
+2. Implementar registro de taxa no webhook de pagamento
+3. Criar edge function de processamento diario
+4. Desenvolver interface de saldo do cliente
+5. Desenvolver interface admin de billing
+6. Integrar Stripe para pagamentos com cartao
+7. Configurar CRON jobs
+8. Testar fluxo completo
