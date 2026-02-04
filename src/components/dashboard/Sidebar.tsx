@@ -27,7 +27,8 @@ import {
   Target,
   ChevronLeft,
   ChevronRight,
-  Boxes
+  Boxes,
+  Wallet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -46,6 +47,7 @@ const menuItems = [
   { icon: Users, label: 'Clientes', path: '/dashboard/customers' },
   { icon: Target, label: 'Tracking', path: '/dashboard/tracking' },
   { icon: BarChart3, label: 'Relatórios', path: '/dashboard/reports' },
+  { icon: Wallet, label: 'Financeiro', path: '/dashboard/balance' },
   { icon: Boxes, label: 'Meus Bots', path: '/dashboard/bots' },
   { icon: Smartphone, label: 'Simulador', path: '/dashboard/simulator' },
   { icon: Settings, label: 'Configurações', path: '/dashboard/settings' },
