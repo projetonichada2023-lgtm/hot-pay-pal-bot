@@ -268,6 +268,47 @@ export type Database = {
         }
         Relationships: []
       }
+      balance_transactions: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          description: string | null
+          id: string
+          payment_method: string | null
+          reference_id: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          payment_method?: string | null
+          reference_id?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          payment_method?: string | null
+          reference_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balance_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bot_messages: {
         Row: {
           bot_id: string | null
@@ -411,6 +452,53 @@ export type Database = {
             columns: ["offer_product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_balances: {
+        Row: {
+          balance: number
+          blocked_at: string | null
+          client_id: string
+          created_at: string
+          debt_amount: number
+          debt_started_at: string | null
+          id: string
+          is_blocked: boolean
+          last_fee_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          blocked_at?: string | null
+          client_id: string
+          created_at?: string
+          debt_amount?: number
+          debt_started_at?: string | null
+          id?: string
+          is_blocked?: boolean
+          last_fee_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          blocked_at?: string | null
+          client_id?: string
+          created_at?: string
+          debt_amount?: number
+          debt_started_at?: string | null
+          id?: string
+          is_blocked?: boolean
+          last_fee_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_balances_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -570,9 +658,13 @@ export type Database = {
           business_name: string
           business_phone: string | null
           created_at: string | null
+          default_payment_method: string | null
+          fee_rate: number | null
           id: string
           is_active: boolean | null
+          max_debt_days: number | null
           onboarding_completed: boolean | null
+          stripe_customer_id: string | null
           telegram_bot_token: string | null
           telegram_bot_username: string | null
           updated_at: string | null
@@ -585,9 +677,13 @@ export type Database = {
           business_name: string
           business_phone?: string | null
           created_at?: string | null
+          default_payment_method?: string | null
+          fee_rate?: number | null
           id?: string
           is_active?: boolean | null
+          max_debt_days?: number | null
           onboarding_completed?: boolean | null
+          stripe_customer_id?: string | null
           telegram_bot_token?: string | null
           telegram_bot_username?: string | null
           updated_at?: string | null
@@ -600,9 +696,13 @@ export type Database = {
           business_name?: string
           business_phone?: string | null
           created_at?: string | null
+          default_payment_method?: string | null
+          fee_rate?: number | null
           id?: string
           is_active?: boolean | null
+          max_debt_days?: number | null
           onboarding_completed?: boolean | null
+          stripe_customer_id?: string | null
           telegram_bot_token?: string | null
           telegram_bot_username?: string | null
           updated_at?: string | null
@@ -610,6 +710,59 @@ export type Database = {
           webhook_configured?: boolean | null
         }
         Relationships: []
+      }
+      daily_fee_invoices: {
+        Row: {
+          client_id: string
+          created_at: string
+          due_date: string | null
+          fees_count: number
+          id: string
+          invoice_date: string
+          paid_at: string | null
+          payment_id: string | null
+          pix_code: string | null
+          pix_qrcode: string | null
+          status: string
+          total_fees: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          due_date?: string | null
+          fees_count?: number
+          id?: string
+          invoice_date: string
+          paid_at?: string | null
+          payment_id?: string | null
+          pix_code?: string | null
+          pix_qrcode?: string | null
+          status?: string
+          total_fees?: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          due_date?: string | null
+          fees_count?: number
+          id?: string
+          invoice_date?: string
+          paid_at?: string | null
+          payment_id?: string | null
+          pix_code?: string | null
+          pix_qrcode?: string | null
+          status?: string
+          total_fees?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_fee_invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       facebook_events: {
         Row: {
@@ -906,6 +1059,51 @@ export type Database = {
           upsell_enabled?: boolean
         }
         Relationships: []
+      }
+      platform_fees: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          id: string
+          order_id: string | null
+          paid_at: string | null
+          status: string
+        }
+        Insert: {
+          amount?: number
+          client_id: string
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          paid_at?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          paid_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_fees_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fees_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_fees: {
         Row: {
@@ -1605,9 +1803,16 @@ export type Database = {
     Enums: {
       affiliate_status: "pending" | "approved" | "rejected" | "suspended"
       app_role: "admin" | "client"
+      balance_transaction_type:
+        | "credit"
+        | "debit"
+        | "fee_deduction"
+        | "debt_payment"
       billing_cycle: "monthly" | "yearly"
+      invoice_status: "pending" | "paid" | "overdue" | "cancelled"
       order_status: "pending" | "paid" | "delivered" | "cancelled" | "refunded"
       payment_method: "pix" | "card" | "boleto"
+      platform_fee_status: "pending" | "paid" | "deducted_from_balance"
       subscription_plan: "free" | "basic" | "pro" | "enterprise"
       subscription_status:
         | "active"
@@ -1744,9 +1949,17 @@ export const Constants = {
     Enums: {
       affiliate_status: ["pending", "approved", "rejected", "suspended"],
       app_role: ["admin", "client"],
+      balance_transaction_type: [
+        "credit",
+        "debit",
+        "fee_deduction",
+        "debt_payment",
+      ],
       billing_cycle: ["monthly", "yearly"],
+      invoice_status: ["pending", "paid", "overdue", "cancelled"],
       order_status: ["pending", "paid", "delivered", "cancelled", "refunded"],
       payment_method: ["pix", "card", "boleto"],
+      platform_fee_status: ["pending", "paid", "deducted_from_balance"],
       subscription_plan: ["free", "basic", "pro", "enterprise"],
       subscription_status: [
         "active",

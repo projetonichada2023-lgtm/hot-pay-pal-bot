@@ -918,6 +918,28 @@ serve(async (req) => {
       });
     }
 
+    // *** CHECK IF CLIENT IS BLOCKED DUE TO DEBT ***
+    const { data: clientBalance } = await supabase
+      .from('client_balances')
+      .select('is_blocked, debt_amount')
+      .eq('client_id', ctx.clientId)
+      .single();
+
+    if (clientBalance?.is_blocked) {
+      const debtAmount = Number(clientBalance.debt_amount) || 0;
+      await sendTelegramMessage(
+        ctx.botToken, 
+        chatId, 
+        `⚠️ <b>Bot Temporariamente Suspenso</b>\n\n` +
+        `Este bot está temporariamente suspenso por pendências financeiras.\n\n` +
+        `O proprietário precisa regularizar a situação para reativar o serviço.\n\n` +
+        `💰 Dívida pendente: R$ ${debtAmount.toFixed(2)}`
+      );
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Handle message commands
     if (update.message) {
       const text = update.message.text || '';

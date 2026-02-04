@@ -15,6 +15,7 @@ import { SimulatorPage } from '@/pages/dashboard/SimulatorPage';
 import { UpgradePage } from '@/pages/dashboard/UpgradePage';
 import { TrackingPage } from '@/pages/dashboard/TrackingPage';
 import { BotsPage } from '@/pages/dashboard/BotsPage';
+import { BalancePage } from '@/pages/dashboard/BalancePage';
 
 interface DashboardContentProps {
   client: Client;
@@ -39,6 +40,7 @@ export const DashboardContent = ({ client }: DashboardContentProps) => {
           <Route path="/bot-config" element={<BotConfigPage client={client} />} />
           <Route path="/simulator" element={<SimulatorPage client={client} />} />
           <Route path="/settings" element={<SettingsPage client={client} />} />
+          <Route path="/balance" element={<BalancePage client={client} />} />
           <Route path="/upgrade" element={<UpgradePage client={client} />} />
         </Routes>
       </div>

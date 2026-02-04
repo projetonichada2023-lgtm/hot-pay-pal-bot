@@ -154,8 +154,9 @@ export const AdminClientsPage = () => {
                 <TableRow>
                   <TableHead>Negócio</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Saldo</TableHead>
+                  <TableHead>Dívida</TableHead>
                   <TableHead>Plano</TableHead>
-                  <TableHead>Status Assinatura</TableHead>
                   <TableHead>Bot Configurado</TableHead>
                   <TableHead>Ativo</TableHead>
                   <TableHead>Criado em</TableHead>
@@ -167,8 +168,22 @@ export const AdminClientsPage = () => {
                   <TableRow key={client.id}>
                     <TableCell className="font-medium">{client.business_name}</TableCell>
                     <TableCell>{client.business_email || "-"}</TableCell>
+                    <TableCell className="text-green-600 font-medium">
+                      R$ {(Number(client.balance?.balance) || 0).toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      {(Number(client.balance?.debt_amount) || 0) > 0 ? (
+                        <span className="text-red-600 font-bold">
+                          R$ {Number(client.balance?.debt_amount).toFixed(2)}
+                          {client.balance?.is_blocked && (
+                            <Badge variant="destructive" className="ml-2">Bloqueado</Badge>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">R$ 0,00</span>
+                      )}
+                    </TableCell>
                     <TableCell>{getPlanBadge(client.subscription?.plan_type)}</TableCell>
-                    <TableCell>{getStatusBadge(client.subscription?.status)}</TableCell>
                     <TableCell>
                       <Badge variant={client.webhook_configured ? "default" : "outline"}>
                         {client.webhook_configured ? "Sim" : "Não"}
@@ -218,7 +233,7 @@ export const AdminClientsPage = () => {
                 ))}
                 {filteredClients.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                       Nenhum cliente encontrado
                     </TableCell>
                   </TableRow>
