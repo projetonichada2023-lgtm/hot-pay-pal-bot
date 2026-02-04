@@ -21,20 +21,20 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
       {/* Image Background - Apple Style with cinematic animation */}
       <div className="absolute inset-0 z-0">
         <motion.div
-          initial={{ opacity: 0, scale: 1.2, x: "-5%" }}
+          initial={{ opacity: 0, scale: 1.02 }}
           animate={{ 
             opacity: 1, 
-            scale: [1.2, 1.1, 1.15, 1.1],
-            x: ["-5%", "0%", "-2%", "0%"],
-            y: ["0%", "-2%", "0%", "-1%"],
+            scale: [1.02, 1, 1.01, 1],
+            x: ["0%", "1%", "0%", "-1%"],
+            y: ["0%", "-0.5%", "0%", "0.5%"],
           }}
           transition={{ 
             opacity: { duration: 1.5, ease: [0.22, 1, 0.36, 1] },
-            scale: { duration: 30, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" },
-            x: { duration: 35, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" },
-            y: { duration: 28, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" },
+            scale: { duration: 25, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" },
+            x: { duration: 30, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" },
+            y: { duration: 22, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" },
           }}
-          className="absolute inset-[-10%] will-change-transform"
+          className="absolute inset-[-2%] will-change-transform"
         >
           <img
             src="/hero-bg.jpg"
