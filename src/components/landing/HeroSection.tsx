@@ -18,36 +18,8 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
 
   return (
     <section ref={heroRef} className="pt-32 pb-20 px-4 relative overflow-hidden min-h-screen">
-      {/* Image Background - Apple Style with cinematic animation */}
-      <div className="absolute inset-0 z-0">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ 
-            opacity: 1, 
-            x: ["0%", "0.5%", "0%", "-0.5%"],
-            y: ["0%", "-0.3%", "0%", "0.3%"],
-          }}
-          transition={{ 
-            opacity: { duration: 1.5, ease: [0.22, 1, 0.36, 1] },
-            x: { duration: 30, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" },
-            y: { duration: 22, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" },
-          }}
-          className="absolute inset-0 will-change-transform"
-        >
-          <img
-            src="/hero-bg.jpg"
-            alt=""
-            className="w-full h-full object-cover"
-            style={{ 
-              imageRendering: 'auto',
-              WebkitBackfaceVisibility: 'hidden',
-              backfaceVisibility: 'hidden',
-            }}
-            loading="eager"
-            decoding="sync"
-            fetchPriority="high"
-          />
-        </motion.div>
+      {/* Dark Background with Aurora Effects */}
+      <div className="absolute inset-0 z-0 bg-[#0a0a0a]">
         {/* Premium overlay gradients */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/60 via-[#0a0a0a]/40 to-[#0a0a0a]" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/40 via-transparent to-[#0a0a0a]/40" />
