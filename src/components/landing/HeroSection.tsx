@@ -18,35 +18,46 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
 
   return (
     <section ref={heroRef} className="pt-32 pb-20 px-4 relative overflow-hidden min-h-screen">
-      {/* Image Background - Apple Style with Ken Burns effect */}
+      {/* Image Background - Apple Style with cinematic animation */}
       <div className="absolute inset-0 z-0">
         <motion.div
-          initial={{ opacity: 0, scale: 1.15 }}
+          initial={{ opacity: 0, scale: 1.2, x: "-5%" }}
           animate={{ 
             opacity: 1, 
-            scale: [1.15, 1.05, 1.1],
+            scale: [1.2, 1.1, 1.15, 1.1],
+            x: ["-5%", "0%", "-2%", "0%"],
+            y: ["0%", "-2%", "0%", "-1%"],
           }}
           transition={{ 
-            opacity: { duration: 1.2, ease: [0.22, 1, 0.36, 1] },
-            scale: { duration: 25, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }
+            opacity: { duration: 1.5, ease: [0.22, 1, 0.36, 1] },
+            scale: { duration: 30, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" },
+            x: { duration: 35, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" },
+            y: { duration: 28, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" },
           }}
-          className="absolute inset-0 will-change-transform"
+          className="absolute inset-[-10%] will-change-transform"
         >
           <img
             src="/hero-bg.jpg"
             alt=""
             className="w-full h-full object-cover"
+            style={{ 
+              imageRendering: 'auto',
+              WebkitBackfaceVisibility: 'hidden',
+              backfaceVisibility: 'hidden',
+            }}
             loading="eager"
+            decoding="sync"
+            fetchPriority="high"
           />
         </motion.div>
-        {/* Overlay gradients for readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/70 via-[#0a0a0a]/50 to-[#0a0a0a]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/50 via-transparent to-[#0a0a0a]/50" />
+        {/* Premium overlay gradients */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/60 via-[#0a0a0a]/40 to-[#0a0a0a]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/40 via-transparent to-[#0a0a0a]/40" />
         <motion.div 
-          className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_40%,transparent,#0a0a0a)]"
+          className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,transparent,#0a0a0a_90%)]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 2, delay: 0.5 }}
+          transition={{ duration: 2, delay: 0.3 }}
         />
       </div>
       
