@@ -23,6 +23,7 @@ const navItems = [
   { icon: Users, label: "Clientes", path: "/admin/clients" },
   { icon: UserCheck, label: "Afiliados", path: "/admin/affiliates" },
   { icon: ShoppingCart, label: "Pedidos", path: "/admin/orders" },
+  { icon: CreditCard, label: "Taxas", path: "/admin/billing" },
   { icon: DollarSign, label: "Financeiro", path: "/admin/financials" },
   { icon: CreditCard, label: "Assinaturas", path: "/admin/subscriptions" },
   { icon: BarChart3, label: "Estatísticas", path: "/admin/stats" },

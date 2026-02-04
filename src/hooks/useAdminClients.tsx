@@ -12,11 +12,17 @@ export interface AdminClient {
   onboarding_completed: boolean;
   created_at: string;
   user_id: string;
+  fee_rate: number;
   subscription?: {
     id: string;
     plan_type: string;
     status: string;
     expires_at: string | null;
+  } | null;
+  balance?: {
+    balance: number;
+    debt_amount: number;
+    is_blocked: boolean;
   } | null;
 }
 
@@ -58,7 +64,8 @@ export const useAdminClients = () => {
           webhook_configured,
           onboarding_completed,
           created_at,
-          user_id
+          user_id,
+          fee_rate
         `)
         .order("created_at", { ascending: false });
 
@@ -69,13 +76,19 @@ export const useAdminClients = () => {
         .from("subscriptions")
         .select("id, client_id, plan_type, status, expires_at");
 
-      // Map subscriptions to clients
-      const clientsWithSubs = clients?.map((client) => ({
+      // Fetch balances separately
+      const { data: balances } = await supabase
+        .from("client_balances")
+        .select("client_id, balance, debt_amount, is_blocked");
+
+      // Map subscriptions and balances to clients
+      const clientsWithData = clients?.map((client) => ({
         ...client,
         subscription: subscriptions?.find((s) => s.client_id === client.id) || null,
+        balance: balances?.find((b) => b.client_id === client.id) || null,
       })) as AdminClient[];
 
-      return clientsWithSubs || [];
+      return clientsWithData || [];
     },
   });
 

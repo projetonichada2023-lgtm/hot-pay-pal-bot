@@ -262,6 +262,110 @@ async function sendTikTokCompletePaymentEvent(
   console.log('TikTok CompletePayment event saved with status:', apiStatus);
 }
 
+// ==========================================
+// PLATFORM FEE REGISTRATION
+// ==========================================
+
+async function registerPlatformFee(clientId: string, orderId: string) {
+  try {
+    // Get client fee rate
+    const { data: client } = await supabase
+      .from('clients')
+      .select('fee_rate')
+      .eq('id', clientId)
+      .single();
+
+    const feeRate = Number(client?.fee_rate) || 0.70;
+    console.log(`Registering platform fee of R$ ${feeRate.toFixed(2)} for order ${orderId}`);
+
+    // Create platform fee record
+    const { data: fee, error: feeError } = await supabase
+      .from('platform_fees')
+      .insert({
+        client_id: clientId,
+        order_id: orderId,
+        amount: feeRate,
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (feeError) {
+      console.error('Error creating platform fee:', feeError);
+      return;
+    }
+
+    // Get or create client balance
+    let { data: balance } = await supabase
+      .from('client_balances')
+      .select('*')
+      .eq('client_id', clientId)
+      .single();
+
+    if (!balance) {
+      // Create balance record if it doesn't exist
+      const { data: newBalance } = await supabase
+        .from('client_balances')
+        .insert({ client_id: clientId })
+        .select()
+        .single();
+      balance = newBalance;
+    }
+
+    const currentBalance = Number(balance?.balance) || 0;
+
+    if (currentBalance >= feeRate) {
+      // Deduct from balance
+      const newBalance = currentBalance - feeRate;
+      
+      await supabase
+        .from('client_balances')
+        .update({ 
+          balance: newBalance,
+          last_fee_date: new Date().toISOString()
+        })
+        .eq('client_id', clientId);
+
+      await supabase
+        .from('platform_fees')
+        .update({ 
+          status: 'deducted_from_balance',
+          paid_at: new Date().toISOString()
+        })
+        .eq('id', fee.id);
+
+      // Record transaction
+      await supabase.from('balance_transactions').insert({
+        client_id: clientId,
+        type: 'fee_deduction',
+        amount: -feeRate,
+        description: `Taxa de venda - Pedido #${orderId.slice(0, 8)}`,
+        reference_id: fee.id,
+        payment_method: 'balance'
+      });
+
+      console.log(`Fee deducted from balance. New balance: R$ ${newBalance.toFixed(2)}`);
+    } else {
+      // Accumulate debt
+      const currentDebt = Number(balance?.debt_amount) || 0;
+      const newDebt = currentDebt + feeRate;
+      
+      await supabase
+        .from('client_balances')
+        .update({
+          debt_amount: newDebt,
+          debt_started_at: balance?.debt_started_at || new Date().toISOString(),
+          last_fee_date: new Date().toISOString()
+        })
+        .eq('client_id', clientId);
+
+      console.log(`Fee added to debt. Total debt: R$ ${newDebt.toFixed(2)}`);
+    }
+  } catch (error) {
+    console.error('Error registering platform fee:', error);
+  }
+}
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -385,6 +489,9 @@ async function processPaymentUpdate(order: any, status: string, transaction: any
         paid_at: new Date().toISOString(),
       })
       .eq('id', orderId);
+
+    // *** REGISTER PLATFORM FEE ***
+    await registerPlatformFee(clientId, orderId);
 
     // *** SEND TIKTOK COMPLETEPAYMENT EVENT ***
     if (customer) {

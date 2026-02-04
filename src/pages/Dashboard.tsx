@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/dashboard/Sidebar';
 import { DashboardContent } from '@/components/dashboard/DashboardContent';
 import { NotificationCenter } from '@/components/dashboard/NotificationCenter';
 import { ImpersonationBanner } from '@/components/dashboard/ImpersonationBanner';
+import { DebtBanner } from '@/components/dashboard/DebtBanner';
 import { OnboardingTour } from '@/components/onboarding/OnboardingTour';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { BotProvider } from '@/contexts/BotContext';
@@ -47,6 +48,7 @@ const Dashboard = () => {
   return (
     <BotProvider clientId={client.id}>
       <ImpersonationBanner />
+      <DebtBanner clientId={client.id} />
       <div className="min-h-screen bg-background flex w-full">
         <Sidebar client={client} />
         <div className="flex-1 min-w-0 overflow-x-hidden">
