@@ -57,6 +57,69 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
           animate={{ opacity: 1 }}
           transition={{ duration: 2, delay: 0.3 }}
         />
+        
+        {/* Aurora/Glow Effects */}
+        <motion.div
+          className="absolute top-[10%] left-[15%] w-[500px] h-[500px] rounded-full opacity-20 blur-[120px] pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.6) 0%, transparent 70%)' }}
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.15, 0.25, 0.15],
+            x: [0, 30, 0],
+            y: [0, -20, 0],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute top-[20%] right-[10%] w-[400px] h-[400px] rounded-full opacity-15 blur-[100px] pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.5) 0%, transparent 70%)' }}
+          animate={{
+            scale: [1.1, 1, 1.1],
+            opacity: [0.1, 0.2, 0.1],
+            x: [0, -25, 0],
+            y: [0, 30, 0],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 1,
+          }}
+        />
+        <motion.div
+          className="absolute bottom-[30%] left-[20%] w-[350px] h-[350px] rounded-full opacity-10 blur-[80px] pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.5) 0%, transparent 70%)' }}
+          animate={{
+            scale: [1, 1.15, 1],
+            opacity: [0.08, 0.15, 0.08],
+            x: [0, 20, 0],
+            y: [0, 15, 0],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2,
+          }}
+        />
+        <motion.div
+          className="absolute top-[40%] right-[25%] w-[300px] h-[300px] rounded-full opacity-10 blur-[90px] pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)' }}
+          animate={{
+            scale: [1.05, 0.95, 1.05],
+            opacity: [0.08, 0.12, 0.08],
+          }}
+          transition={{
+            duration: 7,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 0.5,
+          }}
+        />
       </div>
       
       <div className="container mx-auto text-center relative z-10">
