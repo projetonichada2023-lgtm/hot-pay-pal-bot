@@ -8,76 +8,178 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const FASTSOFT_API_URL = 'https://api.fastsoftbrasil.com';
+ const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY')!;
+ const ASAAS_API_URL = 'https://api.asaas.com/v3';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 interface AddBalanceRequest {
   clientId: string;
   amount: number;
-  method: 'pix' | 'stripe';
+   method: 'pix' | 'card';
 }
 
-// Generate PIX for balance top-up via FastSoft
-async function generateBalancePix(
+ interface AsaasCustomer {
+   id: string;
+   name: string;
+   email: string;
+ }
+ 
+ // Find or create Asaas customer for the platform
+ async function getOrCreateAsaasCustomer(
+   clientId: string,
+   businessName: string
+ ): Promise<string | null> {
+   try {
+     // Check if client has asaas_customer_id
+     const { data: client } = await supabase
+       .from('clients')
+       .select('stripe_customer_id')
+       .eq('id', clientId)
+       .single();
+ 
+     // Using stripe_customer_id field to store asaas customer id temporarily
+     if (client?.stripe_customer_id?.startsWith('cus_')) {
+       return client.stripe_customer_id;
+     }
+ 
+     // Create new customer in Asaas
+     const response = await fetch(`${ASAAS_API_URL}/customers`, {
+       method: 'POST',
+       headers: {
+         'Content-Type': 'application/json',
+         'access_token': ASAAS_API_KEY,
+       },
+       body: JSON.stringify({
+         name: businessName || 'Cliente Plataforma',
+         email: `cliente_${clientId.slice(0, 8)}@plataforma.local`,
+         cpfCnpj: '00000000000', // Placeholder - Asaas will accept for sandbox
+         notificationDisabled: true,
+       }),
+     });
+ 
+     const data = await response.json();
+     console.log('Asaas customer creation response:', data);
+ 
+     if (data.id) {
+       // Store the customer ID
+       await supabase
+         .from('clients')
+         .update({ stripe_customer_id: data.id })
+         .eq('id', clientId);
+       
+       return data.id;
+     }
+ 
+     return null;
+   } catch (error) {
+     console.error('Error creating Asaas customer:', error);
+     return null;
+   }
+ }
+ 
+ // Generate PIX payment via Asaas
+ async function generateAsaasPix(
   clientId: string,
   amount: number,
-  clientSettings: any
+   customerId: string
 ): Promise<{ pixCode: string; pixQrcode: string; paymentId: string } | null> {
-  if (!clientSettings?.fastsoft_public_key || !clientSettings?.fastsoft_api_key) {
-    console.log('FastSoft not configured, generating mock PIX');
-    return generateMockPix(clientId, amount);
-  }
-
   try {
-    const authHeader = 'Basic ' + btoa(`${clientSettings.fastsoft_public_key}:${clientSettings.fastsoft_api_key}`);
+     // Create payment
+     const dueDate = new Date();
+     dueDate.setDate(dueDate.getDate() + 1);
 
-    const requestBody = {
-      amount: Math.round(amount * 100),
-      currency: 'BRL',
-      paymentMethod: 'PIX',
-      customer: {
-        name: 'Recarga de Saldo',
-        email: 'recarga@plataforma.com',
-        document: { number: '00000000000', type: 'CPF' },
+     const response = await fetch(`${ASAAS_API_URL}/payments`, {
+       method: 'POST',
+       headers: {
+         'Content-Type': 'application/json',
+         'access_token': ASAAS_API_KEY,
       },
-      items: [{
-        title: 'Recarga de Saldo - Taxas da Plataforma',
-        unitPrice: Math.round(amount * 100),
-        quantity: 1,
-        tangible: false,
-      }],
-      pix: { expiresInDays: 1 },
-      metadata: JSON.stringify({ 
-        type: 'balance_topup',
-        client_id: clientId 
+       body: JSON.stringify({
+         customer: customerId,
+         billingType: 'PIX',
+         value: amount,
+         dueDate: dueDate.toISOString().split('T')[0],
+         description: 'Recarga de Saldo - Plataforma',
+         externalReference: clientId,
       }),
-      postbackUrl: `${SUPABASE_URL}/functions/v1/balance-webhook`,
-    };
+     });
 
-    const response = await fetch(`${FASTSOFT_API_URL}/api/user/transactions`, {
-      method: 'POST',
+     const payment = await response.json();
+     console.log('Asaas payment response:', payment);
+ 
+     if (!payment.id) {
+       console.error('Failed to create Asaas payment:', payment);
+       return generateMockPix(clientId, amount);
+     }
+ 
+     // Get PIX QR Code
+     const pixResponse = await fetch(`${ASAAS_API_URL}/payments/${payment.id}/pixQrCode`, {
       headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json',
+         'access_token': ASAAS_API_KEY,
       },
-      body: JSON.stringify(requestBody),
     });
 
-    const responseText = await response.text();
-    console.log('FastSoft balance PIX response:', response.status, responseText);
+     const pixData = await pixResponse.json();
+     console.log('Asaas PIX QR Code response:', pixData);
 
-    if (!response.ok) return generateMockPix(clientId, amount);
+     if (!pixData.encodedImage || !pixData.payload) {
+       console.error('Failed to get PIX QR code:', pixData);
+       return generateMockPix(clientId, amount);
+     }
 
-    const data = JSON.parse(responseText);
-    const pixCode = data.pix?.qrcode || data.pixCode || '';
-    const pixQrcode = data.pix?.receiptUrl || 
-      `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCode)}`;
+     return {
+       pixCode: pixData.payload,
+       pixQrcode: `data:image/png;base64,${pixData.encodedImage}`,
+       paymentId: payment.id,
+     };
+   } catch (error) {
+     console.error('Error generating Asaas PIX:', error);
+     return generateMockPix(clientId, amount);
+   }
+ }
+ 
+ // Generate credit card payment link via Asaas
+ async function generateAsaasCardPayment(
+   clientId: string,
+   amount: number,
+   customerId: string
+ ): Promise<{ invoiceUrl: string; paymentId: string } | null> {
+   try {
+     const dueDate = new Date();
+     dueDate.setDate(dueDate.getDate() + 1);
+ 
+     const response = await fetch(`${ASAAS_API_URL}/payments`, {
+       method: 'POST',
+       headers: {
+         'Content-Type': 'application/json',
+         'access_token': ASAAS_API_KEY,
+       },
+       body: JSON.stringify({
+         customer: customerId,
+         billingType: 'UNDEFINED', // Allows customer to choose payment method
+         value: amount,
+         dueDate: dueDate.toISOString().split('T')[0],
+         description: 'Recarga de Saldo - Plataforma',
+         externalReference: clientId,
+       }),
+     });
 
-    return { pixCode, pixQrcode, paymentId: data.id };
+     const payment = await response.json();
+     console.log('Asaas card payment response:', payment);
+ 
+     if (!payment.id || !payment.invoiceUrl) {
+       console.error('Failed to create Asaas card payment:', payment);
+       return null;
+     }
+ 
+     return {
+       invoiceUrl: payment.invoiceUrl,
+       paymentId: payment.id,
+     };
   } catch (error) {
-    console.error('Error generating balance PIX:', error);
-    return generateMockPix(clientId, amount);
+     console.error('Error generating Asaas card payment:', error);
+     return null;
   }
 }
 
@@ -209,15 +311,17 @@ serve(async (req) => {
       });
     }
 
+     // Get or create Asaas customer
+     const asaasCustomerId = await getOrCreateAsaasCustomer(clientId, client.business_name);
+     
+     if (!asaasCustomerId) {
+       console.log('Failed to get Asaas customer, using mock');
+     }
+ 
     if (method === 'pix') {
-      // Get client settings for FastSoft
-      const { data: settings } = await supabase
-        .from('client_settings')
-        .select('fastsoft_public_key, fastsoft_api_key, fastsoft_enabled')
-        .eq('client_id', clientId)
-        .single();
-
-      const pix = await generateBalancePix(clientId, amount, settings);
+       const pix = asaasCustomerId 
+         ? await generateAsaasPix(clientId, amount, asaasCustomerId)
+         : generateMockPix(clientId, amount);
 
       if (!pix) {
         return new Response(JSON.stringify({ error: 'Failed to generate PIX' }), {
@@ -236,13 +340,30 @@ serve(async (req) => {
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-    } else if (method === 'stripe') {
-      // TODO: Implement Stripe payment intent
-      return new Response(JSON.stringify({ 
-        error: 'Stripe payment not yet implemented',
-        message: 'Use PIX for now'
-      }), {
-        status: 501,
+     } else if (method === 'card') {
+       if (!asaasCustomerId) {
+         return new Response(JSON.stringify({ error: 'Payment service unavailable' }), {
+           status: 503,
+           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+         });
+       }
+ 
+       const cardPayment = await generateAsaasCardPayment(clientId, amount, asaasCustomerId);
+ 
+       if (!cardPayment) {
+         return new Response(JSON.stringify({ error: 'Failed to create card payment' }), {
+           status: 500,
+           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+         });
+       }
+ 
+       return new Response(JSON.stringify({
+         success: true,
+         method: 'card',
+         invoiceUrl: cardPayment.invoiceUrl,
+         paymentId: cardPayment.paymentId,
+         amount,
+       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

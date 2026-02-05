@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { QrCode, CreditCard, Copy, Check, Loader2 } from 'lucide-react';
+ import { QrCode, CreditCard, Copy, Check, Loader2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAddBalance } from '@/hooks/useClientBalance';
 
@@ -30,6 +30,7 @@ export const AddBalanceDialog = ({
   const [amount, setAmount] = useState<string>(currentDebt > 0 ? currentDebt.toFixed(2) : '50.00');
   const [pixData, setPixData] = useState<{ pixCode: string; pixQrcode: string } | null>(null);
   const [copied, setCopied] = useState(false);
+   const [activeTab, setActiveTab] = useState('pix');
 
   const addBalance = useAddBalance();
 
@@ -40,12 +41,28 @@ export const AddBalanceDialog = ({
       return;
     }
 
-    const result = await addBalance.mutateAsync({ clientId, amount: value });
+     const result = await addBalance.mutateAsync({ clientId, amount: value, method: 'pix' });
     if (result?.pixCode) {
       setPixData({ pixCode: result.pixCode, pixQrcode: result.pixQrcode });
     }
   };
 
+   const handlePayWithCard = async () => {
+     const value = parseFloat(amount);
+     if (isNaN(value) || value <= 0) {
+       toast.error('Valor inválido');
+       return;
+     }
+ 
+     const result = await addBalance.mutateAsync({ clientId, amount: value, method: 'card' });
+     if (result?.invoiceUrl) {
+       // Open Asaas payment page in new tab
+       window.open(result.invoiceUrl, '_blank');
+       toast.success('Página de pagamento aberta! Complete o pagamento e seu saldo será atualizado automaticamente.');
+       handleClose();
+     }
+   };
+ 
   const handleCopyPix = () => {
     if (pixData?.pixCode) {
       navigator.clipboard.writeText(pixData.pixCode);
@@ -78,15 +95,15 @@ export const AddBalanceDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="pix" className="w-full">
+         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="pix" className="gap-2">
               <QrCode className="h-4 w-4" />
               PIX
             </TabsTrigger>
-            <TabsTrigger value="card" className="gap-2" disabled>
+             <TabsTrigger value="card" className="gap-2">
               <CreditCard className="h-4 w-4" />
-              Cartão (em breve)
+               Cartão
             </TabsTrigger>
           </TabsList>
 
@@ -197,9 +214,65 @@ export const AddBalanceDialog = ({
           </TabsContent>
 
           <TabsContent value="card" className="mt-4">
-            <div className="text-center py-8 text-muted-foreground">
-              <CreditCard className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Pagamento com cartão em breve!</p>
+             <div className="space-y-4">
+               <div className="space-y-2">
+                 <Label htmlFor="card-amount">Valor (R$)</Label>
+                 <Input
+                   id="card-amount"
+                   type="number"
+                   min="1"
+                   step="0.01"
+                   value={amount}
+                   onChange={(e) => setAmount(e.target.value)}
+                   placeholder="50.00"
+                 />
+               </div>
+ 
+               <div className="flex flex-wrap gap-2">
+                 {suggestedAmounts.map((val) => (
+                   <Button
+                     key={val}
+                     variant="outline"
+                     size="sm"
+                     onClick={() => setAmount(val.toFixed(2))}
+                     className={amount === val.toFixed(2) ? 'border-primary' : ''}
+                   >
+                     R$ {val}
+                   </Button>
+                 ))}
+                 {currentDebt > 0 && (
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     onClick={() => setAmount(currentDebt.toFixed(2))}
+                     className={`text-red-600 ${amount === currentDebt.toFixed(2) ? 'border-red-500' : ''}`}
+                   >
+                     Pagar dívida
+                   </Button>
+                 )}
+               </div>
+ 
+               <div className="p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+                 <p>Você será redirecionado para uma página segura de pagamento onde poderá inserir os dados do seu cartão.</p>
+               </div>
+ 
+               <Button 
+                 className="w-full" 
+                 onClick={handlePayWithCard}
+                 disabled={addBalance.isPending}
+               >
+                 {addBalance.isPending ? (
+                   <>
+                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                     Processando...
+                   </>
+                 ) : (
+                   <>
+                     <ExternalLink className="h-4 w-4 mr-2" />
+                     Pagar com Cartão
+                   </>
+                 )}
+               </Button>
             </div>
           </TabsContent>
         </Tabs>

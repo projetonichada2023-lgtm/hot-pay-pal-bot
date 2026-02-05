@@ -195,9 +195,9 @@ export const useAddBalance = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ clientId, amount }: { clientId: string; amount: number }) => {
+     mutationFn: async ({ clientId, amount, method = 'pix' }: { clientId: string; amount: number; method?: 'pix' | 'card' }) => {
       const { data, error } = await supabase.functions.invoke('add-balance', {
-        body: { clientId, amount, method: 'pix' },
+         body: { clientId, amount, method },
       });
 
       if (error) throw error;
@@ -206,11 +206,13 @@ export const useAddBalance = () => {
     onSuccess: (data) => {
       if (data.pixCode) {
         toast.success('PIX gerado com sucesso!');
+       } else if (data.invoiceUrl) {
+         // Card payment - don't show toast here, handled in component
       }
     },
     onError: (error: Error) => {
       console.error('Error adding balance:', error);
-      toast.error('Erro ao gerar PIX');
+       toast.error('Erro ao processar pagamento');
     },
   });
 };

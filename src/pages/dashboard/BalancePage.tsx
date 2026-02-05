@@ -1,4 +1,5 @@
-import { useState } from 'react';
+ import { useState, useEffect } from 'react';
+ import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+ import { toast } from 'sonner';
 import { Client } from '@/hooks/useClient';
 import { 
   useClientBalance, 
@@ -24,6 +26,7 @@ import {
 } from '@/hooks/useClientBalance';
 import { AddBalanceDialog } from '@/components/balance/AddBalanceDialog';
 import { TransactionHistoryDialog } from '@/components/balance/TransactionHistoryDialog';
+ import { useQueryClient } from '@tanstack/react-query';
 
 interface BalancePageProps {
   client: Client;
@@ -32,12 +35,33 @@ interface BalancePageProps {
 export const BalancePage = ({ client }: BalancePageProps) => {
   const [addBalanceOpen, setAddBalanceOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+   const [searchParams, setSearchParams] = useSearchParams();
+   const queryClient = useQueryClient();
 
   const { data: balance, isLoading: balanceLoading } = useClientBalance(client.id);
   const { data: transactions, isLoading: transactionsLoading } = useBalanceTransactions(client.id, { limit: 10 });
   const { data: todayFees } = useTodayFees(client.id);
   const { data: monthStats } = useMonthlyFeeStats(client.id);
 
+   // Handle payment return from Asaas
+   useEffect(() => {
+     const paymentStatus = searchParams.get('payment');
+     
+     if (paymentStatus === 'success') {
+       toast.success('Pagamento realizado! Seu saldo será atualizado em instantes.');
+       // Refresh balance data
+       queryClient.invalidateQueries({ queryKey: ['client_balance'] });
+       queryClient.invalidateQueries({ queryKey: ['balance_transactions'] });
+       // Clear the query param
+       searchParams.delete('payment');
+       setSearchParams(searchParams, { replace: true });
+     } else if (paymentStatus === 'cancelled') {
+       toast.error('Pagamento cancelado.');
+       searchParams.delete('payment');
+       setSearchParams(searchParams, { replace: true });
+     }
+   }, [searchParams, setSearchParams, queryClient]);
+ 
   const isLoading = balanceLoading || transactionsLoading;
 
   if (isLoading) {
