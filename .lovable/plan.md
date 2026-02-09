@@ -1,250 +1,168 @@
 
-# Plano: Integracao Asaas para PIX e Cartao de Credito
+# Plano: Melhorar Sidebar e Area Financeira
 
-## Situacao Atual
+## Resumo
 
-Apos analise do codigo, identifiquei:
-
-| Item | Status Atual |
-|------|--------------|
-| Edge Function `add-balance` | Usa FastSoft para PIX, Stripe como TODO |
-| Pagamento PIX | FastSoft (mock se nao configurado) |
-| Pagamento Cartao | Nao implementado (retorna erro 501) |
-| Webhook de Balance | Nao existe |
-| Secret ASAAS_API_KEY | Nao configurada |
+Redesign da sidebar com agrupamento visual por categorias e upgrade completo da pagina Financeiro com graficos de evolucao, faturas diarias e visual premium alinhado com a estetica da plataforma.
 
 ---
 
-## Arquitetura Proposta
+## 1. Sidebar - Agrupamento por Categorias
+
+A sidebar atual lista 14 itens sem separacao visual. Vamos organizar em grupos logicos com labels sutis:
 
 ```text
-+------------------+     +-------------------+     +----------------+
-|   AddBalance     |     |   add-balance     |     |    Asaas       |
-|   Dialog         | --> |   Edge Function   | --> |    API         |
-+------------------+     +-------------------+     +----------------+
-        |                                                   |
-        | (exibe QR ou redireciona)                         |
-        v                                                   v
-+------------------+                              +------------------+
-|   Usuario Paga   |                              |   Pagamento      |
-|   PIX ou Cartao  |                              |   Confirmado     |
-+------------------+                              +------------------+
-                                                           |
-+------------------+     +-------------------+             |
-|   Saldo          | <-- | asaas-balance-    | <-----------+
-|   Atualizado     |     | webhook           |  (webhook POST)
-+------------------+     +-------------------+
++-----------------------------+
+|  [Logo Conversy]            |
+|  [Bot Selector]             |
+|                             |
+|  PRINCIPAL                  |
+|    Dashboard                |
+|    Conversas                |
+|                             |
+|  VENDAS                     |
+|    Mensagens Bot            |
+|    Produtos                 |
+|    Funil                    |
+|    Pedidos                  |
+|    Recuperacao              |
+|                             |
+|  ANALISE                    |
+|    Clientes                 |
+|    Tracking                 |
+|    Relatorios               |
+|                             |
+|  GESTAO                     |
+|    Financeiro               |
+|    Meus Bots                |
+|    Simulador                |
+|    Configuracoes            |
+|                             |
+|  [Theme] [Sair]             |
++-----------------------------+
 ```
+
+**Detalhes visuais:**
+- Labels de grupo em texto uppercase, tamanho xs, cor muted, tracking wider
+- Espacamento sutil entre grupos (separador invisivel)
+- Labels ocultos quando sidebar esta colapsada
+- Indicador de divida no item "Financeiro" (badge vermelho com valor) quando houver debt_amount > 0
 
 ---
 
-## Etapas de Implementacao
+## 2. Sidebar - Badge de Divida no Financeiro
 
-### Fase 1: Configurar Secret do Asaas
-
-Sera necessario obter sua chave de API do Asaas:
-1. Acesse o painel do Asaas
-2. Va em Configuracoes > Integracao > API
-3. Copie sua API Key
-
-A chave sera armazenada de forma segura no backend.
+Adicionar um badge vermelho ao lado do item "Financeiro" na sidebar que mostra o valor da divida pendente, incentivando o usuario a regularizar. Usa o hook `useClientBalance` ja existente.
 
 ---
 
-### Fase 2: Atualizar Edge Function `add-balance`
+## 3. Pagina Financeiro (BalancePage) - Redesign Premium
 
-**Arquivo**: `supabase/functions/add-balance/index.ts`
+### 3.1 Header Melhorado
+- Titulo com tipografia Clash Display
+- Subtitulo contextual baseado no estado (divida, bloqueio, tudo ok)
+- Remover emoji do titulo, usar icone Wallet inline
 
-Modificacoes:
-- Substituir FastSoft por Asaas para geracao de PIX
-- Adicionar suporte a cartao de credito via `invoiceUrl` do Asaas
-- Usar API Key global da plataforma (nao do cliente)
+### 3.2 Cards de Metricas Redesign
+Transformar os 3 cards atuais em 4 cards com visual glassmorphism:
+- **Saldo Disponivel** - Verde, icone Wallet
+- **Taxas Hoje** - Azul, icone Receipt
+- **Taxas do Mes** - Laranja (primary), icone Calendar
+- **Divida Pendente** - Vermelho/verde condicional
 
-```text
-Fluxo PIX (billingType: PIX):
-1. Criar cobranca no Asaas com billingType: 'PIX'
-2. Buscar QR Code via endpoint /payments/{id}/pixQrCode
-3. Retornar pixCode e pixQrcode para o frontend
+Estilo: fundo com gradiente sutil, borda hairline, desfoque
 
-Fluxo Cartao (billingType: CREDIT_CARD):
-1. Criar cobranca no Asaas com billingType: 'CREDIT_CARD'
-2. Retornar invoiceUrl para o frontend
-3. Usuario eh redirecionado para pagina segura do Asaas
-```
+### 3.3 Grafico de Evolucao de Saldo
+Novo componente com AreaChart (Recharts) mostrando:
+- Evolucao do saldo nos ultimos 30 dias baseado em balance_transactions
+- Linha de creditos vs debitos
+- Tooltip formatado em BRL
 
-Endpoints Asaas utilizados:
-- `POST /v3/payments` - Criar cobranca
-- `GET /v3/payments/{id}/pixQrCode` - Obter QR Code PIX
+### 3.4 Lista de Faturas Diarias
+Nova secao mostrando as `daily_fee_invoices` (hook `useDailyInvoices` ja existe):
+- Data, total de taxas, quantidade de vendas, status (pago/pendente)
+- Badge de status colorido
+- Layout em tabela responsiva
 
----
-
-### Fase 3: Criar Edge Function `asaas-balance-webhook`
-
-**Novo arquivo**: `supabase/functions/asaas-balance-webhook/index.ts`
-
-Responsabilidades:
-- Receber notificacoes do Asaas (eventos de pagamento)
-- Validar evento `PAYMENT_RECEIVED` ou `PAYMENT_CONFIRMED`
-- Extrair client_id do campo `externalReference` ou `description`
-- Creditar saldo usando funcao `addCreditToBalance` existente
-- Registrar transacao com `payment_method: 'asaas_pix'` ou `'asaas_card'`
-
-Eventos processados:
-- `PAYMENT_RECEIVED` - Pagamento PIX confirmado
-- `PAYMENT_CONFIRMED` - Pagamento cartao confirmado
-- `PAYMENT_CREDIT_CARD_CAPTURE_REFUSED` - Cartao recusado (log)
-
----
-
-### Fase 4: Configurar Webhook no Asaas
-
-Apos deploy da edge function, a URL do webhook sera:
-```
-https://ufyvllgimtkyehfkfxoi.supabase.co/functions/v1/asaas-balance-webhook
-```
-
-Configurar no painel Asaas:
-- URL: (acima)
-- Eventos: PAYMENT_RECEIVED, PAYMENT_CONFIRMED
-
----
-
-### Fase 5: Atualizar Frontend
-
-**Arquivo**: `src/components/balance/AddBalanceDialog.tsx`
-
-Modificacoes:
-- Remover `disabled` da aba "Cartao"
-- Implementar formulario para cartao
-- Handler para redirecionar para `invoiceUrl` quando cartao
-
-**Arquivo**: `src/hooks/useClientBalance.tsx`
-
-Adicionar:
-- Atualizar mutation para aceitar `method: 'pix' | 'card'`
-- Tratar resposta com `invoiceUrl` para cartao
-
-**Arquivo**: `src/pages/dashboard/BalancePage.tsx`
-
-Adicionar:
-- Deteccao de query params `?payment=success` ou `?payment=cancelled`
-- Toast de confirmacao apos pagamento
-
----
-
-### Fase 6: Configurar config.toml
-
-**Arquivo**: `supabase/config.toml`
-
-Adicionar:
-```toml
-[functions.asaas-balance-webhook]
-verify_jwt = false
-```
-
----
-
-## API Asaas - Exemplos de Requisicao
-
-**Criar cobranca PIX:**
-```json
-POST /v3/payments
-{
-  "customer": "cus_xxxxx",
-  "billingType": "PIX",
-  "value": 50.00,
-  "dueDate": "2024-12-31",
-  "description": "Recarga de Saldo - Plataforma",
-  "externalReference": "client_id_aqui"
-}
-```
-
-**Criar cobranca Cartao:**
-```json
-POST /v3/payments
-{
-  "customer": "cus_xxxxx",
-  "billingType": "CREDIT_CARD",
-  "value": 50.00,
-  "dueDate": "2024-12-31",
-  "description": "Recarga de Saldo - Plataforma",
-  "externalReference": "client_id_aqui"
-}
-```
-
-Resposta inclui `invoiceUrl` para redirecionar o usuario.
+### 3.5 Transacoes Recentes - Visual Melhorado
+- Icones diferenciados por tipo (credito, taxa, pagamento divida)
+- Badge de metodo de pagamento (PIX, Cartao, Saldo)
+- Animacao sutil de entrada com framer-motion
 
 ---
 
 ## Detalhes Tecnicos
 
-**Estrutura da cobranca Asaas:**
-- `customer` - ID do cliente no Asaas (criar se nao existir)
-- `billingType` - PIX ou CREDIT_CARD
-- `value` - Valor em reais (decimal)
-- `dueDate` - Data de vencimento
-- `externalReference` - client_id para identificar no webhook
-- `description` - Descricao da cobranca
+### Arquivos Modificados
 
-**Estrutura do webhook Asaas:**
-```json
-{
-  "event": "PAYMENT_RECEIVED",
-  "payment": {
-    "id": "pay_xxxxx",
-    "value": 50.00,
-    "billingType": "PIX",
-    "status": "RECEIVED",
-    "externalReference": "client_id_aqui"
-  }
-}
+| Arquivo | Alteracao |
+|---------|-----------|
+| `src/components/dashboard/Sidebar.tsx` | Reorganizar menuItems em grupos, adicionar labels de categoria, badge de divida |
+| `src/pages/dashboard/BalancePage.tsx` | Redesign completo com graficos, faturas, visual premium |
+| `src/components/balance/BalanceChart.tsx` | **Novo** - Grafico de evolucao de saldo (AreaChart) |
+| `src/components/balance/DailyInvoicesTable.tsx` | **Novo** - Tabela de faturas diarias |
+
+### Dependencias
+- Recharts (ja instalado) para graficos
+- Framer Motion (ja instalado) para animacoes
+- Hooks existentes: `useClientBalance`, `useBalanceTransactions`, `useDailyInvoices`, `useMonthlyFeeStats`, `useTodayFees`
+
+### Sidebar - Estrutura de Grupos
+
+```typescript
+const menuGroups = [
+  {
+    label: 'Principal',
+    items: [
+      { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+      { icon: MessageCircle, label: 'Conversas', path: '/dashboard/chats' },
+    ]
+  },
+  {
+    label: 'Vendas',
+    items: [
+      { icon: MessageSquare, label: 'Mensagens Bot', path: '/dashboard/messages' },
+      { icon: Package, label: 'Produtos', path: '/dashboard/products' },
+      { icon: GitBranch, label: 'Funil', path: '/dashboard/funnel' },
+      { icon: ShoppingCart, label: 'Pedidos', path: '/dashboard/orders' },
+      { icon: RefreshCw, label: 'Recuperação', path: '/dashboard/recovery' },
+    ]
+  },
+  {
+    label: 'Análise',
+    items: [
+      { icon: Users, label: 'Clientes', path: '/dashboard/customers' },
+      { icon: Target, label: 'Tracking', path: '/dashboard/tracking' },
+      { icon: BarChart3, label: 'Relatórios', path: '/dashboard/reports' },
+    ]
+  },
+  {
+    label: 'Gestão',
+    items: [
+      { icon: Wallet, label: 'Financeiro', path: '/dashboard/balance' },
+      { icon: Boxes, label: 'Meus Bots', path: '/dashboard/bots' },
+      { icon: Smartphone, label: 'Simulador', path: '/dashboard/simulator' },
+      { icon: Settings, label: 'Configurações', path: '/dashboard/settings' },
+    ]
+  },
+];
 ```
 
----
+### Grafico de Saldo - Logica
 
-## Secret Necessaria
+O componente `BalanceChart` recebera as `balance_transactions` e calculara o saldo acumulado dia a dia para plotar no AreaChart. Agrupamento por dia, com fallback para os ultimos 30 dias.
 
-| Secret | Descricao | Como obter |
-|--------|-----------|------------|
-| ASAAS_API_KEY | Chave de API do Asaas | Painel Asaas > Integracao > API |
+### Faturas Diarias - Componente
 
-Ambiente sandbox: `https://sandbox.asaas.com/api`
-Ambiente producao: `https://api.asaas.com`
-
----
-
-## Fluxo do Usuario Final
-
-**PIX:**
-1. Clica em "Adicionar Saldo"
-2. Seleciona aba PIX
-3. Define valor e clica "Gerar PIX"
-4. Visualiza QR Code e codigo copia/cola
-5. Paga via app do banco
-6. Webhook recebe confirmacao
-7. Saldo atualizado automaticamente
-
-**Cartao:**
-1. Clica em "Adicionar Saldo"
-2. Seleciona aba Cartao
-3. Define valor e clica "Pagar com Cartao"
-4. Redirecionado para pagina segura do Asaas
-5. Insere dados do cartao
-6. Apos pagamento, retorna ao app
-7. Webhook recebe confirmacao
-8. Saldo atualizado automaticamente
+Tabela simples com colunas: Data | Vendas | Total Taxas | Status, usando os dados de `useDailyInvoices`. Status renderizado como Badge colorido (verde=pago, amarelo=pendente, vermelho=vencido).
 
 ---
 
 ## Ordem de Implementacao
 
-1. Solicitar ASAAS_API_KEY ao usuario
-2. Atualizar `supabase/config.toml` com nova funcao
-3. Implementar `asaas-balance-webhook` (nova edge function)
-4. Atualizar `add-balance` para usar Asaas
-5. Atualizar `AddBalanceDialog.tsx` com aba de cartao funcional
-6. Atualizar `useClientBalance.tsx` com novo tipo de method
-7. Adicionar tratamento de retorno na `BalancePage.tsx`
-8. Testar fluxo PIX
-9. Testar fluxo Cartao
-10. Configurar webhook no painel Asaas
+1. Reorganizar sidebar com grupos e labels
+2. Adicionar badge de divida ao item Financeiro
+3. Criar componente `BalanceChart`
+4. Criar componente `DailyInvoicesTable`
+5. Redesign da `BalancePage` com novo layout premium
+6. Testar responsividade mobile
