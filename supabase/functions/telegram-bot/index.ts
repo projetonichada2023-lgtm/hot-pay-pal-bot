@@ -27,6 +27,9 @@ interface ClientContext {
   fastsoftPublicKey: string | null;
   fastsoftSecretKey: string | null;
   fastsoftEnabled: boolean;
+  duttyfyApiKey: string | null;
+  duttyfyEnabled: boolean;
+  activePaymentGateway: string;
 }
 
 interface TelegramUser {
@@ -139,7 +142,7 @@ async function getClientContext(botToken: string): Promise<ClientContext | null>
     .select(`
       id, 
       telegram_bot_token,
-      client_settings!inner(fastsoft_api_key, fastsoft_public_key, fastsoft_enabled)
+      client_settings!inner(fastsoft_api_key, fastsoft_public_key, fastsoft_enabled, duttyfy_api_key, duttyfy_enabled, active_payment_gateway)
     `)
     .eq('telegram_bot_token', botToken)
     .single();
@@ -157,6 +160,9 @@ async function getClientContext(botToken: string): Promise<ClientContext | null>
     fastsoftPublicKey: settings?.fastsoft_public_key || null,
     fastsoftSecretKey: settings?.fastsoft_api_key || null,
     fastsoftEnabled: settings?.fastsoft_enabled || false,
+    duttyfyApiKey: settings?.duttyfy_api_key || null,
+    duttyfyEnabled: settings?.duttyfy_enabled || false,
+    activePaymentGateway: settings?.active_payment_gateway || 'unipay',
   };
 }
 
@@ -360,12 +366,90 @@ function generateMockPix(amount: number, orderId: string): PixResult {
   return { pixCode, qrCodeUrl, paymentId: `MOCK_${orderId}_${Date.now()}` };
 }
 
-async function generatePix(ctx: ClientContext, amount: number, orderId: string, customer: any): Promise<PixResult> {
+// DuttyFy PIX generation
+async function generatePixDuttyfy(
+  ctx: ClientContext,
+  amount: number,
+  orderId: string,
+  customer: any,
+  product?: any
+): Promise<PixResult | null> {
+  if (!ctx.duttyfyApiKey) {
+    console.error('DuttyFy API key not configured');
+    return null;
+  }
+
+  try {
+    const amountInCents = Math.round(amount * 100);
+    const customerName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Cliente';
+    const productTitle = product?.name || 'Produto Digital';
+
+    const requestBody = {
+      amount: amountInCents,
+      description: `Pedido #${orderId.slice(0, 8)} - ${productTitle}`,
+      customer: {
+        name: customerName,
+        document: '00000000000',
+        phone: customer.phone || '11999999999',
+        email: customer.email || 'cliente@email.com',
+      },
+      item: {
+        title: productTitle,
+        price: amountInCents,
+        quantity: 1,
+      },
+      paymentMethod: 'PIX',
+      postbackUrl: `${SUPABASE_URL}/functions/v1/duttyfy-webhook`,
+    };
+
+    // Add UTM if customer has it
+    if (customer.utm_source) {
+      (requestBody as any).utm = `utm_source=${customer.utm_source || ''}&utm_medium=${customer.utm_medium || ''}&utm_campaign=${customer.utm_campaign || ''}`;
+    }
+
+    console.log('Creating DuttyFy transaction:', JSON.stringify(requestBody, null, 2));
+
+    const response = await fetch('https://api.duttyfy.com.br/v1/payment', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'x-client-secret': ctx.duttyfyApiKey,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    const responseText = await response.text();
+    console.log('DuttyFy response:', response.status, responseText);
+
+    if (!response.ok) return null;
+
+    const data = JSON.parse(responseText);
+    const pixCode = data.pixCode || '';
+    const transactionId = data.transactionId || '';
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCode)}`;
+
+    return { pixCode, qrCodeUrl, paymentId: transactionId };
+  } catch (error) {
+    console.error('Error generating PIX with DuttyFy:', error);
+    return null;
+  }
+}
+
+async function generatePix(ctx: ClientContext, amount: number, orderId: string, customer: any, product?: any): Promise<PixResult> {
+  // Check active gateway preference
+  if (ctx.activePaymentGateway === 'duttyfy' && ctx.duttyfyEnabled && ctx.duttyfyApiKey) {
+    const duttyfyPix = await generatePixDuttyfy(ctx, amount, orderId, customer, product);
+    if (duttyfyPix) return duttyfyPix;
+    console.log('DuttyFy failed, falling back to other gateways');
+  }
+
   if (ctx.fastsoftEnabled && ctx.fastsoftPublicKey && ctx.fastsoftSecretKey) {
     const fastsoftPix = await generatePixFastsoft(ctx, amount, orderId, customer);
     if (fastsoftPix) return fastsoftPix;
     console.log('FastSoft failed, falling back to mock PIX');
   }
+  
   return generateMockPix(amount, orderId);
 }
 
@@ -378,7 +462,8 @@ async function createOrder(
   customerId: string, 
   productId: string, 
   amount: number, 
-  customer: any
+  customer: any,
+  product?: any
 ) {
   const { data: order, error } = await supabase
     .from('orders')
@@ -398,7 +483,7 @@ async function createOrder(
     return null;
   }
 
-  const pix = await generatePix(ctx, amount, order.id, customer);
+  const pix = await generatePix(ctx, amount, order.id, customer, product);
 
   await supabase
     .from('orders')
@@ -531,7 +616,7 @@ async function handleBuy(ctx: ClientContext, chatId: number, productId: string, 
 
   await logMessage(ctx.clientId, customer.id, chatId, 'incoming', `[Clicou: Comprar "${product.name}"]`);
 
-  const order = await createOrder(ctx, customer.id, productId, Number(product.price), customer);
+  const order = await createOrder(ctx, customer.id, productId, Number(product.price), customer, product);
   if (!order) {
     await sendTelegramMessage(ctx.botToken, chatId, '❌ Erro ao criar pedido. Tente novamente.');
     return;
