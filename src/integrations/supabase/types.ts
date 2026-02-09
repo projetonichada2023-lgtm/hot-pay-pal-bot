@@ -552,12 +552,15 @@ export type Database = {
       }
       client_settings: {
         Row: {
+          active_payment_gateway: string | null
           auto_delivery: boolean | null
           cart_reminder_enabled: boolean | null
           cart_reminder_hours: number | null
           client_id: string
           closing_time: string | null
           created_at: string | null
+          duttyfy_api_key: string | null
+          duttyfy_enabled: boolean | null
           facebook_access_token: string | null
           facebook_pixel_id: string | null
           facebook_test_event_code: string | null
@@ -582,12 +585,15 @@ export type Database = {
           working_days: string[] | null
         }
         Insert: {
+          active_payment_gateway?: string | null
           auto_delivery?: boolean | null
           cart_reminder_enabled?: boolean | null
           cart_reminder_hours?: number | null
           client_id: string
           closing_time?: string | null
           created_at?: string | null
+          duttyfy_api_key?: string | null
+          duttyfy_enabled?: boolean | null
           facebook_access_token?: string | null
           facebook_pixel_id?: string | null
           facebook_test_event_code?: string | null
@@ -612,12 +618,15 @@ export type Database = {
           working_days?: string[] | null
         }
         Update: {
+          active_payment_gateway?: string | null
           auto_delivery?: boolean | null
           cart_reminder_enabled?: boolean | null
           cart_reminder_hours?: number | null
           client_id?: string
           closing_time?: string | null
           created_at?: string | null
+          duttyfy_api_key?: string | null
+          duttyfy_enabled?: boolean | null
           facebook_access_token?: string | null
           facebook_pixel_id?: string | null
           facebook_test_event_code?: string | null

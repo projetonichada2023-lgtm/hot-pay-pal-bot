@@ -46,7 +46,9 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showApiKey, setShowApiKey] = useState(false);
+  const [showDuttyfyKey, setShowDuttyfyKey] = useState(false);
   const [apiKey, setApiKey] = useState('');
+  const [duttyfyKey, setDuttyfyKey] = useState('');
   const { resetOnboarding, isResetting } = useOnboarding(client.id, client.onboarding_completed);
   const { usage } = usePlanLimits();
   
@@ -124,6 +126,57 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
       toast({ title: 'UniPay desconectado!' });
     } catch (error) {
       toast({ title: 'Erro ao desconectar', variant: 'destructive' });
+    }
+  };
+
+  const handleSaveDuttyfyKey = async () => {
+    if (!settings || !duttyfyKey.trim()) return;
+    try {
+      await updateSettings.mutateAsync({ 
+        id: settings.id, 
+        duttyfy_api_key: duttyfyKey.trim(),
+        duttyfy_enabled: true,
+        active_payment_gateway: 'duttyfy'
+      } as any);
+      toast({ title: 'DuttyFy conectado com sucesso!' });
+      setDuttyfyKey('');
+    } catch (error) {
+      toast({ title: 'Erro ao salvar', variant: 'destructive' });
+    }
+  };
+
+  const handleToggleDuttyfy = async (enabled: boolean) => {
+    if (!settings) return;
+    try {
+      await updateSettings.mutateAsync({ id: settings.id, duttyfy_enabled: enabled } as any);
+      toast({ title: enabled ? 'DuttyFy ativado!' : 'DuttyFy desativado!' });
+    } catch (error) {
+      toast({ title: 'Erro ao atualizar', variant: 'destructive' });
+    }
+  };
+
+  const handleDisconnectDuttyfy = async () => {
+    if (!settings) return;
+    try {
+      await updateSettings.mutateAsync({ 
+        id: settings.id, 
+        duttyfy_api_key: null,
+        duttyfy_enabled: false,
+        active_payment_gateway: hasApiKey ? 'unipay' : 'unipay'
+      } as any);
+      toast({ title: 'DuttyFy desconectado!' });
+    } catch (error) {
+      toast({ title: 'Erro ao desconectar', variant: 'destructive' });
+    }
+  };
+
+  const handleSetActiveGateway = async (gateway: string) => {
+    if (!settings) return;
+    try {
+      await updateSettings.mutateAsync({ id: settings.id, active_payment_gateway: gateway } as any);
+      toast({ title: `Gateway ativo: ${gateway === 'duttyfy' ? 'DuttyFy' : 'UniPay'}` });
+    } catch (error) {
+      toast({ title: 'Erro ao alterar gateway', variant: 'destructive' });
     }
   };
 
@@ -230,6 +283,9 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
 
   const hasApiKey = !!(settings as any).fastsoft_api_key;
   const unipayEnabled = (settings as any).fastsoft_enabled || false;
+  const hasDuttyfyKey = !!(settings as any).duttyfy_api_key;
+  const duttyfyEnabled = (settings as any).duttyfy_enabled || false;
+  const activeGateway = (settings as any).active_payment_gateway || 'unipay';
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -276,41 +332,71 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
 
         {/* Tab: Pagamentos */}
         <TabsContent value="pagamentos" className="space-y-6">
+          {/* Active Gateway Selector */}
+          <Card className="glass-card border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                Gateway Ativo
+              </CardTitle>
+              <CardDescription>
+                Selecione qual gateway será usado para gerar pagamentos PIX
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-3">
+                {[
+                  { id: 'unipay', label: 'UniPay', connected: hasApiKey },
+                  { id: 'duttyfy', label: 'DuttyFy', connected: hasDuttyfyKey },
+                ].map(gw => (
+                  <button
+                    key={gw.id}
+                    onClick={() => handleSetActiveGateway(gw.id)}
+                    className={`flex-1 p-4 rounded-lg border-2 transition-all ${
+                      activeGateway === gw.id 
+                        ? 'border-primary bg-primary/10' 
+                        : 'border-border bg-muted/30 hover:border-primary/40'
+                    }`}
+                    disabled={!gw.connected}
+                  >
+                    <div className="text-center space-y-1">
+                      <p className={`font-semibold ${activeGateway === gw.id ? 'text-primary' : 'text-foreground'}`}>
+                        {gw.label}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {gw.connected ? (activeGateway === gw.id ? '✅ Ativo' : 'Conectado') : 'Não conectado'}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* UniPay Card */}
           <Card className="glass-card border-primary/20">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <CreditCard className="w-5 h-5" />
-                    Gateway de Pagamento
+                    UniPay
                   </CardTitle>
                   <CardDescription>
-                    Integração exclusiva com UniPay para pagamentos PIX
+                    Integração com UniPay para pagamentos PIX
                   </CardDescription>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  <span className="text-xs font-medium text-primary">UniPay</span>
-                </div>
+                {hasApiKey && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="text-xs font-medium text-green-600 dark:text-green-400">Conectado</span>
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {hasApiKey ? (
                 <>
-                  <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                      <div className="flex-1">
-                        <p className="font-medium text-green-600 dark:text-green-400">
-                          UniPay Conectado
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Sua conta está pronta para receber pagamentos PIX
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                     <div className="space-y-0.5">
                       <Label>Pagamentos Ativos</Label>
@@ -331,7 +417,7 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
                       onClick={() => window.open('https://unipay.com.br/dashboard', '_blank')}
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
-                      Acessar Painel UniPay
+                      Acessar Painel
                     </Button>
                     <Button 
                       variant="destructive" 
@@ -343,57 +429,135 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
                   </div>
                 </>
               ) : (
-                <>
-                  <div className="p-4 bg-muted/30 rounded-lg border border-border">
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Conecte sua conta UniPay para começar a receber pagamentos PIX automaticamente.
-                    </p>
-                    
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <Label>Chave Secreta UniPay</Label>
-                        <div className="relative">
-                          <Input
-                            type={showApiKey ? 'text' : 'password'}
-                            placeholder="Cole sua chave secreta aqui"
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-1 top-1/2 -translate-y-1/2"
-                            onClick={() => setShowApiKey(!showApiKey)}
-                          >
-                            {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                      </div>
-
-                      <Button 
-                        onClick={handleSaveApiKey} 
-                        disabled={!apiKey.trim()}
-                        className="w-full"
+                <div className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+                  <div className="space-y-2">
+                    <Label>Chave Secreta UniPay</Label>
+                    <div className="relative">
+                      <Input
+                        type={showApiKey ? 'text' : 'password'}
+                        placeholder="Cole sua chave secreta aqui"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2"
+                        onClick={() => setShowApiKey(!showApiKey)}
                       >
-                        Conectar UniPay
+                        {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
                   </div>
+                  <Button 
+                    onClick={handleSaveApiKey} 
+                    disabled={!apiKey.trim()}
+                    className="w-full"
+                  >
+                    Conectar UniPay
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
+          {/* DuttyFy Card */}
+          <Card className="glass-card border-primary/20">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    DuttyFy
+                  </CardTitle>
+                  <CardDescription>
+                    Integração com DuttyFy para pagamentos PIX
+                  </CardDescription>
+                </div>
+                {hasDuttyfyKey && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="text-xs font-medium text-green-600 dark:text-green-400">Conectado</span>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {hasDuttyfyKey ? (
+                <>
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                    <div className="space-y-0.5">
+                      <Label>DuttyFy Ativo</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Receber pagamentos PIX via DuttyFy
+                      </p>
+                    </div>
+                    <Switch
+                      checked={duttyfyEnabled}
+                      onCheckedChange={handleToggleDuttyfy}
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => window.open('https://app.duttyfy.com.br/dashboard', '_blank')}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Acessar Painel
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={handleDisconnectDuttyfy}
+                    >
+                      Desconectar
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+                  <div className="space-y-2">
+                    <Label>Chave Secreta DuttyFy (x-client-secret)</Label>
+                    <div className="relative">
+                      <Input
+                        type={showDuttyfyKey ? 'text' : 'password'}
+                        placeholder="Cole sua chave secreta DuttyFy aqui"
+                        value={duttyfyKey}
+                        onChange={(e) => setDuttyfyKey(e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2"
+                        onClick={() => setShowDuttyfyKey(!showDuttyfyKey)}
+                      >
+                        {showDuttyfyKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={handleSaveDuttyfyKey} 
+                    disabled={!duttyfyKey.trim()}
+                    className="w-full"
+                  >
+                    Conectar DuttyFy
+                  </Button>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <ExternalLink className="w-4 h-4" />
-                    <span>Não tem uma conta?</span>
                     <a 
-                      href="https://unipay.com.br" 
+                      href="https://app.duttyfy.com.br" 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-primary hover:underline"
                     >
-                      Criar conta na UniPay
+                      Criar conta na DuttyFy
                     </a>
                   </div>
-                </>
+                </div>
               )}
             </CardContent>
           </Card>
