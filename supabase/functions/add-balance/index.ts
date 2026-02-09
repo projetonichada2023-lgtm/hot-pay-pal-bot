@@ -43,20 +43,34 @@ interface AddBalanceRequest {
        return client.stripe_customer_id;
      }
  
-     // Create new customer in Asaas
-     const response = await fetch(`${ASAAS_API_URL}/customers`, {
-       method: 'POST',
-       headers: {
-         'Content-Type': 'application/json',
-         'access_token': ASAAS_API_KEY,
-       },
-       body: JSON.stringify({
-         name: businessName || 'Cliente Plataforma',
-         email: `cliente_${clientId.slice(0, 8)}@plataforma.local`,
-         cpfCnpj: '00000000000', // Placeholder - Asaas will accept for sandbox
-         notificationDisabled: true,
-       }),
-     });
+  // Get client email from auth
+      const { data: authUser } = await supabase
+        .from('clients')
+        .select('user_id, business_email, business_phone')
+        .eq('id', clientId)
+        .single();
+
+      const email = authUser?.business_email || `cliente_${clientId.slice(0, 8)}@plataforma.com`;
+      const phone = authUser?.business_phone?.replace(/\D/g, '') || undefined;
+
+      // Create new customer in Asaas
+      const customerBody: Record<string, unknown> = {
+        name: businessName || 'Cliente Plataforma',
+        email,
+        notificationDisabled: true,
+      };
+      if (phone && phone.length >= 10) {
+        customerBody.mobilePhone = phone;
+      }
+
+      const response = await fetch(`${ASAAS_API_URL}/customers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'access_token': ASAAS_API_KEY,
+        },
+        body: JSON.stringify(customerBody),
+      });
  
      const data = await response.json();
      console.log('Asaas customer creation response:', data);
