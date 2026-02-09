@@ -190,14 +190,14 @@ export const useTodayFees = (clientId: string | undefined) => {
   });
 };
 
-// Mutation para adicionar saldo via PIX
+// Mutation para adicionar saldo via PIX ou Cartão
 export const useAddBalance = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-     mutationFn: async ({ clientId, amount, method = 'pix' }: { clientId: string; amount: number; method?: 'pix' | 'card' }) => {
+    mutationFn: async ({ clientId, amount, method = 'pix', cpfCnpj }: { clientId: string; amount: number; method?: 'pix' | 'card'; cpfCnpj?: string }) => {
       const { data, error } = await supabase.functions.invoke('add-balance', {
-         body: { clientId, amount, method },
+        body: { clientId, amount, method, cpfCnpj },
       });
 
       if (error) throw error;
@@ -206,13 +206,13 @@ export const useAddBalance = () => {
     onSuccess: (data) => {
       if (data.pixCode) {
         toast.success('PIX gerado com sucesso!');
-       } else if (data.invoiceUrl) {
-         // Card payment - don't show toast here, handled in component
+      } else if (data.invoiceUrl) {
+        // Card payment - handled in component
       }
     },
     onError: (error: Error) => {
       console.error('Error adding balance:', error);
-       toast.error('Erro ao processar pagamento');
+      toast.error('Erro ao processar pagamento');
     },
   });
 };
