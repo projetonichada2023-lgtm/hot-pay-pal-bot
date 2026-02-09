@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
- import { QrCode, CreditCard, Copy, Check, Loader2, ExternalLink } from 'lucide-react';
+import { QrCode, CreditCard, Copy, Check, Loader2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAddBalance } from '@/hooks/useClientBalance';
 
@@ -21,6 +21,21 @@ interface AddBalanceDialogProps {
   currentDebt: number;
 }
 
+const formatCpfCnpj = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 14);
+  if (digits.length <= 11) {
+    return digits
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  }
+  return digits
+    .replace(/(\d{2})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1/$2')
+    .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+};
+
 export const AddBalanceDialog = ({
   open,
   onOpenChange,
@@ -30,9 +45,15 @@ export const AddBalanceDialog = ({
   const [amount, setAmount] = useState<string>(currentDebt > 0 ? currentDebt.toFixed(2) : '50.00');
   const [pixData, setPixData] = useState<{ pixCode: string; pixQrcode: string } | null>(null);
   const [copied, setCopied] = useState(false);
-   const [activeTab, setActiveTab] = useState('pix');
+  const [activeTab, setActiveTab] = useState('pix');
+  const [cpfCnpj, setCpfCnpj] = useState('');
 
   const addBalance = useAddBalance();
+
+  const validateCpfCnpj = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    return digits.length === 11 || digits.length === 14;
+  };
 
   const handleGeneratePix = async () => {
     const value = parseFloat(amount);
@@ -40,29 +61,46 @@ export const AddBalanceDialog = ({
       toast.error('Valor inválido');
       return;
     }
+    if (!validateCpfCnpj(cpfCnpj)) {
+      toast.error('Informe um CPF ou CNPJ válido');
+      return;
+    }
 
-     const result = await addBalance.mutateAsync({ clientId, amount: value, method: 'pix' });
+    const result = await addBalance.mutateAsync({
+      clientId,
+      amount: value,
+      method: 'pix',
+      cpfCnpj: cpfCnpj.replace(/\D/g, ''),
+    });
     if (result?.pixCode) {
       setPixData({ pixCode: result.pixCode, pixQrcode: result.pixQrcode });
     }
   };
 
-   const handlePayWithCard = async () => {
-     const value = parseFloat(amount);
-     if (isNaN(value) || value <= 0) {
-       toast.error('Valor inválido');
-       return;
-     }
- 
-     const result = await addBalance.mutateAsync({ clientId, amount: value, method: 'card' });
-     if (result?.invoiceUrl) {
-       // Open Asaas payment page in new tab
-       window.open(result.invoiceUrl, '_blank');
-       toast.success('Página de pagamento aberta! Complete o pagamento e seu saldo será atualizado automaticamente.');
-       handleClose();
-     }
-   };
- 
+  const handlePayWithCard = async () => {
+    const value = parseFloat(amount);
+    if (isNaN(value) || value <= 0) {
+      toast.error('Valor inválido');
+      return;
+    }
+    if (!validateCpfCnpj(cpfCnpj)) {
+      toast.error('Informe um CPF ou CNPJ válido');
+      return;
+    }
+
+    const result = await addBalance.mutateAsync({
+      clientId,
+      amount: value,
+      method: 'card',
+      cpfCnpj: cpfCnpj.replace(/\D/g, ''),
+    });
+    if (result?.invoiceUrl) {
+      window.open(result.invoiceUrl, '_blank');
+      toast.success('Página de pagamento aberta! Complete o pagamento e seu saldo será atualizado automaticamente.');
+      handleClose();
+    }
+  };
+
   const handleCopyPix = () => {
     if (pixData?.pixCode) {
       navigator.clipboard.writeText(pixData.pixCode);
@@ -75,10 +113,65 @@ export const AddBalanceDialog = ({
   const handleClose = () => {
     setPixData(null);
     setCopied(false);
+    setCpfCnpj('');
     onOpenChange(false);
   };
 
   const suggestedAmounts = [20, 50, 100, 200];
+
+  const CpfCnpjField = ({ id }: { id: string }) => (
+    <div className="space-y-2">
+      <Label htmlFor={id}>CPF ou CNPJ</Label>
+      <Input
+        id={id}
+        value={cpfCnpj}
+        onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
+        placeholder="000.000.000-00"
+        maxLength={18}
+      />
+    </div>
+  );
+
+  const AmountField = ({ id }: { id: string }) => (
+    <div className="space-y-2">
+      <Label htmlFor={id}>Valor (R$)</Label>
+      <Input
+        id={id}
+        type="number"
+        min="1"
+        step="0.01"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        placeholder="50.00"
+      />
+    </div>
+  );
+
+  const SuggestedAmounts = () => (
+    <div className="flex flex-wrap gap-2">
+      {suggestedAmounts.map((val) => (
+        <Button
+          key={val}
+          variant="outline"
+          size="sm"
+          onClick={() => setAmount(val.toFixed(2))}
+          className={amount === val.toFixed(2) ? 'border-primary' : ''}
+        >
+          R$ {val}
+        </Button>
+      ))}
+      {currentDebt > 0 && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setAmount(currentDebt.toFixed(2))}
+          className={`text-red-600 ${amount === currentDebt.toFixed(2) ? 'border-red-500' : ''}`}
+        >
+          Pagar dívida
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -95,57 +188,24 @@ export const AddBalanceDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="pix" className="gap-2">
               <QrCode className="h-4 w-4" />
               PIX
             </TabsTrigger>
-             <TabsTrigger value="card" className="gap-2">
+            <TabsTrigger value="card" className="gap-2">
               <CreditCard className="h-4 w-4" />
-               Cartão
+              Cartão
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="pix" className="space-y-4 mt-4">
             {!pixData ? (
               <>
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Valor (R$)</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    min="1"
-                    step="0.01"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="50.00"
-                  />
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {suggestedAmounts.map((val) => (
-                    <Button
-                      key={val}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setAmount(val.toFixed(2))}
-                      className={amount === val.toFixed(2) ? 'border-primary' : ''}
-                    >
-                      R$ {val}
-                    </Button>
-                  ))}
-                  {currentDebt > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setAmount(currentDebt.toFixed(2))}
-                      className={`text-red-600 ${amount === currentDebt.toFixed(2) ? 'border-red-500' : ''}`}
-                    >
-                      Pagar dívida
-                    </Button>
-                  )}
-                </div>
+                <CpfCnpjField id="cpf-pix" />
+                <AmountField id="amount-pix" />
+                <SuggestedAmounts />
 
                 <Button 
                   className="w-full" 
@@ -214,65 +274,32 @@ export const AddBalanceDialog = ({
           </TabsContent>
 
           <TabsContent value="card" className="mt-4">
-             <div className="space-y-4">
-               <div className="space-y-2">
-                 <Label htmlFor="card-amount">Valor (R$)</Label>
-                 <Input
-                   id="card-amount"
-                   type="number"
-                   min="1"
-                   step="0.01"
-                   value={amount}
-                   onChange={(e) => setAmount(e.target.value)}
-                   placeholder="50.00"
-                 />
-               </div>
- 
-               <div className="flex flex-wrap gap-2">
-                 {suggestedAmounts.map((val) => (
-                   <Button
-                     key={val}
-                     variant="outline"
-                     size="sm"
-                     onClick={() => setAmount(val.toFixed(2))}
-                     className={amount === val.toFixed(2) ? 'border-primary' : ''}
-                   >
-                     R$ {val}
-                   </Button>
-                 ))}
-                 {currentDebt > 0 && (
-                   <Button
-                     variant="outline"
-                     size="sm"
-                     onClick={() => setAmount(currentDebt.toFixed(2))}
-                     className={`text-red-600 ${amount === currentDebt.toFixed(2) ? 'border-red-500' : ''}`}
-                   >
-                     Pagar dívida
-                   </Button>
-                 )}
-               </div>
- 
-               <div className="p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-                 <p>Você será redirecionado para uma página segura de pagamento onde poderá inserir os dados do seu cartão.</p>
-               </div>
- 
-               <Button 
-                 className="w-full" 
-                 onClick={handlePayWithCard}
-                 disabled={addBalance.isPending}
-               >
-                 {addBalance.isPending ? (
-                   <>
-                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                     Processando...
-                   </>
-                 ) : (
-                   <>
-                     <ExternalLink className="h-4 w-4 mr-2" />
-                     Pagar com Cartão
-                   </>
-                 )}
-               </Button>
+            <div className="space-y-4">
+              <CpfCnpjField id="cpf-card" />
+              <AmountField id="amount-card" />
+              <SuggestedAmounts />
+
+              <div className="p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+                <p>Você será redirecionado para uma página segura de pagamento onde poderá inserir os dados do seu cartão.</p>
+              </div>
+
+              <Button 
+                className="w-full" 
+                onClick={handlePayWithCard}
+                disabled={addBalance.isPending}
+              >
+                {addBalance.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Pagar com Cartão
+                  </>
+                )}
+              </Button>
             </div>
           </TabsContent>
         </Tabs>
