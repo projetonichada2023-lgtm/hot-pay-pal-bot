@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Client } from '@/hooks/useClient';
+import { useClientBalance } from '@/hooks/useClientBalance';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BotSelector } from '@/components/bots/BotSelector';
@@ -36,22 +37,51 @@ interface SidebarProps {
   client: Client;
 }
 
-const menuItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: MessageCircle, label: 'Conversas', path: '/dashboard/chats' },
-  { icon: MessageSquare, label: 'Mensagens Bot', path: '/dashboard/messages' },
-  { icon: Package, label: 'Produtos', path: '/dashboard/products' },
-  { icon: GitBranch, label: 'Funil', path: '/dashboard/funnel' },
-  { icon: ShoppingCart, label: 'Pedidos', path: '/dashboard/orders' },
-  { icon: RefreshCw, label: 'Recuperação', path: '/dashboard/recovery' },
-  { icon: Users, label: 'Clientes', path: '/dashboard/customers' },
-  { icon: Target, label: 'Tracking', path: '/dashboard/tracking' },
-  { icon: BarChart3, label: 'Relatórios', path: '/dashboard/reports' },
-  { icon: Wallet, label: 'Financeiro', path: '/dashboard/balance' },
-  { icon: Boxes, label: 'Meus Bots', path: '/dashboard/bots' },
-  { icon: Smartphone, label: 'Simulador', path: '/dashboard/simulator' },
-  { icon: Settings, label: 'Configurações', path: '/dashboard/settings' },
+const menuGroups = [
+  {
+    label: 'Principal',
+    items: [
+      { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+      { icon: MessageCircle, label: 'Conversas', path: '/dashboard/chats' },
+    ]
+  },
+  {
+    label: 'Vendas',
+    items: [
+      { icon: MessageSquare, label: 'Mensagens Bot', path: '/dashboard/messages' },
+      { icon: Package, label: 'Produtos', path: '/dashboard/products' },
+      { icon: GitBranch, label: 'Funil', path: '/dashboard/funnel' },
+      { icon: ShoppingCart, label: 'Pedidos', path: '/dashboard/orders' },
+      { icon: RefreshCw, label: 'Recuperação', path: '/dashboard/recovery' },
+    ]
+  },
+  {
+    label: 'Análise',
+    items: [
+      { icon: Users, label: 'Clientes', path: '/dashboard/customers' },
+      { icon: Target, label: 'Tracking', path: '/dashboard/tracking' },
+      { icon: BarChart3, label: 'Relatórios', path: '/dashboard/reports' },
+    ]
+  },
+  {
+    label: 'Gestão',
+    items: [
+      { icon: Wallet, label: 'Financeiro', path: '/dashboard/balance' },
+      { icon: Boxes, label: 'Meus Bots', path: '/dashboard/bots' },
+      { icon: Smartphone, label: 'Simulador', path: '/dashboard/simulator' },
+      { icon: Settings, label: 'Configurações', path: '/dashboard/settings' },
+    ]
+  },
 ];
+
+const getTourAttribute = (path: string) => {
+  if (path === '/dashboard/products') return 'menu-products';
+  if (path === '/dashboard/bot-config') return 'menu-bot-config';
+  if (path === '/dashboard/funnel') return 'menu-funnel';
+  if (path === '/dashboard/messages') return 'menu-messages';
+  if (path === '/dashboard/recovery') return 'menu-recovery';
+  return undefined;
+};
 
 export const Sidebar = ({ client }: SidebarProps) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -64,9 +94,7 @@ export const Sidebar = ({ client }: SidebarProps) => {
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('theme');
-      if (stored) {
-        return stored === 'dark';
-      }
+      if (stored) return stored === 'dark';
       return true;
     }
     return true;
@@ -74,6 +102,9 @@ export const Sidebar = ({ client }: SidebarProps) => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { data: balance } = useClientBalance(client?.id);
+
+  const debtAmount = Number(balance?.debt_amount) || 0;
 
   useEffect(() => {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
@@ -96,14 +127,6 @@ export const Sidebar = ({ client }: SidebarProps) => {
   const handleNavigate = (path: string) => {
     navigate(path);
     setIsMobileOpen(false);
-  };
-
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-  };
-
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
   };
 
   return (
@@ -153,65 +176,83 @@ export const Sidebar = ({ client }: SidebarProps) => {
             variant="ghost"
             size="icon"
             className="hidden md:flex self-end mb-3 h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            onClick={toggleCollapse}
+            onClick={() => setIsCollapsed(!isCollapsed)}
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" strokeWidth={1.5} /> : <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />}
           </Button>
 
-          {/* Navigation */}
+          {/* Navigation with Groups */}
           <ScrollArea className="flex-1 -mx-2 px-2">
-            <nav className="space-y-0.5">
-              {menuItems.map((item) => {
-                const isActive = location.pathname === item.path;
-                const getTourAttribute = () => {
-                  if (item.path === '/dashboard/products') return 'menu-products';
-                  if (item.path === '/dashboard/bot-config') return 'menu-bot-config';
-                  if (item.path === '/dashboard/funnel') return 'menu-funnel';
-                  if (item.path === '/dashboard/messages') return 'menu-messages';
-                  if (item.path === '/dashboard/recovery') return 'menu-recovery';
-                  return undefined;
-                };
-                const tourAttr = getTourAttribute();
-                return (
-                  <Button
-                    key={item.path}
-                    variant="ghost"
-                    className={cn(
-                      'w-full h-10 transition-all duration-200',
-                      isCollapsed ? 'justify-center px-2' : 'justify-start gap-3 px-3',
-                      isActive 
-                        ? 'bg-primary/10 text-primary border-l-2 border-primary rounded-l-none' 
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/30 border-l-2 border-transparent'
-                    )}
-                    onClick={() => handleNavigate(item.path)}
-                    title={isCollapsed ? item.label : undefined}
-                    {...(tourAttr ? { 'data-tour': tourAttr } : {})}
-                  >
-                    <item.icon className={cn('w-[18px] h-[18px] shrink-0', isActive && 'text-primary')} strokeWidth={1.5} />
-                    {!isCollapsed && <span className="text-sm font-medium truncate">{item.label}</span>}
-                  </Button>
-                );
-              })}
+            <nav className="space-y-4">
+              {menuGroups.map((group) => (
+                <div key={group.label}>
+                  {/* Group Label */}
+                  {!isCollapsed && (
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-3 mb-1.5">
+                      {group.label}
+                    </p>
+                  )}
+                  {isCollapsed && (
+                    <div className="h-px bg-border/20 mx-2 mb-1.5" />
+                  )}
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => {
+                      const isActive = location.pathname === item.path;
+                      const tourAttr = getTourAttribute(item.path);
+                      const isFinanceiro = item.path === '/dashboard/balance';
+
+                      return (
+                        <Button
+                          key={item.path}
+                          variant="ghost"
+                          className={cn(
+                            'w-full h-10 transition-all duration-200',
+                            isCollapsed ? 'justify-center px-2' : 'justify-start gap-3 px-3',
+                            isActive 
+                              ? 'bg-primary/10 text-primary border-l-2 border-primary rounded-l-none' 
+                              : 'text-muted-foreground hover:text-foreground hover:bg-muted/30 border-l-2 border-transparent'
+                          )}
+                          onClick={() => handleNavigate(item.path)}
+                          title={isCollapsed ? item.label : undefined}
+                          {...(tourAttr ? { 'data-tour': tourAttr } : {})}
+                        >
+                          <item.icon className={cn('w-[18px] h-[18px] shrink-0', isActive && 'text-primary')} strokeWidth={1.5} />
+                          {!isCollapsed && (
+                            <span className="text-sm font-medium truncate flex-1 text-left">{item.label}</span>
+                          )}
+                          {/* Debt badge on Financeiro */}
+                          {isFinanceiro && debtAmount > 0 && !isCollapsed && (
+                            <span className="text-[10px] font-bold bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded-full leading-none">
+                              R${debtAmount.toFixed(0)}
+                            </span>
+                          )}
+                          {isFinanceiro && debtAmount > 0 && isCollapsed && (
+                            <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+                          )}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </nav>
           </ScrollArea>
 
           {/* Bottom Actions */}
           <div className="pt-4 mt-4 border-t border-border/30 space-y-1">
-            {/* Theme Toggle */}
             <Button
               variant="ghost"
               className={cn(
                 "h-10 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all duration-200",
                 isCollapsed ? "justify-center px-2 w-full" : "justify-start gap-3 w-full"
               )}
-              onClick={toggleTheme}
+              onClick={() => setIsDark(!isDark)}
               title={isCollapsed ? (isDark ? 'Modo Claro' : 'Modo Escuro') : undefined}
             >
               {isDark ? <Sun className="w-[18px] h-[18px] shrink-0" strokeWidth={1.5} /> : <Moon className="w-[18px] h-[18px] shrink-0" strokeWidth={1.5} />}
               {!isCollapsed && <span className="text-sm font-medium">{isDark ? 'Modo Claro' : 'Modo Escuro'}</span>}
             </Button>
 
-            {/* Logout */}
             <Button
               variant="ghost"
               className={cn(
