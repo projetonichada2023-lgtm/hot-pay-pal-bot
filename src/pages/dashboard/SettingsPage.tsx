@@ -28,6 +28,8 @@ import {
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SubscriptionCard } from '@/components/subscription/SubscriptionCard';
+import unipayLogo from '@/assets/unipay-logo.png';
+import duttyfyLogo from '@/assets/duttyfy-logo.png';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { 
   subscribeToPush, 
@@ -350,10 +352,8 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    activeGateway === 'unipay' ? 'bg-primary/10' : 'bg-muted'
-                  }`}>
-                    <CreditCard className={`w-5 h-5 ${activeGateway === 'unipay' ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden bg-white">
+                    <img src={unipayLogo} alt="UniPay" className="w-8 h-8 object-contain" />
                   </div>
                   <div>
                     <CardTitle className="text-base flex items-center gap-2">
@@ -440,10 +440,8 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    activeGateway === 'duttyfy' ? 'bg-primary/10' : 'bg-muted'
-                  }`}>
-                    <CreditCard className={`w-5 h-5 ${activeGateway === 'duttyfy' ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden bg-white">
+                    <img src={duttyfyLogo} alt="DuttyFy" className="w-8 h-8 object-contain" />
                   </div>
                   <div>
                     <CardTitle className="text-base flex items-center gap-2">
