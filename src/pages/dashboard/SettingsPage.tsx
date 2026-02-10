@@ -22,7 +22,8 @@ import {
   Bell,
   BellOff,
   Smartphone,
-  AlertCircle
+  AlertCircle,
+  ChevronDown
 } from 'lucide-react';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -49,6 +50,7 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
   const [showDuttyfyKey, setShowDuttyfyKey] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [duttyfyKey, setDuttyfyKey] = useState('');
+  const [expandedGateway, setExpandedGateway] = useState<string | null>(null);
   const { resetOnboarding, isResetting } = useOnboarding(client.id, client.onboarding_completed);
   const { usage } = usePlanLimits();
   
@@ -331,235 +333,195 @@ export const SettingsPage = ({ client }: SettingsPageProps) => {
         </TabsContent>
 
         {/* Tab: Pagamentos */}
-        <TabsContent value="pagamentos" className="space-y-6">
-          {/* Active Gateway Selector */}
-          <Card className="glass-card border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5" />
-                Gateway Ativo
-              </CardTitle>
-              <CardDescription>
-                Selecione qual gateway será usado para gerar pagamentos PIX
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-3">
-                {[
-                  { id: 'unipay', label: 'UniPay', connected: hasApiKey },
-                  { id: 'duttyfy', label: 'DuttyFy', connected: hasDuttyfyKey },
-                ].map(gw => (
-                  <button
-                    key={gw.id}
-                    onClick={() => handleSetActiveGateway(gw.id)}
-                    className={`flex-1 p-4 rounded-lg border-2 transition-all ${
-                      activeGateway === gw.id 
-                        ? 'border-primary bg-primary/10' 
-                        : 'border-border bg-muted/30 hover:border-primary/40'
-                    }`}
-                    disabled={!gw.connected}
-                  >
-                    <div className="text-center space-y-1">
-                      <p className={`font-semibold ${activeGateway === gw.id ? 'text-primary' : 'text-foreground'}`}>
-                        {gw.label}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {gw.connected ? (activeGateway === gw.id ? '✅ Ativo' : 'Conectado') : 'Não conectado'}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="pagamentos" className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Selecione e configure o gateway de pagamento PIX ativo. Clique para expandir.
+          </p>
 
-          {/* UniPay Card */}
-          <Card className="glass-card border-primary/20">
-            <CardHeader>
+          {/* UniPay Collapsible Card */}
+          <Card 
+            className={`glass-card transition-all cursor-pointer ${
+              activeGateway === 'unipay' ? 'border-primary ring-1 ring-primary/30' : 'border-border'
+            }`}
+          >
+            <CardHeader 
+              className="cursor-pointer"
+              onClick={() => setExpandedGateway(expandedGateway === 'unipay' ? null : 'unipay')}
+            >
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="w-5 h-5" />
-                    UniPay
-                  </CardTitle>
-                  <CardDescription>
-                    Integração com UniPay para pagamentos PIX
-                  </CardDescription>
-                </div>
-                {hasApiKey && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-xs font-medium text-green-600 dark:text-green-400">Conectado</span>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    activeGateway === 'unipay' ? 'bg-primary/10' : 'bg-muted'
+                  }`}>
+                    <CreditCard className={`w-5 h-5 ${activeGateway === 'unipay' ? 'text-primary' : 'text-muted-foreground'}`} />
                   </div>
-                )}
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      UniPay
+                      {activeGateway === 'unipay' && (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">ATIVO</span>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {hasApiKey ? 'Conectado' : 'Não conectado'}
+                    </CardDescription>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {hasApiKey && (
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                  )}
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${expandedGateway === 'unipay' ? 'rotate-180' : ''}`} />
+                </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {hasApiKey ? (
-                <>
-                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                    <div className="space-y-0.5">
-                      <Label>Pagamentos Ativos</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Receber pagamentos PIX via UniPay
-                      </p>
-                    </div>
-                    <Switch
-                      checked={unipayEnabled}
-                      onCheckedChange={handleToggleUnipay}
-                    />
-                  </div>
+            {expandedGateway === 'unipay' && (
+              <CardContent className="space-y-4 pt-0">
+                {hasApiKey && activeGateway !== 'unipay' && (
+                  <Button variant="outline" className="w-full" onClick={() => handleSetActiveGateway('unipay')}>
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    Definir como gateway ativo
+                  </Button>
+                )}
 
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      className="flex-1"
-                      onClick={() => window.open('https://unipay.com.br/dashboard', '_blank')}
-                    >
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Acessar Painel
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={handleDisconnect}
-                    >
-                      Desconectar
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <div className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
-                  <div className="space-y-2">
-                    <Label>Chave Secreta UniPay</Label>
-                    <div className="relative">
-                      <Input
-                        type={showApiKey ? 'text' : 'password'}
-                        placeholder="Cole sua chave secreta aqui"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1/2 -translate-y-1/2"
-                        onClick={() => setShowApiKey(!showApiKey)}
-                      >
-                        {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {hasApiKey ? (
+                  <>
+                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                      <div className="space-y-0.5">
+                        <Label>Pagamentos Ativos</Label>
+                        <p className="text-sm text-muted-foreground">Receber pagamentos PIX via UniPay</p>
+                      </div>
+                      <Switch checked={unipayEnabled} onCheckedChange={handleToggleUnipay} />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="flex-1" onClick={() => window.open('https://unipay.com.br/dashboard', '_blank')}>
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Acessar Painel
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={handleDisconnect}>
+                        Desconectar
                       </Button>
                     </div>
-                  </div>
-                  <Button 
-                    onClick={handleSaveApiKey} 
-                    disabled={!apiKey.trim()}
-                    className="w-full"
-                  >
-                    Conectar UniPay
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* DuttyFy Card */}
-          <Card className="glass-card border-primary/20">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="w-5 h-5" />
-                    DuttyFy
-                  </CardTitle>
-                  <CardDescription>
-                    Integração com DuttyFy para pagamentos PIX
-                  </CardDescription>
-                </div>
-                {hasDuttyfyKey && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-xs font-medium text-green-600 dark:text-green-400">Conectado</span>
+                  </>
+                ) : (
+                  <div className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+                    <div className="space-y-2">
+                      <Label>Chave Secreta UniPay</Label>
+                      <div className="relative">
+                        <Input
+                          type={showApiKey ? 'text' : 'password'}
+                          placeholder="Cole sua chave secreta aqui"
+                          value={apiKey}
+                          onChange={(e) => setApiKey(e.target.value)}
+                        />
+                        <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2" onClick={() => setShowApiKey(!showApiKey)}>
+                          {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                    <Button onClick={handleSaveApiKey} disabled={!apiKey.trim()} className="w-full">
+                      Conectar UniPay
+                    </Button>
                   </div>
                 )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {hasDuttyfyKey ? (
-                <>
-                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                    <div className="space-y-0.5">
-                      <Label>DuttyFy Ativo</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Receber pagamentos PIX via DuttyFy
-                      </p>
-                    </div>
-                    <Switch
-                      checked={duttyfyEnabled}
-                      onCheckedChange={handleToggleDuttyfy}
-                    />
-                  </div>
+              </CardContent>
+            )}
+          </Card>
 
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      className="flex-1"
-                      onClick={() => window.open('https://app.duttyfy.com.br/dashboard', '_blank')}
-                    >
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Acessar Painel
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={handleDisconnectDuttyfy}
-                    >
-                      Desconectar
-                    </Button>
+          {/* DuttyFy Collapsible Card */}
+          <Card 
+            className={`glass-card transition-all cursor-pointer ${
+              activeGateway === 'duttyfy' ? 'border-primary ring-1 ring-primary/30' : 'border-border'
+            }`}
+          >
+            <CardHeader 
+              className="cursor-pointer"
+              onClick={() => setExpandedGateway(expandedGateway === 'duttyfy' ? null : 'duttyfy')}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    activeGateway === 'duttyfy' ? 'bg-primary/10' : 'bg-muted'
+                  }`}>
+                    <CreditCard className={`w-5 h-5 ${activeGateway === 'duttyfy' ? 'text-primary' : 'text-muted-foreground'}`} />
                   </div>
-                </>
-              ) : (
-                <div className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
-                  <div className="space-y-2">
-                    <Label>Chave Secreta DuttyFy (x-client-secret)</Label>
-                    <div className="relative">
-                      <Input
-                        type={showDuttyfyKey ? 'text' : 'password'}
-                        placeholder="Cole sua chave secreta DuttyFy aqui"
-                        value={duttyfyKey}
-                        onChange={(e) => setDuttyfyKey(e.target.value)}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1/2 -translate-y-1/2"
-                        onClick={() => setShowDuttyfyKey(!showDuttyfyKey)}
-                      >
-                        {showDuttyfyKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                  <Button 
-                    onClick={handleSaveDuttyfyKey} 
-                    disabled={!duttyfyKey.trim()}
-                    className="w-full"
-                  >
-                    Conectar DuttyFy
-                  </Button>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <ExternalLink className="w-4 h-4" />
-                    <a 
-                      href="https://app.duttyfy.com.br" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      Criar conta na DuttyFy
-                    </a>
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      DuttyFy
+                      {activeGateway === 'duttyfy' && (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">ATIVO</span>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {hasDuttyfyKey ? 'Conectado' : 'Não conectado'}
+                    </CardDescription>
                   </div>
                 </div>
-              )}
-            </CardContent>
+                <div className="flex items-center gap-2">
+                  {hasDuttyfyKey && (
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                  )}
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${expandedGateway === 'duttyfy' ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+            </CardHeader>
+            {expandedGateway === 'duttyfy' && (
+              <CardContent className="space-y-4 pt-0">
+                {hasDuttyfyKey && activeGateway !== 'duttyfy' && (
+                  <Button variant="outline" className="w-full" onClick={() => handleSetActiveGateway('duttyfy')}>
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    Definir como gateway ativo
+                  </Button>
+                )}
+
+                {hasDuttyfyKey ? (
+                  <>
+                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                      <div className="space-y-0.5">
+                        <Label>DuttyFy Ativo</Label>
+                        <p className="text-sm text-muted-foreground">Receber pagamentos PIX via DuttyFy</p>
+                      </div>
+                      <Switch checked={duttyfyEnabled} onCheckedChange={handleToggleDuttyfy} />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="flex-1" onClick={() => window.open('https://app.duttyfy.com.br/dashboard', '_blank')}>
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Acessar Painel
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={handleDisconnectDuttyfy}>
+                        Desconectar
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+                    <div className="space-y-2">
+                      <Label>Chave Secreta DuttyFy (x-client-secret)</Label>
+                      <div className="relative">
+                        <Input
+                          type={showDuttyfyKey ? 'text' : 'password'}
+                          placeholder="Cole sua chave secreta DuttyFy aqui"
+                          value={duttyfyKey}
+                          onChange={(e) => setDuttyfyKey(e.target.value)}
+                        />
+                        <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2" onClick={() => setShowDuttyfyKey(!showDuttyfyKey)}>
+                          {showDuttyfyKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                    <Button onClick={handleSaveDuttyfyKey} disabled={!duttyfyKey.trim()} className="w-full">
+                      Conectar DuttyFy
+                    </Button>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <ExternalLink className="w-4 h-4" />
+                      <a href="https://app.duttyfy.com.br" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        Criar conta na DuttyFy
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            )}
           </Card>
         </TabsContent>
 
