@@ -196,53 +196,6 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
           </motion.div>
         </motion.div>
 
-        {/* Partnership Badge */}
-        <motion.div 
-          className="mt-12 flex flex-col items-center gap-3"
-          initial={{ opacity: 0, y: 20 }}
-          animate={heroInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 1 }}
-        >
-          <p className="text-sm text-muted-foreground">Pagamentos processados com segurança por</p>
-          <div className="flex items-center gap-3 flex-wrap justify-center">
-            <motion.a
-              href="https://unipaybr.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300"
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <img 
-                src={unipayLogo} 
-                alt="UniPay - Gateway de Pagamentos" 
-                className="h-7 w-auto object-contain"
-                loading="lazy"
-                decoding="async"
-              />
-              <div className="h-5 w-px bg-border/50" />
-              <span className="text-xs font-medium text-emerald-400">UniPay</span>
-            </motion.a>
-            <motion.a
-              href="https://duttyfy.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 hover:border-violet-500/40 transition-all duration-300"
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <img 
-                src={duttyfyLogo} 
-                alt="DuttyFy - Gateway de Pagamentos" 
-                className="h-7 w-auto object-contain"
-                loading="lazy"
-                decoding="async"
-              />
-              <div className="h-5 w-px bg-border/50" />
-              <span className="text-xs font-medium text-violet-400">DuttyFy</span>
-            </motion.a>
-          </div>
-        </motion.div>
       </div>
     </section>
   );
