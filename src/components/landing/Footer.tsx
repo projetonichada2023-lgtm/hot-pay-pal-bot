@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Instagram, Youtube, Send, BookOpen, Mail, ExternalLink } from "lucide-react";
 import conversyLogo from "@/assets/conversy-logo.png";
 import unipayLogo from "@/assets/unipay-logo.png";
+import duttyfyLogo from "@/assets/duttyfy-logo.png";
 
 export function Footer() {
   return (
@@ -154,28 +155,31 @@ export function Footer() {
         {/* Divider */}
         <div className="border-t border-border/30 pt-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            {/* UniPay Partnership */}
-            <motion.a
-              href="https://unipaybr.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <img 
-                src={unipayLogo} 
-                alt="UniPay" 
-                className="h-6 w-auto object-contain"
-                loading="lazy"
-                decoding="async"
-              />
-              <div className="h-4 w-px bg-border/50" />
-              <div className="flex items-center gap-1 text-xs text-emerald-400">
-                <span>Gateway de Pagamentos</span>
-                <ExternalLink className="w-3 h-3" />
-              </div>
-            </motion.a>
+            {/* Gateway Partners */}
+            <div className="flex items-center gap-3">
+              <motion.a
+                href="https://unipaybr.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <img src={unipayLogo} alt="UniPay" className="h-5 w-auto object-contain" loading="lazy" decoding="async" />
+                <span className="text-[10px] text-emerald-400">Gateway</span>
+              </motion.a>
+              <motion.a
+                href="https://duttyfy.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 hover:border-violet-500/40 transition-all duration-300"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <img src={duttyfyLogo} alt="DuttyFy" className="h-5 w-auto object-contain" loading="lazy" decoding="async" />
+                <span className="text-[10px] text-violet-400">Gateway</span>
+              </motion.a>
+            </div>
 
             {/* Copyright */}
             <p className="text-sm text-muted-foreground">

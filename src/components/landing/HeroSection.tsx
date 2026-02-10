@@ -7,6 +7,7 @@ import { AnimatedCounter } from "./AnimatedCounter";
 import { DashboardMockup } from "./DashboardMockup";
 import { scaleIn, staggerContainer } from "./shared/animations";
 import unipayLogo from "@/assets/unipay-logo.png";
+import duttyfyLogo from "@/assets/duttyfy-logo.png";
 
 interface HeroSectionProps {
   onOpenDemo: () => void;
@@ -203,27 +204,44 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
           transition={{ duration: 0.6, delay: 1 }}
         >
           <p className="text-sm text-muted-foreground">Pagamentos processados com segurança por</p>
-          <motion.a
-            href="https://unipaybr.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-4 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300"
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <img 
-              src={unipayLogo} 
-              alt="UniPay - Gateway de Pagamentos" 
-              className="h-8 w-auto object-contain"
-              loading="lazy"
-              decoding="async"
-            />
-            <div className="h-6 w-px bg-border/50" />
-            <div className="text-left">
-              <p className="text-xs text-muted-foreground">Parceiro Oficial</p>
-              <p className="text-sm font-medium text-emerald-400">Gateway de Pagamentos</p>
-            </div>
-          </motion.a>
+          <div className="flex items-center gap-3 flex-wrap justify-center">
+            <motion.a
+              href="https://unipaybr.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-3 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300"
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <img 
+                src={unipayLogo} 
+                alt="UniPay - Gateway de Pagamentos" 
+                className="h-7 w-auto object-contain"
+                loading="lazy"
+                decoding="async"
+              />
+              <div className="h-5 w-px bg-border/50" />
+              <span className="text-xs font-medium text-emerald-400">UniPay</span>
+            </motion.a>
+            <motion.a
+              href="https://duttyfy.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-3 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 hover:border-violet-500/40 transition-all duration-300"
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <img 
+                src={duttyfyLogo} 
+                alt="DuttyFy - Gateway de Pagamentos" 
+                className="h-7 w-auto object-contain"
+                loading="lazy"
+                decoding="async"
+              />
+              <div className="h-5 w-px bg-border/50" />
+              <span className="text-xs font-medium text-violet-400">DuttyFy</span>
+            </motion.a>
+          </div>
         </motion.div>
       </div>
     </section>
