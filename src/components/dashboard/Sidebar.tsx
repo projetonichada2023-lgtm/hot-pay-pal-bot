@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Client } from '@/hooks/useClient';
+import { Client, useClientSettings } from '@/hooks/useClient';
 import { useClientBalance } from '@/hooks/useClientBalance';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BotSelector } from '@/components/bots/BotSelector';
 import conversyLogo from '@/assets/conversy-logo.png';
 import conversyIcon from '@/assets/conversy-icon.png';
+import unipayLogo from '@/assets/unipay-logo.png';
+import duttyfyLogo from '@/assets/duttyfy-logo.png';
 import { 
   LayoutDashboard, 
   MessageSquare, 
@@ -29,7 +31,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Boxes,
-  Wallet
+  Wallet,
+  CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -103,8 +106,12 @@ export const Sidebar = ({ client }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: balance } = useClientBalance(client?.id);
+  const { data: settings } = useClientSettings(client?.id);
 
   const debtAmount = Number(balance?.debt_amount) || 0;
+  const activeGateway = (settings as any)?.active_payment_gateway || null;
+  const hasUnipayKey = !!(settings as any)?.fastsoft_api_key;
+  const hasDuttyfyKey = !!(settings as any)?.duttyfy_api_key;
 
   useEffect(() => {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
@@ -237,6 +244,59 @@ export const Sidebar = ({ client }: SidebarProps) => {
               ))}
             </nav>
           </ScrollArea>
+
+          {/* Gateway Status */}
+          <div 
+            className={cn(
+              "pt-3 mt-3 border-t border-border/30 cursor-pointer",
+              isCollapsed ? "px-0" : "px-1"
+            )}
+            onClick={() => handleNavigate('/dashboard/settings?tab=pagamentos')}
+            title={isCollapsed ? `Gateway: ${activeGateway === 'duttyfy' ? 'DuttyFy' : activeGateway === 'unipay' ? 'UniPay' : 'Nenhum'}` : undefined}
+          >
+            {isCollapsed ? (
+              <div className="flex justify-center">
+                {activeGateway === 'duttyfy' ? (
+                  <div className="w-7 h-7 rounded-md overflow-hidden bg-white/10 flex items-center justify-center border border-border/30">
+                    <img src={duttyfyLogo} alt="DuttyFy" className="w-5 h-5 object-contain" />
+                  </div>
+                ) : activeGateway === 'unipay' ? (
+                  <div className="w-7 h-7 rounded-md overflow-hidden bg-white/10 flex items-center justify-center border border-border/30">
+                    <img src={unipayLogo} alt="UniPay" className="w-5 h-5 object-contain" />
+                  </div>
+                ) : (
+                  <div className="w-7 h-7 rounded-md bg-muted/30 flex items-center justify-center border border-border/30">
+                    <CreditCard className="w-4 h-4 text-muted-foreground/50" strokeWidth={1.5} />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-muted/30 transition-colors">
+                {activeGateway === 'duttyfy' ? (
+                  <div className="w-7 h-7 rounded-md overflow-hidden bg-white/10 flex items-center justify-center border border-border/30 shrink-0">
+                    <img src={duttyfyLogo} alt="DuttyFy" className="w-5 h-5 object-contain" />
+                  </div>
+                ) : activeGateway === 'unipay' ? (
+                  <div className="w-7 h-7 rounded-md overflow-hidden bg-white/10 flex items-center justify-center border border-border/30 shrink-0">
+                    <img src={unipayLogo} alt="UniPay" className="w-5 h-5 object-contain" />
+                  </div>
+                ) : (
+                  <div className="w-7 h-7 rounded-md bg-muted/30 flex items-center justify-center border border-border/30 shrink-0">
+                    <CreditCard className="w-4 h-4 text-muted-foreground/50" strokeWidth={1.5} />
+                  </div>
+                )}
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Gateway</span>
+                  <span className="text-xs font-medium text-foreground truncate">
+                    {activeGateway === 'duttyfy' ? 'DuttyFy' : activeGateway === 'unipay' ? 'UniPay' : 'Não configurado'}
+                  </span>
+                </div>
+                {activeGateway && (
+                  <div className="w-2 h-2 rounded-full bg-green-500 ml-auto shrink-0" />
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Bottom Actions */}
           <div className="pt-4 mt-4 border-t border-border/30 space-y-1">
