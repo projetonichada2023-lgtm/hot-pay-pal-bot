@@ -23,7 +23,7 @@ export const AffiliateLinks = () => {
   const { links, createLink, affiliate } = useAffiliate();
   const [isCreating, setIsCreating] = useState(false);
 
-  const baseUrl = window.location.origin;
+  const baseUrl = 'https://conversyapp.com';
 
   const handleCreateLink = async () => {
     setIsCreating(true);
