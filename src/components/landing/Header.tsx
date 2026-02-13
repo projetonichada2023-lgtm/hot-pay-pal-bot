@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link } from "react-router-dom";
-import { ArrowRight, Menu, MessageCircle } from "lucide-react";
+import { ArrowRight, Menu, Zap } from "lucide-react";
 import conversyLogo from "@/assets/conversy-logo.png";
 
 interface HeaderProps {
@@ -12,50 +12,53 @@ interface HeaderProps {
 
 export function Header({ onOpenDemo }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 30);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <motion.header 
-      className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/[0.06]"
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled 
+          ? "bg-black/90 backdrop-blur-xl border-b border-white/[0.06]" 
+          : "bg-transparent"
+      }`}
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
     >
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <motion.div 
-          className="flex items-center"
-          whileHover={{ scale: 1.02 }}
-        >
-          <img 
-            src={conversyLogo} 
-            alt="Conversy" 
-            className="h-8 w-auto object-contain"
-          />
+        <motion.div className="flex items-center gap-2" whileHover={{ scale: 1.02 }}>
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <Zap className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <span className="font-display font-bold text-lg">Conversy</span>
         </motion.div>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
-          <a href="#como-funciona" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Como Funciona
-          </a>
-          <a href="#beneficios" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Benefícios
-          </a>
-          <a href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            FAQ
-          </a>
+          {["Produtos", "Recursos", "Preços"].map(item => (
+            <a key={item} href={`#${item.toLowerCase()}`} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {item}
+            </a>
+          ))}
         </nav>
 
         {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3">
           <Link to="/auth">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              Entrar
+              Login
             </Button>
           </Link>
           <Link to="/auth">
             <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-              <Button size="sm" className="gap-2 btn-gradient rounded-2xl">
-                Começar Grátis
+              <Button size="sm" className="gap-2 btn-gradient rounded-xl">
+                Começar
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </motion.div>
@@ -70,73 +73,31 @@ export function Header({ onOpenDemo }: HeaderProps) {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-80 bg-[#0a0a0a] border-white/[0.06]">
+            <SheetContent side="right" className="w-80 bg-black border-white/[0.06]">
               <div className="flex flex-col gap-6 mt-8">
                 <div className="flex items-center gap-2 mb-4">
-                  <img 
-                    src={conversyLogo} 
-                    alt="Conversy" 
-                    className="h-8 w-auto object-contain"
-                  />
+                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                    <Zap className="w-4 h-4 text-primary-foreground" />
+                  </div>
+                  <span className="font-display font-bold text-lg">Conversy</span>
                 </div>
-
                 <nav className="flex flex-col gap-4">
-                  <a 
-                    href="#features" 
-                    className="text-lg hover:text-primary transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Recursos
-                  </a>
-                  <a 
-                    href="#como-funciona" 
-                    className="text-lg hover:text-primary transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Como Funciona
-                  </a>
-                  <a 
-                    href="#beneficios" 
-                    className="text-lg hover:text-primary transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Benefícios
-                  </a>
-                  <a 
-                    href="#faq" 
-                    className="text-lg hover:text-primary transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    FAQ
-                  </a>
+                  {["Produtos", "Recursos", "Preços"].map(item => (
+                    <a key={item} href={`#${item.toLowerCase()}`} className="text-lg hover:text-primary transition-colors" onClick={() => setMobileMenuOpen(false)}>
+                      {item}
+                    </a>
+                  ))}
                 </nav>
-
                 <div className="border-t border-white/[0.06] pt-6 mt-2 flex flex-col gap-3">
                   <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full justify-center rounded-2xl border-white/10">
-                      Entrar
-                    </Button>
+                    <Button variant="outline" className="w-full justify-center rounded-xl border-white/10">Login</Button>
                   </Link>
                   <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full justify-center gap-2 btn-gradient rounded-2xl">
-                      Começar Grátis
-                      <ArrowRight className="w-4 h-4" />
+                    <Button className="w-full justify-center gap-2 btn-gradient rounded-xl">
+                      Começar <ArrowRight className="w-4 h-4" />
                     </Button>
                   </Link>
                 </div>
-
-                {/* Mobile Demo Button */}
-                <Button 
-                  variant="secondary" 
-                  className="w-full gap-2 mt-2 rounded-2xl bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.08]"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    onOpenDemo();
-                  }}
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  Ver Demonstração
-                </Button>
               </div>
             </SheetContent>
           </Sheet>

@@ -1,34 +1,43 @@
 import { motion } from "framer-motion";
 import { ScrollReveal } from "./shared/ScrollReveal";
 import { staggerContainer, staggerItem } from "./shared/animations";
-import { features } from "./shared/data";
+import { Zap, Users, MessageSquare, ShieldCheck } from "lucide-react";
+
+const items = [
+  { title: "Entrega Zero Delay", desc: "Seu cliente recebe o acesso em milissegundos após o pagamento.", icon: Zap },
+  { title: "Gestão de Membros", desc: "Adição e remoção automática de membros em grupos privados.", icon: Users },
+  { title: "Recuperação Inteligente", desc: "Aumente as suas vendas com lembretes automáticos no chat.", icon: MessageSquare },
+  { title: "Segurança Bancária", desc: "Proteção total de dados e transações 100% criptografadas.", icon: ShieldCheck },
+];
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-24 px-4 relative bg-[#0a0a0a]">
-      {/* Subtle background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.015] to-transparent pointer-events-none" />
+    <section id="features" className="py-24 px-4 relative bg-black">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_50%_50%,rgba(255,92,0,0.04),transparent_70%)] pointer-events-none" />
       
       <div className="container mx-auto relative z-10">
         <ScrollReveal className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
-            Tudo que você precisa para vender
+            O motor do seu{" "}
+            <span className="text-primary" style={{ textShadow: "0 0 30px rgba(255, 92, 0, 0.3)" }}>
+              Império Digital.
+            </span>
           </h2>
           <p className="font-body text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
-            Ferramentas poderosas para criar, gerenciar e escalar seu negócio digital no Telegram.
+            Desenvolvemos as ferramentas necessárias para que a tecnologia não seja uma barreira para o seu lucro.
           </p>
         </ScrollReveal>
         
         <motion.div 
-          className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
         >
-          {features.map((feature) => (
+          {items.map((item) => (
             <motion.div
-              key={feature.title}
+              key={item.title}
               variants={staggerItem}
             >
               <motion.div
@@ -41,10 +50,10 @@ export function FeaturesSection() {
                     whileHover={{ rotate: [0, -10, 10, 0] }}
                     transition={{ duration: 0.5 }}
                   >
-                    <feature.icon className="w-7 h-7 text-primary" strokeWidth={1.5} />
+                    <item.icon className="w-7 h-7 text-primary" strokeWidth={1.5} />
                   </motion.div>
-                  <h3 className="text-xl mb-3 font-display font-semibold">{feature.title}</h3>
-                  <p className="font-body text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
+                  <h3 className="text-xl mb-3 font-display font-semibold">{item.title}</h3>
+                  <p className="font-body text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
                 </div>
               </motion.div>
             </motion.div>
