@@ -40,7 +40,7 @@ export function Header({ onOpenDemo }: HeaderProps) {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
-          {["Produtos", "Recursos", "Preços"].map(item => (
+          {["Produtos", "Recursos", "Depoimentos", "Preços"].map(item => (
             <a key={item} href={`#${item.toLowerCase()}`} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               {item}
             </a>
@@ -78,7 +78,7 @@ export function Header({ onOpenDemo }: HeaderProps) {
                   <img src={conversyLogo} alt="Conversy" className="h-7 w-auto object-contain" />
                 </div>
                 <nav className="flex flex-col gap-4">
-                  {["Produtos", "Recursos", "Preços"].map(item => (
+                {["Produtos", "Recursos", "Depoimentos", "Preços"].map(item => (
                     <a key={item} href={`#${item.toLowerCase()}`} className="text-lg hover:text-primary transition-colors" onClick={() => setMobileMenuOpen(false)}>
                       {item}
                     </a>

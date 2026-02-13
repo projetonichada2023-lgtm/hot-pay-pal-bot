@@ -1,13 +1,33 @@
 import { motion } from "framer-motion";
 import { ScrollReveal } from "./shared/ScrollReveal";
 import { staggerContainer, staggerItem } from "./shared/animations";
-import { Zap, Users, MessageSquare, ShieldCheck } from "lucide-react";
+import { Zap, Users, MessageSquare, Layers, CheckCircle2 } from "lucide-react";
 
 const items = [
-  { title: "Entrega Zero Delay", desc: "Seu cliente recebe o acesso em milissegundos após o pagamento.", icon: Zap },
-  { title: "Gestão de Membros", desc: "Adição e remoção automática de membros em grupos privados.", icon: Users },
-  { title: "Recuperação Inteligente", desc: "Aumente as suas vendas com lembretes automáticos no chat.", icon: MessageSquare },
-  { title: "Segurança Bancária", desc: "Proteção total de dados e transações 100% criptografadas.", icon: ShieldCheck },
+  { 
+    title: "Entrega Zero Delay", 
+    desc: "O seu cliente recebe o acesso em milissegundos após o pagamento ser confirmado via PIX.", 
+    icon: Zap,
+    details: ["Confirmação Real-time", "Links Seguros", "Ficheiros até 2GB"]
+  },
+  { 
+    title: "Gestão de Membros", 
+    desc: "Automação total: adicione novos membros e remova inadimplentes sem tocar num botão.", 
+    icon: Users,
+    details: ["Grupos Privados", "Canais de Conteúdo", "Controlo de Expiração"]
+  },
+  { 
+    title: "Recuperação Inteligente", 
+    desc: "Recupere até 35% das vendas perdidas com mensagens automáticas no chat do cliente.", 
+    icon: MessageSquare,
+    details: ["Lembrete de PIX", "Ofertas de Escassez", "Apoio Automático"]
+  },
+  { 
+    title: "Funil de Upsell", 
+    desc: "Aumente o seu ticket médio oferecendo produtos extras imediatamente após a compra.", 
+    icon: Layers,
+    details: ["One-Click Buy", "Sugestões Dinâmicas", "Métricas de Bump"]
+  },
 ];
 
 export function FeaturesSection() {
@@ -53,7 +73,16 @@ export function FeaturesSection() {
                     <item.icon className="w-7 h-7 text-primary" strokeWidth={1.5} />
                   </motion.div>
                   <h3 className="text-xl mb-3 font-display font-semibold">{item.title}</h3>
-                  <p className="font-body text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
+                  <p className="font-body text-muted-foreground text-sm leading-relaxed mb-4">{item.desc}</p>
+                  
+                  <div className="space-y-2 pt-3 border-t border-white/[0.06]">
+                    {item.details.map((detail) => (
+                      <div key={detail} className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span>{detail}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             </motion.div>

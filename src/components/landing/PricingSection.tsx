@@ -8,21 +8,21 @@ const plans = [
     name: "Inicial",
     price: "0",
     desc: "Para validar a ideia.",
-    features: ["1 Bot", "Taxa 2%", "Suporte Email"],
+    features: ["1 Bot Ativo", "Taxa 2.0% / venda", "Entrega Manual", "Suporte Email"],
     popular: false,
   },
   {
     name: "Profissional",
     price: "97",
     desc: "O plano favorito dos produtores.",
-    features: ["5 Bots", "Taxa 0.5%", "Recuperação", "Upsell"],
+    features: ["5 Bots Ativos", "Taxa 0.5% / venda", "Recuperação Automática", "Upsells Ilimitados"],
     popular: true,
   },
   {
     name: "Empresa",
     price: "247",
     desc: "Foco total em escala.",
-    features: ["Bots Ilimitados", "Taxa 0%", "Whitelabel", "Suporte 24/7"],
+    features: ["Bots Ilimitados", "Zero Taxa / venda", "API Whitelabel", "Suporte 24/7 VIP"],
     popular: false,
   },
 ];
@@ -60,10 +60,10 @@ export const PricingSection = () => {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
-            Planos & Preços
+            Planos e Preços
           </h2>
           <p className="font-body text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
-            Comece grátis e escale conforme seu negócio cresce.
+            Sem taxas escondidas. Escolha a melhor opção para o seu momento atual.
           </p>
         </motion.div>
 
