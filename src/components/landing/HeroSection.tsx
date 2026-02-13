@@ -3,7 +3,7 @@ import { motion, useInView } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowRight, Zap, TrendingUp } from "lucide-react";
-import conversyLogo from "@/assets/conversy-logo.png";
+import conversyIcon from "@/assets/conversy-icon-new.png";
 
 interface HeroSectionProps {
   onOpenDemo: () => void;
@@ -123,12 +123,14 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
               {/* Header */}
               <div className="flex items-center gap-3 mb-5 pb-4 border-b border-white/[0.06]">
                 <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
                   <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
                   <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
                 </div>
                 <div className="flex items-center gap-2 ml-2">
-                  <img src={conversyLogo} alt="Conversy" className="h-4 w-auto opacity-60" />
+                  <img src={conversyIcon} alt="Conversy" className="h-5 w-auto" />
                   <span className="text-[10px] text-muted-foreground font-mono">Painel de Controlo</span>
                 </div>
               </div>
