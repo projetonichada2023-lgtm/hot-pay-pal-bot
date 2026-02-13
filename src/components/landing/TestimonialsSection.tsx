@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Star } from "lucide-react";
 import { ScrollReveal } from "./shared/ScrollReveal";
 import { staggerContainer, staggerItem } from "./shared/animations";
+import { SectionTag } from "./SectionTag";
 
 const reviews = [
   {
@@ -26,20 +27,14 @@ const reviews = [
 
 export function TestimonialsSection() {
   return (
-    <section id="depoimentos" className="py-16 md:py-24 px-4 relative bg-black">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_50%_50%,rgba(255,92,0,0.03),transparent_70%)] pointer-events-none" />
-
+    <section id="depoimentos" className="py-16 md:py-24 px-4 relative">
       <div className="container mx-auto relative z-10">
         <ScrollReveal className="text-center mb-10 md:mb-16">
-          <div className="flex items-center justify-center gap-1 mb-4">
-            {[1, 2, 3, 4, 5].map(s => (
-              <Star key={s} className="w-5 h-5 fill-primary text-primary" />
-            ))}
-          </div>
+          <SectionTag>Social Proof</SectionTag>
           <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
-            Resultados{" "}
+            Aprovado por{" "}
             <span className="text-primary" style={{ textShadow: "0 0 30px hsl(24 100% 55% / 0.3)" }}>
-              Reais.
+              Especialistas.
             </span>
           </h2>
           <p className="font-body text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">

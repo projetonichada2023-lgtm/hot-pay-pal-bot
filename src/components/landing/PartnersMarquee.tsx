@@ -1,13 +1,12 @@
 import { motion } from "framer-motion";
 
-const partners = ["MERCADO PAGO", "STRIPE", "UNIPAY", "TON", "TELEGRAM"];
+const partners = ["STRIPE", "PAGSEGURO", "TELEGRAM API", "NUBANK", "MERCADO PAGO"];
 
 export function PartnersMarquee() {
   return (
-    <section className="py-10 bg-black border-y border-white/[0.04] overflow-hidden">
+    <section className="py-8 border-y border-white/[0.04] overflow-hidden">
       <div 
         className="flex gap-12 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]"
-        style={{ '--gap': '3rem' } as React.CSSProperties}
       >
         <motion.div
           className="flex items-center gap-12 shrink-0"

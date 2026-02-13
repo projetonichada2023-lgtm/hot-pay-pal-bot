@@ -8,6 +8,7 @@ import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { CTASection } from "@/components/landing/CTASection";
 import { Footer } from "@/components/landing/Footer";
 import { MobileFloatingCTA } from "@/components/landing/MobileFloatingCTA";
+import { FlofluidBackground } from "@/components/landing/FlofluidBackground";
 import { MessageCircle } from "lucide-react";
 
 // Lazy load heavy components
@@ -31,6 +32,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-black text-foreground overflow-x-hidden">
+      <FlofluidBackground />
       <Header onOpenDemo={() => setDemoOpen(true)} />
       <HeroSection onOpenDemo={() => setDemoOpen(true)} />
       <PartnersMarquee />
