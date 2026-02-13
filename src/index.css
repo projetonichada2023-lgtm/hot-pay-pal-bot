@@ -80,15 +80,15 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 0%;
 
-    /* Conversy Primary: #FF6B1A → HSL 24, 100%, 55% */
-    --primary: 24 100% 55%;
+    /* Conversy Primary: RGB 240, 137, 54 → HSL 27, 87%, 58% - #F08936 */
+    --primary: 27 87% 58%;
     --primary-foreground: 0 0% 100%;
 
-    /* Conversy Primary Dark */
-    --primary-dark: 18 90% 42%;
+    /* Conversy Primary Dark: #C46B4E */
+    --primary-dark: 15 47% 54%;
 
-    /* Conversy Primary Light */
-    --primary-light: 25 100% 60%;
+    /* Conversy Primary Light: #F1955E */
+    --primary-light: 23 84% 65%;
 
     --secondary: 220 15% 94%;
     --secondary-foreground: 0 0% 0%;
@@ -142,15 +142,15 @@
     --popover: 0 0% 6%;
     --popover-foreground: 0 0% 96%;
 
-    /* Conversy Primary: #FF6B1A → HSL 24, 100%, 55% */
-    --primary: 24 100% 55%;
+    /* Conversy Primary: RGB 240, 137, 54 → HSL 27, 87%, 58% - #F08936 */
+    --primary: 27 87% 58%;
     --primary-foreground: 0 0% 100%;
 
-    /* Conversy Primary Dark */
-    --primary-dark: 18 90% 42%;
+    /* Conversy Primary Dark: #C46B4E */
+    --primary-dark: 15 47% 54%;
 
-    /* Conversy Primary Light */
-    --primary-light: 25 100% 60%;
+    /* Conversy Primary Light: #F1955E */
+    --primary-light: 23 84% 65%;
 
     --secondary: 0 0% 10%;
     --secondary-foreground: 0 0% 96%;
@@ -334,7 +334,7 @@
 
   /* Modern SaaS Landing Cards */
   .landing-feature-card {
-    @apply relative overflow-hidden rounded-2xl p-4 md:p-8;
+    @apply relative overflow-hidden rounded-2xl p-8;
     background: hsl(0 0% 8%);
     border: 1px solid hsl(0 0% 100% / 0.08);
     box-shadow: 
@@ -595,21 +595,6 @@
 
   .dashboard-mockup {
     transform-style: preserve-3d;
-  }
-  /* Text gradient white - reference style */
-  .text-gradient-white {
-    background: linear-gradient(to bottom right, #fff 50%, rgba(255,255,255,0.5));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  /* Glass effect for landing */
-  .glass {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
   }
 }
 

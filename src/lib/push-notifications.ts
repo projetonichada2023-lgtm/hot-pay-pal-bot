@@ -85,13 +85,13 @@ export async function subscribeToPush(
     await navigator.serviceWorker.ready;
 
     // Check for existing subscription
-    let subscription = await (registration as any).pushManager.getSubscription();
+    let subscription = await registration.pushManager.getSubscription();
     
     const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
     
     if (!subscription) {
       // Create new subscription
-      subscription = await (registration as any).pushManager.subscribe({
+      subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
       });
@@ -144,7 +144,7 @@ export async function unsubscribeFromPush(clientId: string): Promise<boolean> {
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) return true;
 
-    const subscription = await (registration as any).pushManager.getSubscription();
+    const subscription = await registration.pushManager.getSubscription();
     if (subscription) {
       await subscription.unsubscribe();
       
@@ -194,7 +194,7 @@ export async function checkPushSupport(): Promise<{
   try {
     const registration = await navigator.serviceWorker.getRegistration();
     if (registration) {
-      const subscription = await (registration as any).pushManager.getSubscription();
+      const subscription = await registration.pushManager.getSubscription();
       subscribed = !!subscription;
     }
   } catch (e) {

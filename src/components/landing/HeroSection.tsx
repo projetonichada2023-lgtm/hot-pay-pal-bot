@@ -2,9 +2,12 @@ import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowRight, Zap, TrendingUp, Play, CheckCircle2 } from "lucide-react";
-import conversyIcon from "@/assets/conversy-icon-new.png";
-import { SectionTag } from "./SectionTag";
+import { ArrowRight, MessageCircle, Zap } from "lucide-react";
+import { AnimatedCounter } from "./AnimatedCounter";
+import { DashboardMockup } from "./DashboardMockup";
+import { scaleIn, staggerContainer } from "./shared/animations";
+import unipayLogo from "@/assets/unipay-logo.png";
+import duttyfyLogo from "@/assets/duttyfy-logo.png";
 
 interface HeroSectionProps {
   onOpenDemo: () => void;
@@ -15,179 +18,184 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
   const heroInView = useInView(heroRef, { once: true });
 
   return (
-    <section ref={heroRef} className="pt-24 md:pt-32 pb-12 md:pb-20 px-4 relative overflow-hidden min-h-[80vh] md:min-h-screen flex items-center">
-      <div className="container mx-auto relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Left: Text Content */}
-          <div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={heroInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <SectionTag>Automação Inteligente 2026</SectionTag>
-            </motion.div>
-            
-            <motion.h1 
-              className="text-3xl md:text-5xl lg:text-7xl leading-[1.05] mb-4 md:mb-6 font-display font-bold tracking-tight"
-              initial={{ opacity: 0, y: 50 }}
-              animate={heroInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <span className="text-gradient-white">Automatize.</span>{" "}
-              <motion.span 
-                className="text-primary"
-                initial={{ opacity: 0 }}
-                animate={heroInView ? { opacity: 1 } : {}}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                style={{ textShadow: "0 0 30px rgba(255, 92, 0, 0.4)" }}
-              >
-                Escale. Lucre.
-              </motion.span>
-            </motion.h1>
-            
-            <motion.p 
-              className="text-base md:text-xl max-w-lg mb-6 md:mb-8 font-body text-muted-foreground leading-relaxed"
-              initial={{ opacity: 0, y: 40 }}
-              animate={heroInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.7, delay: 0.5 }}
-            >
-              Transforme o seu Telegram numa máquina de vendas com checkout PIX, entrega automática e gestão inteligente de membros.
-            </motion.p>
-            
-            <motion.div 
-              className="flex flex-col sm:flex-row gap-3 sm:gap-4"
-              initial={{ opacity: 0, y: 40 }}
-              animate={heroInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.7, delay: 0.65 }}
-            >
-              <Link to="/auth" className="w-full sm:w-auto">
-                <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                  <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base font-display font-medium btn-gradient rounded-2xl uppercase tracking-wide">
-                    Abrir Minha Loja
-                    <motion.div animate={{ x: [0, 5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                      <ArrowRight className="w-5 h-5" strokeWidth={1.5} />
-                    </motion.div>
-                  </Button>
-                </motion.div>
-              </Link>
-              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base font-display font-medium rounded-2xl border-white/10 hover:border-primary/40 hover:bg-white/[0.03] transition-all duration-300"
-                  onClick={onOpenDemo}
-                >
-                  <Play className="w-4 h-4" />
-                  Ver Demonstração
-                </Button>
-              </motion.div>
-            </motion.div>
-
-            {/* Stats */}
-            <motion.div 
-              className="flex items-center gap-6 md:gap-8 mt-8 md:mt-12"
-              initial={{ opacity: 0 }}
-              animate={heroInView ? { opacity: 1 } : {}}
-              transition={{ duration: 0.6, delay: 0.9 }}
-            >
-              <div>
-                <div className="text-2xl md:text-3xl font-display font-bold text-primary" style={{ textShadow: "0 0 20px rgba(255, 92, 0, 0.3)" }}>R$ 20M+</div>
-                <div className="text-xs text-muted-foreground mt-1">em Vendas Processadas</div>
-              </div>
-              <div className="w-px h-10 bg-white/10" />
-              <div>
-                <div className="text-2xl md:text-3xl font-display font-bold text-primary" style={{ textShadow: "0 0 20px rgba(255, 92, 0, 0.3)" }}>5.000+</div>
-                <div className="text-xs text-muted-foreground mt-1">Empreendedores Ativos</div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Right: Dashboard Mockup */}
-          <motion.div
-            className="relative hidden lg:block"
-            initial={{ opacity: 0, x: 60, rotateY: -15 }}
-            animate={heroInView ? { opacity: 1, x: 0, rotateY: 0 } : {}}
-            transition={{ duration: 1, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            style={{ perspective: "1200px" }}
+    <section ref={heroRef} className="pt-32 pb-20 px-4 relative overflow-hidden min-h-screen">
+      {/* Dark Background with Aurora Effects */}
+      <div className="absolute inset-0 z-0 bg-[#0a0a0a]">
+        {/* Premium overlay gradients */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/60 via-[#0a0a0a]/40 to-[#0a0a0a]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/40 via-transparent to-[#0a0a0a]/40" />
+        <motion.div 
+          className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,transparent,#0a0a0a_90%)]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 2, delay: 0.3 }}
+        />
+        
+        {/* Aurora/Glow Effects */}
+        <motion.div
+          className="absolute top-[10%] left-[15%] w-[500px] h-[500px] rounded-full opacity-20 blur-[120px] pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.6) 0%, transparent 70%)' }}
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.15, 0.25, 0.15],
+            x: [0, 30, 0],
+            y: [0, -20, 0],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute top-[20%] right-[10%] w-[400px] h-[400px] rounded-full opacity-15 blur-[100px] pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.5) 0%, transparent 70%)' }}
+          animate={{
+            scale: [1.1, 1, 1.1],
+            opacity: [0.1, 0.2, 0.1],
+            x: [0, -25, 0],
+            y: [0, 30, 0],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 1,
+          }}
+        />
+        <motion.div
+          className="absolute bottom-[30%] left-[20%] w-[350px] h-[350px] rounded-full opacity-10 blur-[80px] pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.5) 0%, transparent 70%)' }}
+          animate={{
+            scale: [1, 1.15, 1],
+            opacity: [0.08, 0.15, 0.08],
+            x: [0, 20, 0],
+            y: [0, 15, 0],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2,
+          }}
+        />
+        <motion.div
+          className="absolute top-[40%] right-[25%] w-[300px] h-[300px] rounded-full opacity-10 blur-[90px] pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)' }}
+          animate={{
+            scale: [1.05, 0.95, 1.05],
+            opacity: [0.08, 0.12, 0.08],
+          }}
+          transition={{
+            duration: 7,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 0.5,
+          }}
+        />
+      </div>
+      
+      <div className="container mx-auto text-center relative z-10">
+        <motion.div 
+          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          animate={heroInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary mb-6"
+        >
+          <Zap className="w-4 h-4" />
+          <span>Automatize suas vendas no Telegram</span>
+        </motion.div>
+        
+        <motion.h1 
+          className="text-4xl md:text-6xl lg:text-7xl max-w-4xl mx-auto leading-tight mb-6 font-display font-bold tracking-tight"
+          initial={{ opacity: 0, y: 50 }}
+          animate={heroInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        >
+          Venda Produtos Digitais
+          <motion.span 
+            className="text-primary block mt-2"
+            initial={{ opacity: 0, y: 50 }}
+            animate={heroInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
           >
-            {/* Glow behind card */}
-            <div className="absolute -inset-8 bg-primary/10 rounded-3xl blur-3xl" />
-            
-            <div className="relative glass rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.02)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.05)" }}>
-              {/* Header */}
-              <div className="flex items-center gap-3 mb-5 pb-4 border-b border-white/[0.06]">
-                <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
-                </div>
-                <div className="flex items-center gap-2 ml-2">
-                  <img src={conversyIcon} alt="Conversy" className="h-5 w-auto" />
-                  <span className="text-[10px] text-muted-foreground font-mono">Dashboard Admin</span>
-                </div>
-                <div className="ml-auto flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-[9px] text-green-400 font-mono">Ativo • Tempo Real</span>
-                </div>
-              </div>
-              
-              {/* Stats Row */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-                  <p className="text-[11px] text-muted-foreground mb-1">Vendas Hoje</p>
-                  <p className="text-xl font-display font-bold text-primary">R$ 4.2K</p>
-                </div>
-                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-                  <p className="text-[11px] text-muted-foreground mb-1">Conv. Média</p>
-                  <p className="text-xl font-display font-bold text-foreground">28%</p>
-                </div>
-              </div>
-
-              {/* Activity */}
-              <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4">
-                <p className="text-xs font-medium text-foreground mb-3">Atividade Recente</p>
-                <div className="space-y-3">
-                  {[
-                    { label: "Novo Pagamento Confirmado", val: "+ R$ 197,00", color: "text-primary" },
-                    { label: "Acesso Enviado ao Cliente", val: "Sucesso", color: "text-green-400" }
-                  ].map((item, i) => (
-                    <motion.div 
-                      key={i}
-                      className="flex items-center justify-between py-2 border-b border-white/[0.04] last:border-0"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={heroInView ? { opacity: 1, x: 0 } : {}}
-                      transition={{ delay: 1.2 + i * 0.15 }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-primary" />
-                        <span className="text-[11px] text-muted-foreground">{item.label}</span>
-                      </div>
-                      <span className={`text-[11px] font-semibold ${item.color}`}>{item.val}</span>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Floating notification */}
-            <motion.div
-              className="absolute -bottom-4 -left-8 glass rounded-xl p-3 flex items-center gap-2 shadow-2xl"
-              style={{ background: "rgba(255,255,255,0.03)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.08)" }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={heroInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 1.5 }}
-            >
-              <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold text-foreground">+23% esta semana</p>
-                <p className="text-[9px] text-muted-foreground">Vendas em alta</p>
-              </div>
+            Direto no Telegram
+          </motion.span>
+        </motion.h1>
+        
+        <motion.p 
+          className="text-lg md:text-xl max-w-2xl mx-auto mb-8 font-body text-muted-foreground leading-relaxed"
+          initial={{ opacity: 0, y: 40 }}
+          animate={heroInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        >
+          Crie seu bot de vendas automatizado com pagamento PIX, entrega instantânea e recuperação de carrinho. Sem código, sem complicação.
+        </motion.p>
+        
+        <motion.div 
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4 sm:px-0"
+          initial={{ opacity: 0, y: 40 }}
+          animate={heroInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <Link to="/auth" className="w-full sm:w-auto">
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base font-display font-medium btn-gradient rounded-2xl">
+                Começar Agora
+                <motion.div
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  <ArrowRight className="w-5 h-5" strokeWidth={1.5} />
+                </motion.div>
+              </Button>
             </motion.div>
+          </Link>
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="w-full sm:w-auto">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base font-display font-medium rounded-2xl border-white/10 hover:border-primary/40 hover:bg-white/[0.03] transition-all duration-300"
+              onClick={onOpenDemo}
+            >
+              <MessageCircle className="w-5 h-5" strokeWidth={1.5} />
+              Ver Demonstração
+            </Button>
           </motion.div>
-        </div>
+        </motion.div>
+
+        {/* Dashboard Mockup with 3D effect */}
+        <DashboardMockup />
+
+        {/* Stats with animated counters */}
+        <motion.div 
+          className="grid grid-cols-3 gap-4 md:gap-8 max-w-2xl mx-auto mt-16"
+          variants={staggerContainer}
+          initial="hidden"
+          animate={heroInView ? "visible" : "hidden"}
+        >
+          <motion.div className="text-center" variants={scaleIn}>
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
+              <AnimatedCounter value={500} suffix="+" delay={0.8} duration={1.5} />
+            </div>
+            <div className="text-xs sm:text-sm text-muted-foreground mt-1">Negócios Ativos</div>
+          </motion.div>
+          
+          <motion.div className="text-center" variants={scaleIn}>
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
+              <AnimatedCounter value={2} prefix="R$" suffix="M+" delay={0.9} duration={1.5} />
+            </div>
+            <div className="text-xs sm:text-sm text-muted-foreground mt-1">Vendas Processadas</div>
+          </motion.div>
+          
+          <motion.div className="text-center" variants={scaleIn}>
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
+              <AnimatedCounter value={98} suffix="%" delay={1} duration={1.5} />
+            </div>
+            <div className="text-xs sm:text-sm text-muted-foreground mt-1">Satisfação</div>
+          </motion.div>
+        </motion.div>
+
       </div>
     </section>
   );

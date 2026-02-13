@@ -2,17 +2,19 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { Header } from "@/components/landing/Header";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
-import { PartnersMarquee } from "@/components/landing/PartnersMarquee";
-import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
+import { ComparisonSection } from "@/components/landing/ComparisonSection";
+import { TargetAudienceSection } from "@/components/landing/TargetAudienceSection";
+import { TrustSection } from "@/components/landing/TrustSection";
+import { FAQSection } from "@/components/landing/FAQSection";
 import { CTASection } from "@/components/landing/CTASection";
 import { Footer } from "@/components/landing/Footer";
 import { MobileFloatingCTA } from "@/components/landing/MobileFloatingCTA";
-import { FlofluidBackground } from "@/components/landing/FlofluidBackground";
-import { MessageCircle } from "lucide-react";
+import { testimonials } from "@/components/landing/shared/data";
 
 // Lazy load heavy components
 const DemoModal = lazy(() => import("@/components/landing/DemoModal").then(m => ({ default: m.DemoModal })));
+const TestimonialsSection = lazy(() => import("@/components/ui/testimonials-with-marquee").then(m => ({ default: m.TestimonialsSection })));
 const PricingSection = lazy(() => import("@/components/landing/PricingSection").then(m => ({ default: m.PricingSection })));
 
 // Loading fallback for lazy components
@@ -31,34 +33,53 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-foreground overflow-x-hidden">
-      <FlofluidBackground />
+    <div className="min-h-screen bg-[#0a0a0a] text-foreground overflow-x-hidden">
+      {/* Header */}
       <Header onOpenDemo={() => setDemoOpen(true)} />
+
+      {/* Hero Section */}
       <HeroSection onOpenDemo={() => setDemoOpen(true)} />
-      <PartnersMarquee />
+
+      {/* Features Section */}
       <FeaturesSection />
-      <TestimonialsSection />
+
+      {/* How it Works */}
       <HowItWorksSection />
 
+      {/* Benefits Comparison Table */}
+      <ComparisonSection />
+
+      {/* Para Quem é Section */}
+      <TargetAudienceSection />
+
+      {/* Pricing Section */}
       <Suspense fallback={<SectionLoader />}>
         <PricingSection />
       </Suspense>
 
+      {/* Trust Section */}
+      <TrustSection />
+
+      {/* Testimonials Section */}
+      <Suspense fallback={<SectionLoader />}>
+        <TestimonialsSection
+          title="O que nossos clientes dizem"
+          description="Milhares de empreendedores já transformaram suas vendas com o Conversy."
+          testimonials={testimonials}
+        />
+      </Suspense>
+
+      {/* FAQ Section */}
+      <FAQSection />
+
+      {/* CTA Section */}
       <CTASection />
+
+      {/* Footer */}
       <Footer />
 
       {/* Mobile Floating CTA */}
       <MobileFloatingCTA />
-
-      {/* Floating Support Button */}
-      <a
-        href="https://t.me/conversy_suporte"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-24 md:bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30 hover:brightness-110 transition-all"
-      >
-        <MessageCircle className="w-6 h-6 text-primary-foreground" />
-      </a>
 
       {/* Demo Modal */}
       <Suspense fallback={null}>
