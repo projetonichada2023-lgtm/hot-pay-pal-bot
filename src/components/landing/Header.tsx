@@ -3,8 +3,9 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link } from "react-router-dom";
-import { ArrowRight, Menu, Zap } from "lucide-react";
-import conversyLogo from "@/assets/conversy-logo.png";
+import { ArrowRight, Menu } from "lucide-react";
+import conversyLogo from "@/assets/conversy-logo-new.png";
+import conversyIcon from "@/assets/conversy-icon-new.png";
 
 interface HeaderProps {
   onOpenDemo: () => void;
@@ -32,11 +33,9 @@ export function Header({ onOpenDemo }: HeaderProps) {
       transition={{ duration: 0.6, ease: "easeOut" }}
     >
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <motion.div className="flex items-center gap-2" whileHover={{ scale: 1.02 }}>
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Zap className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="font-display font-bold text-lg">Conversy</span>
+        <motion.div className="flex items-center" whileHover={{ scale: 1.02 }}>
+          <img src={conversyLogo} alt="Conversy" className="h-7 w-auto object-contain hidden sm:block" />
+          <img src={conversyIcon} alt="Conversy" className="h-8 w-auto object-contain sm:hidden" />
         </motion.div>
 
         {/* Desktop Navigation */}
@@ -76,10 +75,7 @@ export function Header({ onOpenDemo }: HeaderProps) {
             <SheetContent side="right" className="w-80 bg-black border-white/[0.06]">
               <div className="flex flex-col gap-6 mt-8">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                    <Zap className="w-4 h-4 text-primary-foreground" />
-                  </div>
-                  <span className="font-display font-bold text-lg">Conversy</span>
+                  <img src={conversyLogo} alt="Conversy" className="h-7 w-auto object-contain" />
                 </div>
                 <nav className="flex flex-col gap-4">
                   {["Produtos", "Recursos", "Preços"].map(item => (

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Zap, Instagram, Youtube, Send } from "lucide-react";
+import { Instagram, Youtube, Send } from "lucide-react";
+import conversyLogo from "@/assets/conversy-logo-new.png";
 
 export function Footer() {
   return (
@@ -15,11 +16,8 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Zap className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <span className="font-display font-bold text-lg">Conversy</span>
+            <div className="flex items-center mb-4">
+              <img src={conversyLogo} alt="Conversy" className="h-7 w-auto object-contain" />
             </div>
             <p className="text-sm text-muted-foreground mb-4">
               O padrão de excelência em automação para Telegram. Potencializando o mercado digital desde 2026.
