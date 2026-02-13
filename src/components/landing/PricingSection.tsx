@@ -53,7 +53,7 @@ const staggerItem = {
 
 export const PricingSection = () => {
   return (
-    <section id="preços" className="py-24 px-4 relative bg-black">
+    <section id="preços" className="py-16 md:py-24 px-4 relative bg-black">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[150px]" />
       </div>
@@ -66,7 +66,7 @@ export const PricingSection = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
+          <h2 className="text-2xl md:text-5xl mb-3 md:mb-4 font-display font-bold tracking-tight">
             Planos e Preços
           </h2>
           <p className="font-body text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
@@ -75,7 +75,7 @@ export const PricingSection = () => {
         </motion.div>
 
         <motion.div
-          className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 max-w-5xl mx-auto"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -98,25 +98,25 @@ export const PricingSection = () => {
                 )}
 
                 <div className={`landing-feature-card relative rounded-3xl h-full flex flex-col ${plan.popular ? "ring-1 ring-primary/30" : ""}`}>
-                  <h3 className="text-xl font-display font-semibold mb-1">{plan.name}</h3>
-                  <p className="text-sm font-body text-muted-foreground mb-4">{plan.desc}</p>
+                  <h3 className="text-base md:text-xl font-display font-semibold mb-1">{plan.name}</h3>
+                  <p className="text-xs font-body text-muted-foreground mb-3 md:mb-4 hidden sm:block">{plan.desc}</p>
                   
-                  <div className="flex items-baseline gap-1 mb-6">
+                  <div className="flex items-baseline gap-1 mb-4 md:mb-6">
                     {plan.price === "Sob Consulta" ? (
-                      <span className="text-2xl font-display font-bold">Sob Consulta</span>
+                      <span className="text-lg md:text-2xl font-display font-bold">Sob Consulta</span>
                     ) : (
                       <>
-                        <span className="text-sm text-muted-foreground">R$</span>
-                        <span className="text-5xl font-display font-bold">{plan.price}</span>
+                        <span className="text-xs text-muted-foreground">R$</span>
+                        <span className="text-3xl md:text-5xl font-display font-bold">{plan.price}</span>
                       </>
                     )}
                   </div>
 
-                  <div className="flex-1 space-y-3 mb-6">
+                  <div className="flex-1 space-y-2 md:space-y-3 mb-4 md:mb-6">
                     {plan.features.map((f) => (
-                      <div key={f} className="flex items-center gap-3 text-sm">
-                        <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                          <Check className="w-3 h-3 text-primary" strokeWidth={2} />
+                      <div key={f} className="flex items-center gap-2 md:gap-3 text-xs md:text-sm">
+                        <div className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                          <Check className="w-2.5 h-2.5 md:w-3 md:h-3 text-primary" strokeWidth={2} />
                         </div>
                         <span className="font-body text-muted-foreground">{f}</span>
                       </div>
@@ -124,7 +124,7 @@ export const PricingSection = () => {
                   </div>
 
                   <Link to="/auth" className="block">
-                    <Button className={`w-full gap-2 h-12 rounded-xl font-display font-medium ${
+                    <Button className={`w-full gap-2 h-10 md:h-12 rounded-xl font-display font-medium text-xs md:text-sm ${
                       plan.popular
                         ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 cta-shine"
                         : "bg-white/5 hover:bg-white/10 text-foreground border border-white/10"

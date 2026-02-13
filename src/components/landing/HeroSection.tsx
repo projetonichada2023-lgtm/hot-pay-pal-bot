@@ -14,7 +14,7 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
   const heroInView = useInView(heroRef, { once: true });
 
   return (
-    <section ref={heroRef} className="pt-32 pb-20 px-4 relative overflow-hidden min-h-screen flex items-center">
+    <section ref={heroRef} className="pt-24 md:pt-32 pb-12 md:pb-20 px-4 relative overflow-hidden min-h-[80vh] md:min-h-screen flex items-center">
       {/* Pure black background with subtle orange glow */}
       <div className="absolute inset-0 z-0 bg-black">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,rgba(255,92,0,0.08),transparent_70%)]" />
@@ -35,7 +35,7 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
             </motion.div>
             
             <motion.h1 
-              className="text-4xl md:text-5xl lg:text-7xl leading-[1.05] mb-6 font-display font-bold tracking-tight"
+              className="text-3xl md:text-5xl lg:text-7xl leading-[1.05] mb-4 md:mb-6 font-display font-bold tracking-tight"
               initial={{ opacity: 0, y: 50 }}
               animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
@@ -53,7 +53,7 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
             </motion.h1>
             
             <motion.p 
-              className="text-lg md:text-xl max-w-lg mb-8 font-body text-muted-foreground leading-relaxed"
+              className="text-base md:text-xl max-w-lg mb-6 md:mb-8 font-body text-muted-foreground leading-relaxed"
               initial={{ opacity: 0, y: 40 }}
               animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.7, delay: 0.5 }}
@@ -91,7 +91,7 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
 
             {/* Stats */}
             <motion.div 
-              className="flex items-center gap-8 mt-12"
+              className="flex items-center gap-6 md:gap-8 mt-8 md:mt-12"
               initial={{ opacity: 0 }}
               animate={heroInView ? { opacity: 1 } : {}}
               transition={{ duration: 0.6, delay: 0.9 }}

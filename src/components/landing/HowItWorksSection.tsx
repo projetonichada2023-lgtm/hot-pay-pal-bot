@@ -26,7 +26,7 @@ const steps = [
 
 export function HowItWorksSection() {
   return (
-    <section className="py-24 px-4 relative bg-black">
+    <section className="py-16 md:py-24 px-4 relative bg-black">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_50%_50%,rgba(255,92,0,0.03),transparent_70%)] pointer-events-none" />
 
       <div className="container mx-auto relative z-10">

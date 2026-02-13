@@ -13,7 +13,7 @@ export function MobileFloatingCTA() {
         transition={{ delay: 1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       >
         <Link to="/auth" className="block">
-          <Button className="w-full h-14 text-lg gap-2 shadow-lg shadow-primary/30 font-display font-medium cta-shine btn-gradient rounded-xl">
+          <Button className="w-full h-12 text-base gap-2 shadow-lg shadow-primary/30 font-display font-medium cta-shine btn-gradient rounded-xl">
             Começar Grátis Agora
             <ArrowRight className="w-5 h-5" strokeWidth={1.5} />
           </Button>

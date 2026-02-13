@@ -26,11 +26,11 @@ const reviews = [
 
 export function TestimonialsSection() {
   return (
-    <section id="depoimentos" className="py-24 px-4 relative bg-black">
+    <section id="depoimentos" className="py-16 md:py-24 px-4 relative bg-black">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_50%_50%,rgba(255,92,0,0.03),transparent_70%)] pointer-events-none" />
 
       <div className="container mx-auto relative z-10">
-        <ScrollReveal className="text-center mb-16">
+        <ScrollReveal className="text-center mb-10 md:mb-16">
           <div className="flex items-center justify-center gap-1 mb-4">
             {[1, 2, 3, 4, 5].map(s => (
               <Star key={s} className="w-5 h-5 fill-primary text-primary" />
@@ -48,7 +48,7 @@ export function TestimonialsSection() {
         </ScrollReveal>
 
         <motion.div
-          className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"

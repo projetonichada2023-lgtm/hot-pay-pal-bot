@@ -7,7 +7,7 @@ import { scaleIn } from "./shared/animations";
 
 export function CTASection() {
   return (
-    <section className="py-24 px-4 bg-black">
+    <section className="py-16 md:py-24 px-4 bg-black">
       <div className="container mx-auto">
         <ScrollReveal variants={scaleIn}>
           <div className="landing-feature-card !p-10 md:!p-16 text-center relative overflow-hidden rounded-[2rem]">
