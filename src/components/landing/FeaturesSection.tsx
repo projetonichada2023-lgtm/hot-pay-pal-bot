@@ -38,13 +38,13 @@ export function FeaturesSection() {
       <div className="container mx-auto relative z-10">
         <ScrollReveal className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
-            O motor do seu{" "}
-            <span className="text-primary" style={{ textShadow: "0 0 30px rgba(255, 92, 0, 0.3)" }}>
-              Império Digital.
+            Tudo o que precisa para{" "}
+            <span className="text-primary" style={{ textShadow: "0 0 30px hsl(24 100% 55% / 0.3)" }}>
+              vender mais.
             </span>
           </h2>
           <p className="font-body text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
-            Desenvolvemos as ferramentas necessárias para que a tecnologia não seja uma barreira para o seu lucro.
+            Ferramentas poderosas que eliminam o trabalho manual e maximizam cada oportunidade de venda.
           </p>
         </ScrollReveal>
         

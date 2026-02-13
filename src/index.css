@@ -80,8 +80,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 0%;
 
-    /* Conversy Primary: #FF5C00 → HSL 22, 100%, 50% */
-    --primary: 22 100% 50%;
+    /* Conversy Primary: #FF6B1A → HSL 24, 100%, 55% */
+    --primary: 24 100% 55%;
     --primary-foreground: 0 0% 100%;
 
     /* Conversy Primary Dark */
@@ -142,8 +142,8 @@
     --popover: 0 0% 6%;
     --popover-foreground: 0 0% 96%;
 
-    /* Conversy Primary: #FF5C00 → HSL 22, 100%, 50% */
-    --primary: 22 100% 50%;
+    /* Conversy Primary: #FF6B1A → HSL 24, 100%, 55% */
+    --primary: 24 100% 55%;
     --primary-foreground: 0 0% 100%;
 
     /* Conversy Primary Dark */

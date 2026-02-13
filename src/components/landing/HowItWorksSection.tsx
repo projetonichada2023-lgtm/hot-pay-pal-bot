@@ -35,11 +35,10 @@ export function HowItWorksSection() {
           <div>
             <ScrollReveal>
               <h2 className="text-3xl md:text-5xl mb-10 font-display font-bold tracking-tight">
-                Em apenas{" "}
-                <span className="text-primary" style={{ textShadow: "0 0 30px rgba(255, 92, 0, 0.3)" }}>
-                  3 passos
-                </span>{" "}
-                simples.
+                Comece a vender em{" "}
+                <span className="text-primary" style={{ textShadow: "0 0 30px hsl(24 100% 55% / 0.3)" }}>
+                  3 minutos.
+                </span>
               </h2>
             </ScrollReveal>
 

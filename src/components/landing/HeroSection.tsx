@@ -31,7 +31,7 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary mb-6"
             >
               <Zap className="w-4 h-4" />
-              <span>Padrões Iniciais 2026</span>
+              <span>Plataforma #1 em Automação Telegram</span>
             </motion.div>
             
             <motion.h1 
@@ -40,7 +40,7 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
               animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
             >
-              Venda{" "}
+              Automatize.{" "}
               <motion.span 
                 className="text-primary"
                 initial={{ opacity: 0 }}
@@ -48,7 +48,7 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
                 transition={{ duration: 0.8, delay: 0.4 }}
                 style={{ textShadow: "0 0 30px rgba(255, 92, 0, 0.4)" }}
               >
-                No Automático.
+                Escale. Lucre.
               </motion.span>
             </motion.h1>
             
@@ -58,7 +58,7 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
               animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.7, delay: 0.5 }}
             >
-              A infraestrutura definitiva para monetizar grupos e canais no Telegram com checkout PIX e entrega instantânea.
+              Transforme o seu Telegram numa máquina de vendas com checkout PIX, entrega automática e gestão inteligente de membros.
             </motion.p>
             
             <motion.div 
@@ -70,7 +70,7 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
               <Link to="/auth" className="w-full sm:w-auto">
                 <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                   <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 sm:h-12 text-lg sm:text-base font-display font-medium btn-gradient rounded-2xl">
-                    Abrir Minha Loja
+                    Começar Grátis
                     <motion.div animate={{ x: [0, 5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
                       <ArrowRight className="w-5 h-5" strokeWidth={1.5} />
                     </motion.div>
@@ -98,12 +98,12 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
             >
               <div>
                 <div className="text-2xl md:text-3xl font-display font-bold text-primary" style={{ textShadow: "0 0 20px rgba(255, 92, 0, 0.3)" }}>R$ 20M+</div>
-                <div className="text-xs text-muted-foreground mt-1">Processados</div>
+                <div className="text-xs text-muted-foreground mt-1">em Vendas Processadas</div>
               </div>
               <div className="w-px h-10 bg-white/10" />
               <div>
                 <div className="text-2xl md:text-3xl font-display font-bold text-primary" style={{ textShadow: "0 0 20px rgba(255, 92, 0, 0.3)" }}>5.000+</div>
-                <div className="text-xs text-muted-foreground mt-1">Utilizadores</div>
+                <div className="text-xs text-muted-foreground mt-1">Empreendedores Ativos</div>
               </div>
             </motion.div>
           </div>
@@ -126,8 +126,6 @@ export function HeroSection({ onOpenDemo }: HeroSectionProps) {
                   <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
                   <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
                   <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
                 </div>
                 <div className="flex items-center gap-2 ml-2">
                   <img src={conversyIcon} alt="Conversy" className="h-5 w-auto" />
