@@ -32,7 +32,8 @@ import {
   ChevronRight,
   Boxes,
   Wallet,
-  CreditCard
+  CreditCard,
+  UserPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -70,6 +71,7 @@ const menuGroups = [
     label: 'Gestão',
     items: [
       { icon: Wallet, label: 'Financeiro', path: '/dashboard/balance' },
+      { icon: UserPlus, label: 'Afiliados', path: '/affiliate' },
       { icon: Boxes, label: 'Meus Bots', path: '/dashboard/bots' },
       { icon: Smartphone, label: 'Simulador', path: '/dashboard/simulator' },
       { icon: Settings, label: 'Configurações', path: '/dashboard/settings' },
