@@ -334,7 +334,7 @@
 
   /* Modern SaaS Landing Cards */
   .landing-feature-card {
-    @apply relative overflow-hidden rounded-2xl p-8;
+    @apply relative overflow-hidden rounded-2xl p-4 md:p-8;
     background: hsl(0 0% 8%);
     border: 1px solid hsl(0 0% 100% / 0.08);
     box-shadow: 
