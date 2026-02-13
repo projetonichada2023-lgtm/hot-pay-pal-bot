@@ -80,15 +80,15 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 0%;
 
-    /* Conversy Primary: RGB 240, 137, 54 → HSL 27, 87%, 58% - #F08936 */
-    --primary: 27 87% 58%;
+    /* Conversy Primary: #FF5C00 → HSL 22, 100%, 50% */
+    --primary: 22 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    /* Conversy Primary Dark: #C46B4E */
-    --primary-dark: 15 47% 54%;
+    /* Conversy Primary Dark */
+    --primary-dark: 18 90% 42%;
 
-    /* Conversy Primary Light: #F1955E */
-    --primary-light: 23 84% 65%;
+    /* Conversy Primary Light */
+    --primary-light: 25 100% 60%;
 
     --secondary: 220 15% 94%;
     --secondary-foreground: 0 0% 0%;
@@ -142,15 +142,15 @@
     --popover: 0 0% 6%;
     --popover-foreground: 0 0% 96%;
 
-    /* Conversy Primary: RGB 240, 137, 54 → HSL 27, 87%, 58% - #F08936 */
-    --primary: 27 87% 58%;
+    /* Conversy Primary: #FF5C00 → HSL 22, 100%, 50% */
+    --primary: 22 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    /* Conversy Primary Dark: #C46B4E */
-    --primary-dark: 15 47% 54%;
+    /* Conversy Primary Dark */
+    --primary-dark: 18 90% 42%;
 
-    /* Conversy Primary Light: #F1955E */
-    --primary-light: 23 84% 65%;
+    /* Conversy Primary Light */
+    --primary-light: 25 100% 60%;
 
     --secondary: 0 0% 10%;
     --secondary-foreground: 0 0% 96%;
