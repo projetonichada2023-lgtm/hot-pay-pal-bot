@@ -3,7 +3,8 @@ import { Header } from "@/components/landing/Header";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { PartnersMarquee } from "@/components/landing/PartnersMarquee";
-import { FAQSection } from "@/components/landing/FAQSection";
+import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
+import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { CTASection } from "@/components/landing/CTASection";
 import { Footer } from "@/components/landing/Footer";
 import { MobileFloatingCTA } from "@/components/landing/MobileFloatingCTA";
@@ -32,8 +33,10 @@ export default function Landing() {
     <div className="min-h-screen bg-black text-foreground overflow-x-hidden">
       <Header onOpenDemo={() => setDemoOpen(true)} />
       <HeroSection onOpenDemo={() => setDemoOpen(true)} />
-      <FeaturesSection />
       <PartnersMarquee />
+      <FeaturesSection />
+      <TestimonialsSection />
+      <HowItWorksSection />
 
       <Suspense fallback={<SectionLoader />}>
         <PricingSection />

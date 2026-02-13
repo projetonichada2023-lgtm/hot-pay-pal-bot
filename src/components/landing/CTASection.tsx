@@ -35,13 +35,13 @@ export function CTASection() {
               </motion.div>
               
               <h2 className="text-3xl md:text-5xl mb-5 font-display font-bold tracking-tight">
-                Pronto para{" "}
+                O Futuro é{" "}
                 <span className="text-primary" style={{ textShadow: "0 0 30px rgba(255, 92, 0, 0.4)" }}>
-                  Expandir?
+                  Conversacional.
                 </span>
               </h2>
               <p className="font-body text-muted-foreground text-lg max-w-xl mx-auto mb-10 leading-relaxed">
-                Pare de responder clientes manualmente. Automatize a sua operação e foque no crescimento do seu negócio digital.
+                Não fique para trás. A era do 1-a-1 manual acabou. Automatize agora e comece a escalar hoje mesmo.
               </p>
               
               <Link to="/auth">
