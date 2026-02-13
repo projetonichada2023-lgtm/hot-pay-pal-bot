@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check, Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { SectionTag } from "./SectionTag";
 
 const plans = [
   {
@@ -53,19 +54,16 @@ const staggerItem = {
 
 export const PricingSection = () => {
   return (
-    <section id="preços" className="py-16 md:py-24 px-4 relative bg-black">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[150px]" />
-      </div>
-      
+    <section id="preços" className="py-16 md:py-24 px-4 relative">
       <div className="container mx-auto relative z-10">
         <motion.div
-          className="text-center mb-16"
+          className="text-center mb-10 md:mb-16"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
+          <SectionTag>Preços</SectionTag>
           <h2 className="text-2xl md:text-5xl mb-3 md:mb-4 font-display font-bold tracking-tight">
             Planos e Preços
           </h2>
@@ -124,12 +122,12 @@ export const PricingSection = () => {
                   </div>
 
                   <Link to="/auth" className="block">
-                    <Button className={`w-full gap-2 h-10 md:h-12 rounded-xl font-display font-medium text-xs md:text-sm ${
+                    <Button className={`w-full gap-2 h-10 md:h-12 rounded-xl font-display font-medium text-xs md:text-sm uppercase tracking-wide ${
                       plan.popular
                         ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 cta-shine"
                         : "bg-white/5 hover:bg-white/10 text-foreground border border-white/10"
                     }`}>
-                      Selecionar {plan.name}
+                      Escolher Plano
                       <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
                     </Button>
                   </Link>

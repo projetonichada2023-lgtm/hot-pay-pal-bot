@@ -56,8 +56,8 @@ export function Header({ onOpenDemo }: HeaderProps) {
           </Link>
           <Link to="/auth">
             <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-              <Button size="sm" className="gap-2 btn-gradient rounded-xl">
-                Começar
+              <Button size="sm" className="gap-2 btn-gradient rounded-xl uppercase tracking-wider text-xs font-display font-medium">
+                COMEÇAR AGORA
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </motion.div>
