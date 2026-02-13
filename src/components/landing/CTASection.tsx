@@ -35,13 +35,13 @@ export function CTASection() {
               </motion.div>
               
               <h2 className="text-3xl md:text-5xl mb-5 font-display font-bold tracking-tight">
-                O Futuro é{" "}
-                <span className="text-primary" style={{ textShadow: "0 0 30px rgba(255, 92, 0, 0.4)" }}>
-                  Conversacional.
+                Pronto para{" "}
+                <span className="text-primary" style={{ textShadow: "0 0 30px hsl(24 100% 55% / 0.4)" }}>
+                  Escalar?
                 </span>
               </h2>
               <p className="font-body text-muted-foreground text-lg max-w-xl mx-auto mb-10 leading-relaxed">
-                Não fique para trás. A era do 1-a-1 manual acabou. Automatize agora e comece a escalar hoje mesmo.
+                Junte-se a milhares de empreendedores que já automatizaram as vendas no Telegram. Comece grátis, sem cartão de crédito.
               </p>
               
               <Link to="/auth">

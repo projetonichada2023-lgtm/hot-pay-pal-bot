@@ -37,13 +37,13 @@ export function TestimonialsSection() {
             ))}
           </div>
           <h2 className="text-3xl md:text-5xl mb-4 font-display font-bold tracking-tight">
-            Quem usa,{" "}
-            <span className="text-primary" style={{ textShadow: "0 0 30px rgba(255, 92, 0, 0.3)" }}>
-              Escala.
+            Resultados{" "}
+            <span className="text-primary" style={{ textShadow: "0 0 30px hsl(24 100% 55% / 0.3)" }}>
+              Reais.
             </span>
           </h2>
           <p className="font-body text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
-            Milhares de empreendedores que transformaram o Telegram num canal lucrativo.
+            Veja como empreendedores estão a faturar mais com menos esforço usando a Conversy.
           </p>
         </ScrollReveal>
 
