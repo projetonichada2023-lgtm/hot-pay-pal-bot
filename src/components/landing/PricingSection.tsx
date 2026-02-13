@@ -5,24 +5,31 @@ import { Link } from "react-router-dom";
 
 const plans = [
   {
-    name: "Inicial",
+    name: "Gratuito",
     price: "0",
     desc: "Para validar a ideia.",
-    features: ["1 Bot Ativo", "Taxa 2.0% / venda", "Entrega Manual", "Suporte Email"],
+    features: ["1 Bot Ativo", "Taxa R$ 0,80 / venda", "Sem Upsells", "Suporte Email"],
+    popular: false,
+  },
+  {
+    name: "Básico",
+    price: "49",
+    desc: "Para quem está a começar a escalar.",
+    features: ["2 Bots Ativos", "500 Pedidos / mês", "2 Upsells", "Taxa R$ 0,60 / venda"],
     popular: false,
   },
   {
     name: "Profissional",
     price: "97",
     desc: "O plano favorito dos produtores.",
-    features: ["5 Bots Ativos", "Taxa 0.5% / venda", "Recuperação Automática", "Upsells Ilimitados"],
+    features: ["5 Bots Ativos", "Pedidos Ilimitados", "Upsells Ilimitados", "Taxa R$ 0,50 / venda"],
     popular: true,
   },
   {
-    name: "Empresa",
-    price: "247",
-    desc: "Foco total em escala.",
-    features: ["Bots Ilimitados", "Zero Taxa / venda", "API Whitelabel", "Suporte 24/7 VIP"],
+    name: "Enterprise",
+    price: "Sob Consulta",
+    desc: "Solução personalizada para escala.",
+    features: ["Bots Ilimitados", "Recursos Ilimitados", "Suporte 24/7 VIP", "Infraestrutura Dedicada"],
     popular: false,
   },
 ];
@@ -68,7 +75,7 @@ export const PricingSection = () => {
         </motion.div>
 
         <motion.div
-          className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto"
+          className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -95,8 +102,14 @@ export const PricingSection = () => {
                   <p className="text-sm font-body text-muted-foreground mb-4">{plan.desc}</p>
                   
                   <div className="flex items-baseline gap-1 mb-6">
-                    <span className="text-sm text-muted-foreground">R$</span>
-                    <span className="text-5xl font-display font-bold">{plan.price}</span>
+                    {plan.price === "Sob Consulta" ? (
+                      <span className="text-2xl font-display font-bold">Sob Consulta</span>
+                    ) : (
+                      <>
+                        <span className="text-sm text-muted-foreground">R$</span>
+                        <span className="text-5xl font-display font-bold">{plan.price}</span>
+                      </>
+                    )}
                   </div>
 
                   <div className="flex-1 space-y-3 mb-6">
