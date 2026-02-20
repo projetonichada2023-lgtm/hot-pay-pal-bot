@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useAffiliate } from "@/hooks/useAffiliate";
 import { useAuth } from "@/hooks/useAuth";
-import { useClient } from "@/hooks/useClient";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AffiliateOverview } from "@/components/affiliate/AffiliateOverview";
@@ -11,8 +10,7 @@ import { AffiliateSettings } from "@/components/affiliate/AffiliateSettings";
 import { AffiliateSubAffiliates } from "@/components/affiliate/AffiliateSubAffiliates";
 import { AffiliateRegister } from "@/components/affiliate/AffiliateRegister";
 import { AffiliatePending } from "@/components/affiliate/AffiliatePending";
-import { Sidebar } from "@/components/dashboard/Sidebar";
-import { BotProvider } from "@/contexts/BotContext";
+import { AffiliateHeader } from "@/components/affiliate/AffiliateHeader";
 import { 
   LayoutDashboard, 
   Link2, 
@@ -26,11 +24,10 @@ import { Loader2 } from "lucide-react";
 
 const AffiliateDashboard = () => {
   const { user, signOut, loading: authLoading } = useAuth();
-  const { data: client, isLoading: clientLoading } = useClient();
-  const { affiliate, isLoading, isApproved } = useAffiliate();
+  const { affiliate, isLoading } = useAffiliate();
   const [activeTab, setActiveTab] = useState("overview");
 
-  if (authLoading || isLoading || clientLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -42,17 +39,14 @@ const AffiliateDashboard = () => {
     return <Navigate to="/affiliate/auth" replace />;
   }
 
-  // User is logged in but not registered as affiliate
   if (!affiliate) {
     return <AffiliateRegister />;
   }
 
-  // Affiliate is pending approval
   if (affiliate.status === "pending") {
     return <AffiliatePending />;
   }
 
-  // Affiliate is rejected or suspended
   if (affiliate.status === "rejected" || affiliate.status === "suspended") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -74,70 +68,59 @@ const AffiliateDashboard = () => {
     );
   }
 
-  const content = (
-    <div className="min-h-screen bg-background flex w-full">
-      {client && <Sidebar client={client} />}
-      <div className="flex-1 min-w-0 overflow-x-hidden">
-        <main className="p-4 md:p-8">
-          <div className="mb-6">
-            <h1 className="text-2xl font-display font-bold">Painel de Afiliados</h1>
-            <p className="text-muted-foreground">Gerencie seus links e acompanhe suas comissões</p>
-          </div>
+  return (
+    <div className="min-h-screen bg-background flex flex-col w-full">
+      <AffiliateHeader affiliateName={affiliate.name} />
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full max-w-lg grid-cols-5">
-              <TabsTrigger value="overview" className="gap-2">
-                <LayoutDashboard className="w-4 h-4" />
-                <span className="hidden sm:inline">Visão Geral</span>
-              </TabsTrigger>
-              <TabsTrigger value="links" className="gap-2">
-                <Link2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Links</span>
-              </TabsTrigger>
-              <TabsTrigger value="sub-affiliates" className="gap-2">
-                <Users className="w-4 h-4" />
-                <span className="hidden sm:inline">Subs</span>
-              </TabsTrigger>
-              <TabsTrigger value="commissions" className="gap-2">
-                <DollarSign className="w-4 h-4" />
-                <span className="hidden sm:inline">Comissões</span>
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="gap-2">
-                <Settings className="w-4 h-4" />
-                <span className="hidden sm:inline">Config</span>
-              </TabsTrigger>
-            </TabsList>
+      <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full">
+        <div className="mb-6">
+          <h1 className="text-2xl font-display font-bold">Painel de Afiliados</h1>
+          <p className="text-muted-foreground">Gerencie seus links e acompanhe suas comissões</p>
+        </div>
 
-            <TabsContent value="overview">
-              <AffiliateOverview />
-            </TabsContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full max-w-lg grid-cols-5">
+            <TabsTrigger value="overview" className="gap-2">
+              <LayoutDashboard className="w-4 h-4" />
+              <span className="hidden sm:inline">Visão Geral</span>
+            </TabsTrigger>
+            <TabsTrigger value="links" className="gap-2">
+              <Link2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Links</span>
+            </TabsTrigger>
+            <TabsTrigger value="sub-affiliates" className="gap-2">
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Subs</span>
+            </TabsTrigger>
+            <TabsTrigger value="commissions" className="gap-2">
+              <DollarSign className="w-4 h-4" />
+              <span className="hidden sm:inline">Comissões</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2">
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">Config</span>
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="links">
-              <AffiliateLinks />
-            </TabsContent>
-
-            <TabsContent value="sub-affiliates">
-              <AffiliateSubAffiliates />
-            </TabsContent>
-
-            <TabsContent value="commissions">
-              <AffiliateCommissions />
-            </TabsContent>
-
-            <TabsContent value="settings">
-              <AffiliateSettings />
-            </TabsContent>
-          </Tabs>
-        </main>
-      </div>
+          <TabsContent value="overview">
+            <AffiliateOverview />
+          </TabsContent>
+          <TabsContent value="links">
+            <AffiliateLinks />
+          </TabsContent>
+          <TabsContent value="sub-affiliates">
+            <AffiliateSubAffiliates />
+          </TabsContent>
+          <TabsContent value="commissions">
+            <AffiliateCommissions />
+          </TabsContent>
+          <TabsContent value="settings">
+            <AffiliateSettings />
+          </TabsContent>
+        </Tabs>
+      </main>
     </div>
   );
-
-  if (client) {
-    return <BotProvider clientId={client.id}>{content}</BotProvider>;
-  }
-
-  return content;
 };
 
 export default AffiliateDashboard;
