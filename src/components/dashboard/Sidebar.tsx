@@ -153,7 +153,7 @@ export const Sidebar = ({ client }: SidebarProps) => {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed md:relative z-40 h-screen bg-black border-r border-border/50 transition-all duration-300',
+          'fixed md:relative z-40 h-screen bg-sidebar border-r border-border/50 transition-all duration-300',
           isMobileOpen ? 'w-64 translate-x-0' : '-translate-x-full md:translate-x-0',
           !isMobileOpen && (isCollapsed ? 'md:w-16' : 'md:w-64')
         )}
