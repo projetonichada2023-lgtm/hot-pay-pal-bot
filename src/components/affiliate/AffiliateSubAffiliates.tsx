@@ -15,7 +15,7 @@ export const AffiliateSubAffiliates = () => {
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
   const refCode = links[0]?.code || affiliate?.id?.slice(0, 8).toUpperCase() || "";
-  const inviteUrl = `https://conversyapp.com/affiliate?ref=${refCode}`;
+  const inviteUrl = `https://conversyapp.com/affiliate/auth?ref=${refCode}`;
 
   const copyInviteLink = () => {
     navigator.clipboard.writeText(inviteUrl);
