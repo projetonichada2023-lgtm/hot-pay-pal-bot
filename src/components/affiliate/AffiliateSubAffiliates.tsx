@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { Copy, Users, DollarSign, Loader2, Save } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Copy, Users, DollarSign, Loader2, Save, CheckCircle, XCircle, Ban } from "lucide-react";
 import { toast } from "sonner";
 
 export const AffiliateSubAffiliates = () => {
-  const { affiliate, subAffiliates, stats, links, updateSubAffiliateRate } = useAffiliate();
+  const { affiliate, subAffiliates, stats, links, updateSubAffiliateRate, updateSubAffiliateStatus } = useAffiliate();
   const [editingRates, setEditingRates] = useState<Record<string, number>>({});
 
   const formatCurrency = (value: number) =>
@@ -115,23 +116,66 @@ export const AffiliateSubAffiliates = () => {
                           Desde {new Date(sub.created_at).toLocaleDateString("pt-BR")}
                         </p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right space-y-1">
                         <p className="font-medium text-primary">
                           {formatCurrency(sub.total_earnings || 0)}
                         </p>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            sub.status === "approved"
-                              ? "bg-emerald-500/10 text-emerald-500"
-                              : sub.status === "pending"
-                              ? "bg-yellow-500/10 text-yellow-500"
-                              : "bg-destructive/10 text-destructive"
-                          }`}
+                        <Badge
+                          variant={
+                            sub.status === "approved" ? "default" :
+                            sub.status === "pending" ? "secondary" : "destructive"
+                          }
                         >
-                          {sub.status === "approved" ? "Aprovado" : sub.status === "pending" ? "Pendente" : sub.status}
-                        </span>
+                          {sub.status === "approved" ? "Aprovado" : sub.status === "pending" ? "Pendente" : sub.status === "rejected" ? "Rejeitado" : "Suspenso"}
+                        </Badge>
                       </div>
                     </div>
+
+                    {/* Approve/Reject actions for pending subs */}
+                    {sub.status === "pending" && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="gap-1"
+                          onClick={() => updateSubAffiliateStatus.mutate({ subId: sub.id, status: "approved" })}
+                          disabled={updateSubAffiliateStatus.isPending}
+                        >
+                          <CheckCircle className="w-3 h-3" /> Aprovar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="gap-1"
+                          onClick={() => updateSubAffiliateStatus.mutate({ subId: sub.id, status: "rejected" })}
+                          disabled={updateSubAffiliateStatus.isPending}
+                        >
+                          <XCircle className="w-3 h-3" /> Rejeitar
+                        </Button>
+                      </div>
+                    )}
+                    {sub.status === "approved" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => updateSubAffiliateStatus.mutate({ subId: sub.id, status: "suspended" })}
+                        disabled={updateSubAffiliateStatus.isPending}
+                      >
+                        <Ban className="w-3 h-3" /> Suspender
+                      </Button>
+                    )}
+                    {(sub.status === "suspended" || sub.status === "rejected") && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => updateSubAffiliateStatus.mutate({ subId: sub.id, status: "approved" })}
+                        disabled={updateSubAffiliateStatus.isPending}
+                      >
+                        <CheckCircle className="w-3 h-3" /> Reativar
+                      </Button>
+                    )}
 
                     {/* Per-sub rate slider */}
                     <div className="space-y-2">
