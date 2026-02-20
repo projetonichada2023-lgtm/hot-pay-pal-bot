@@ -39,7 +39,7 @@ const AffiliateDashboard = () => {
   }
 
   if (!user) {
-    return <Navigate to="/auth?redirect=/affiliate" replace />;
+    return <Navigate to="/affiliate/auth" replace />;
   }
 
   // User is logged in but not registered as affiliate

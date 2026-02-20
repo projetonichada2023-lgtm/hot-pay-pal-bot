@@ -18,8 +18,9 @@ import InstallApp from "./pages/InstallApp";
 import { AdminRoute } from "./components/admin/AdminRoute";
 import { AdminLayout } from "./pages/admin/AdminLayout";
 
-// Lazy load affiliate dashboard
+// Lazy load affiliate pages
 const AffiliateDashboard = lazy(() => import("./pages/affiliate/AffiliateDashboard"));
+const AffiliateAuth = lazy(() => import("./pages/affiliate/AffiliateAuth"));
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,14 @@ const App = () => (
                 <AdminRoute>
                   <AdminLayout />
                 </AdminRoute>
+              }
+            />
+            <Route
+              path="/affiliate/auth"
+              element={
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <AffiliateAuth />
+                </Suspense>
               }
             />
             <Route
