@@ -6,7 +6,8 @@ import {
   MousePointerClick, 
   TrendingUp,
   Clock,
-  CheckCircle
+  CheckCircle,
+  UserPlus
 } from "lucide-react";
 
 export const AffiliateOverview = () => {
@@ -82,8 +83,8 @@ export const AffiliateOverview = () => {
         </Card>
       </div>
 
-      {/* Pending vs Paid */}
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Pending vs Paid vs Indirect */}
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Comissões Pendentes</CardTitle>
@@ -110,6 +111,21 @@ export const AffiliateOverview = () => {
             </div>
             <p className="text-xs text-muted-foreground">
               Já recebido
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ganhos de Subafiliados</CardTitle>
+            <UserPlus className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-500">
+              {formatCurrency(stats.indirectEarnings)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {stats.totalSubAffiliates} subafiliado(s)
             </p>
           </CardContent>
         </Card>

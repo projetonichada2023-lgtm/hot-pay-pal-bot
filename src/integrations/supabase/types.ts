@@ -50,7 +50,9 @@ export type Database = {
           id: string
           order_id: string | null
           paid_at: string | null
+          source: string
           status: string
+          sub_affiliate_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -61,7 +63,9 @@ export type Database = {
           id?: string
           order_id?: string | null
           paid_at?: string | null
+          source?: string
           status?: string
+          sub_affiliate_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -72,7 +76,9 @@ export type Database = {
           id?: string
           order_id?: string | null
           paid_at?: string | null
+          source?: string
           status?: string
+          sub_affiliate_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -95,6 +101,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_commissions_sub_affiliate_id_fkey"
+            columns: ["sub_affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
             referencedColumns: ["id"]
           },
         ]
@@ -176,10 +189,12 @@ export type Database = {
           email: string
           id: string
           name: string
+          parent_affiliate_id: string | null
           phone: string | null
           pix_key: string | null
           pix_key_type: string | null
           status: Database["public"]["Enums"]["affiliate_status"]
+          sub_commission_rate: number
           total_earnings: number | null
           total_referrals: number | null
           updated_at: string | null
@@ -193,10 +208,12 @@ export type Database = {
           email: string
           id?: string
           name: string
+          parent_affiliate_id?: string | null
           phone?: string | null
           pix_key?: string | null
           pix_key_type?: string | null
           status?: Database["public"]["Enums"]["affiliate_status"]
+          sub_commission_rate?: number
           total_earnings?: number | null
           total_referrals?: number | null
           updated_at?: string | null
@@ -210,10 +227,12 @@ export type Database = {
           email?: string
           id?: string
           name?: string
+          parent_affiliate_id?: string | null
           phone?: string | null
           pix_key?: string | null
           pix_key_type?: string | null
           status?: Database["public"]["Enums"]["affiliate_status"]
+          sub_commission_rate?: number
           total_earnings?: number | null
           total_referrals?: number | null
           updated_at?: string | null
@@ -225,6 +244,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliates_parent_affiliate_id_fkey"
+            columns: ["parent_affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
             referencedColumns: ["id"]
           },
         ]
