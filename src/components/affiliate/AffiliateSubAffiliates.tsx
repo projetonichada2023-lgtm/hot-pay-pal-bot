@@ -1,23 +1,39 @@
+import { useState } from "react";
 import { useAffiliate } from "@/hooks/useAffiliate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Users, DollarSign } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Copy, Users, DollarSign, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 
 export const AffiliateSubAffiliates = () => {
-  const { affiliate, subAffiliates, stats, links } = useAffiliate();
+  const { affiliate, subAffiliates, stats, links, updateSubAffiliateRate } = useAffiliate();
+  const [editingRates, setEditingRates] = useState<Record<string, number>>({});
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
-  // Use first link code or affiliate id for referral
   const refCode = links[0]?.code || affiliate?.id?.slice(0, 8).toUpperCase() || "";
   const inviteUrl = `https://conversyapp.com/affiliate?ref=${refCode}`;
 
   const copyInviteLink = () => {
     navigator.clipboard.writeText(inviteUrl);
     toast.success("Link de convite copiado!");
+  };
+
+  const getRate = (subId: string, currentRate: number) =>
+    editingRates[subId] ?? currentRate;
+
+  const handleSaveRate = async (subId: string) => {
+    const rate = editingRates[subId];
+    if (rate === undefined) return;
+    await updateSubAffiliateRate.mutateAsync({ subId, rate });
+    setEditingRates((prev) => {
+      const next = { ...prev };
+      delete next[subId];
+      return next;
+    });
   };
 
   return (
@@ -30,7 +46,7 @@ export const AffiliateSubAffiliates = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Subafiliados</CardTitle>
@@ -52,21 +68,6 @@ export const AffiliateSubAffiliates = () => {
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa para Subs</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {affiliate?.sub_commission_rate}%
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Você fica com {(affiliate?.commission_rate || 0) - (affiliate?.sub_commission_rate || 0)}%
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Invite Link */}
@@ -74,9 +75,7 @@ export const AffiliateSubAffiliates = () => {
         <CardContent className="p-4 space-y-3">
           <h3 className="font-semibold">🔗 Link de Convite para Subafiliados</h3>
           <p className="text-sm text-muted-foreground">
-            Compartilhe este link para convidar novos subafiliados. Eles receberão{" "}
-            <strong>{affiliate?.sub_commission_rate}%</strong> de comissão e você ficará com{" "}
-            <strong>{(affiliate?.commission_rate || 0) - (affiliate?.sub_commission_rate || 0)}%</strong>.
+            Compartilhe este link para convidar novos subafiliados.
           </p>
           <div className="flex items-center gap-2">
             <Input value={inviteUrl} readOnly className="text-xs font-mono bg-muted" />
@@ -98,37 +97,81 @@ export const AffiliateSubAffiliates = () => {
               Nenhum subafiliado ainda. Compartilhe seu link de convite para começar!
             </p>
           ) : (
-            <div className="space-y-3">
-              {subAffiliates.map((sub) => (
-                <div
-                  key={sub.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                >
-                  <div>
-                    <p className="font-medium">{sub.name}</p>
-                    <p className="text-xs text-muted-foreground">{sub.email}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Desde {new Date(sub.created_at).toLocaleDateString("pt-BR")}
-                    </p>
+            <div className="space-y-4">
+              {subAffiliates.map((sub) => {
+                const rate = getRate(sub.id, sub.sub_commission_rate);
+                const hasChanged = editingRates[sub.id] !== undefined;
+
+                return (
+                  <div
+                    key={sub.id}
+                    className="p-4 rounded-lg bg-muted/50 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{sub.name}</p>
+                        <p className="text-xs text-muted-foreground">{sub.email}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Desde {new Date(sub.created_at).toLocaleDateString("pt-BR")}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-primary">
+                          {formatCurrency(sub.total_earnings || 0)}
+                        </p>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            sub.status === "approved"
+                              ? "bg-emerald-500/10 text-emerald-500"
+                              : sub.status === "pending"
+                              ? "bg-yellow-500/10 text-yellow-500"
+                              : "bg-destructive/10 text-destructive"
+                          }`}
+                        >
+                          {sub.status === "approved" ? "Aprovado" : sub.status === "pending" ? "Pendente" : sub.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Per-sub rate slider */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          Comissão do sub: <strong>{rate}%</strong>
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          Você fica com: <strong>{((affiliate?.commission_rate || 0) - rate).toFixed(1)}%</strong>
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Slider
+                          value={[rate]}
+                          onValueChange={(v) =>
+                            setEditingRates((prev) => ({ ...prev, [sub.id]: v[0] }))
+                          }
+                          max={affiliate?.commission_rate || 10}
+                          min={0}
+                          step={0.5}
+                          className="flex-1"
+                        />
+                        {hasChanged && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleSaveRate(sub.id)}
+                            disabled={updateSubAffiliateRate.isPending}
+                          >
+                            {updateSubAffiliateRate.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Save className="w-4 h-4" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium text-primary">
-                      {formatCurrency(sub.total_earnings || 0)}
-                    </p>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        sub.status === "approved"
-                          ? "bg-emerald-500/10 text-emerald-500"
-                          : sub.status === "pending"
-                          ? "bg-yellow-500/10 text-yellow-500"
-                          : "bg-destructive/10 text-destructive"
-                      }`}
-                    >
-                      {sub.status === "approved" ? "Aprovado" : sub.status === "pending" ? "Pendente" : sub.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

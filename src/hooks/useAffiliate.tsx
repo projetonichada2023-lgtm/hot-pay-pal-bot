@@ -190,6 +190,28 @@ export const useAffiliate = () => {
     },
   });
 
+  const updateSubAffiliateRate = useMutation({
+    mutationFn: async ({ subId, rate }: { subId: string; rate: number }) => {
+      const { data: updated, error } = await supabase
+        .from("affiliates")
+        .update({ sub_commission_rate: rate })
+        .eq("id", subId)
+        .eq("parent_affiliate_id", affiliateQuery.data!.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sub-affiliates"] });
+      toast.success("Taxa do subafiliado atualizada!");
+    },
+    onError: (error) => {
+      toast.error("Erro ao atualizar taxa: " + error.message);
+    },
+  });
+
   // Calculate stats
   const indirectEarnings = commissionsQuery.data?.filter(c => c.source === "sub_affiliate").reduce((acc, c) => acc + c.amount, 0) || 0;
   
@@ -218,5 +240,6 @@ export const useAffiliate = () => {
     registerAffiliate,
     createLink,
     updateProfile,
+    updateSubAffiliateRate,
   };
 };
