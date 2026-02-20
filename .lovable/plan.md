@@ -1,75 +1,55 @@
 
-# Divisao de Comissao entre Afiliado e Subafiliado
+# Pagina de Login Separada para Afiliados
 
 ## Resumo
-O afiliado pai podera definir quanto da sua comissao deseja compartilhar com cada subafiliado. Por exemplo, se o afiliado tem 10% de comissao, ele pode escolher dar 3% ao subafiliado e ficar com 7%.
+Criar uma pagina de autenticacao exclusiva em `/affiliate/auth` com visual proprio voltado para afiliados, sem mencao ao dashboard de clientes. Apos login, redireciona direto para `/affiliate`.
 
-## Alteracoes no Banco de Dados
+## O que sera feito
 
-Adicionar coluna `sub_commission_rate` na tabela `affiliates` para que cada afiliado defina a porcentagem que repassa aos seus subafiliados:
+### 1. Nova pagina: `src/pages/affiliate/AffiliateAuth.tsx`
+- Layout split-screen seguindo o mesmo estilo da pagina `/auth` atual (gradiente mesh, floating inputs, animacoes)
+- Lado esquerdo: hero com textos focados em afiliados ("Ganhe comissoes", "Programa de Afiliados Conversy")
+- Lado direito: formulario com abas "Entrar" e "Criar Conta"
+  - **Entrar**: email + senha (redireciona para `/affiliate` apos login)
+  - **Criar Conta**: email + senha (sem campo "Nome do negocio" -- nao cria registro de `client`)
+- Suporte a `?ref=CODIGO` na URL para vincular subafiliado automaticamente
+- Links de "Esqueci minha senha" e "Voltar ao site"
+- Apos signup, o usuario e redirecionado para o formulario de registro de afiliado (ja existente)
 
+### 2. Ajuste no `useAuth` / signup
+- O signup de afiliado **nao** criara um registro na tabela `clients`
+- Usar `supabase.auth.signUp` diretamente sem o `businessName`
+- Alternativa: criar uma funcao `signUpAffiliate` no hook que so faz signup sem criar client
+
+### 3. Rota no `App.tsx`
+- Adicionar rota `/affiliate/auth` apontando para `AffiliateAuth`
+- Manter a logica atual do `AffiliateDashboard` que redireciona para `/affiliate/auth` se nao logado (em vez de `/auth?redirect=/affiliate`)
+
+### 4. Ajuste de redirecionamento
+- No `AffiliateDashboard.tsx`, trocar o redirect de `/auth?redirect=/affiliate` para `/affiliate/auth`
+- Na pagina `/auth` principal, manter o redirect para `/dashboard` (sem mudanca)
+
+## Detalhes Tecnicos
+
+### AffiliateAuth.tsx
+- Reutiliza o componente `FloatingInput` da pagina Auth atual (extrair para componente compartilhado ou copiar)
+- Usa `framer-motion` para animacoes consistentes
+- Hero com stats de afiliados: "R$ 50k+ pagos", "200+ afiliados", "10% comissao"
+- Cores e branding iguais ao auth principal (fundo preto, gradientes laranja)
+
+### Fluxo de cadastro do afiliado
 ```text
-ALTER TABLE affiliates 
-  ADD COLUMN parent_affiliate_id uuid REFERENCES affiliates(id),
-  ADD COLUMN sub_commission_rate numeric NOT NULL DEFAULT 2;
+1. Usuario acessa /affiliate/auth
+2. Cria conta (so email + senha, sem business_name)
+3. Apos login, vai para /affiliate
+4. Como nao tem registro de afiliado, ve o formulario AffiliateRegister
+5. Preenche dados (nome, PIX, etc)
+6. Aguarda aprovacao (AffiliatePending)
+7. Apos aprovado, acessa o dashboard de afiliados
 ```
 
-- `parent_affiliate_id`: referencia ao afiliado que indicou (null para afiliados raiz)
-- `sub_commission_rate`: porcentagem que o afiliado pai repassa ao subafiliado (padrao 2%)
-
-Adicionar colunas em `affiliate_commissions` para rastrear a origem:
-
-```text
-ALTER TABLE affiliate_commissions
-  ADD COLUMN source text NOT NULL DEFAULT 'direct',
-  ADD COLUMN sub_affiliate_id uuid REFERENCES affiliates(id);
-```
-
-Adicionar politica RLS para afiliados verem seus subafiliados:
-
-```text
-CREATE POLICY "Affiliates can view their sub-affiliates"
-  ON affiliates FOR SELECT
-  USING (parent_affiliate_id = get_my_affiliate_id());
-```
-
-## Alteracoes no Frontend
-
-### 1. Configuracoes do Afiliado (`AffiliateSettings.tsx`)
-- Adicionar campo "Taxa para Subafiliados" com um slider ou input numerico
-- Validacao: o valor deve ser entre 0 e a `commission_rate` do afiliado (ex: 0-10%)
-- Exibir texto explicativo: "Voce recebe X% e seu subafiliado recebe Y%"
-- Atualizar o formulario para enviar `sub_commission_rate` junto com os demais dados
-
-### 2. Hook `useAffiliate.tsx`
-- Adicionar query para buscar subafiliados (onde `parent_affiliate_id = meu_id`)
-- Incluir `sub_commission_rate` no tipo `Affiliate`
-- Calcular ganhos indiretos separadamente nas stats
-
-### 3. Nova aba "Subafiliados" no Dashboard (`AffiliateDashboard.tsx`)
-- Adicionar tab "Subafiliados" com icone `Users`
-- Novo componente `AffiliateSubAffiliates.tsx`:
-  - Tabela com subafiliados (nome, status, ganhos, data)
-  - Link de convite para copiar (`https://conversyapp.com/affiliate?ref=CODIGO`)
-  - Cards com metricas: total subafiliados, ganhos indiretos
-
-### 4. Registro (`AffiliateRegister.tsx`)
-- Detectar parametro `?ref=CODIGO` na URL
-- Buscar o afiliado pelo codigo e salvar `parent_affiliate_id` no cadastro
-
-### 5. Overview (`AffiliateOverview.tsx`)
-- Adicionar card "Ganhos de Subafiliados" mostrando comissoes indiretas
-
-## Fluxo de Comissao
-
-```text
-Exemplo: Afiliado A tem 10% e definiu sub_commission_rate = 3%
-
-1. Subafiliado B gera uma venda de R$ 100
-2. Comissao total: R$ 10 (10%)
-3. Subafiliado B recebe: R$ 3 (sub_commission_rate definida pelo pai)
-4. Afiliado A recebe: R$ 7 (10% - 3% = diferenca)
-```
-
-- A soma nunca ultrapassa a `commission_rate` original
-- O afiliado pai controla quanto compartilha via configuracoes
+### Arquivos modificados
+- **Criar**: `src/pages/affiliate/AffiliateAuth.tsx`
+- **Editar**: `src/App.tsx` (nova rota)
+- **Editar**: `src/pages/affiliate/AffiliateDashboard.tsx` (redirect)
+- **Editar**: `src/hooks/useAuth.tsx` (funcao signUpAffiliate sem criar client)
