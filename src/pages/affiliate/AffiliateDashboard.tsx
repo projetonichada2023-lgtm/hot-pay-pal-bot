@@ -8,6 +8,7 @@ import { AffiliateOverview } from "@/components/affiliate/AffiliateOverview";
 import { AffiliateLinks } from "@/components/affiliate/AffiliateLinks";
 import { AffiliateCommissions } from "@/components/affiliate/AffiliateCommissions";
 import { AffiliateSettings } from "@/components/affiliate/AffiliateSettings";
+import { AffiliateSubAffiliates } from "@/components/affiliate/AffiliateSubAffiliates";
 import { AffiliateRegister } from "@/components/affiliate/AffiliateRegister";
 import { AffiliatePending } from "@/components/affiliate/AffiliatePending";
 import { Sidebar } from "@/components/dashboard/Sidebar";
@@ -17,7 +18,8 @@ import {
   Link2, 
   DollarSign, 
   Settings,
-  LogOut
+  LogOut,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -83,7 +85,7 @@ const AffiliateDashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full max-w-md grid-cols-4">
+            <TabsList className="grid w-full max-w-lg grid-cols-5">
               <TabsTrigger value="overview" className="gap-2">
                 <LayoutDashboard className="w-4 h-4" />
                 <span className="hidden sm:inline">Visão Geral</span>
@@ -91,6 +93,10 @@ const AffiliateDashboard = () => {
               <TabsTrigger value="links" className="gap-2">
                 <Link2 className="w-4 h-4" />
                 <span className="hidden sm:inline">Links</span>
+              </TabsTrigger>
+              <TabsTrigger value="sub-affiliates" className="gap-2">
+                <Users className="w-4 h-4" />
+                <span className="hidden sm:inline">Subs</span>
               </TabsTrigger>
               <TabsTrigger value="commissions" className="gap-2">
                 <DollarSign className="w-4 h-4" />
@@ -108,6 +114,10 @@ const AffiliateDashboard = () => {
 
             <TabsContent value="links">
               <AffiliateLinks />
+            </TabsContent>
+
+            <TabsContent value="sub-affiliates">
+              <AffiliateSubAffiliates />
             </TabsContent>
 
             <TabsContent value="commissions">

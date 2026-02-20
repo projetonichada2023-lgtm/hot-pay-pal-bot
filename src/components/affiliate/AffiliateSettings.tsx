@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ export const AffiliateSettings = () => {
     phone: affiliate?.phone || "",
     pix_key: affiliate?.pix_key || "",
     pix_key_type: affiliate?.pix_key_type || "cpf",
+    sub_commission_rate: affiliate?.sub_commission_rate || 2,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,6 +117,33 @@ export const AffiliateSettings = () => {
                   }
                   placeholder="Sua chave PIX"
                 />
+              </div>
+            </div>
+
+            <hr className="my-6" />
+
+            <h3 className="text-lg font-semibold">Taxa para Subafiliados</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Defina quanto da sua comissão ({affiliate?.commission_rate}%) você quer compartilhar com seus subafiliados.
+            </p>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Taxa para Subafiliados: {formData.sub_commission_rate}%</Label>
+                <Slider
+                  value={[formData.sub_commission_rate]}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, sub_commission_rate: value[0] })
+                  }
+                  max={affiliate?.commission_rate || 10}
+                  min={0}
+                  step={0.5}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Subafiliado recebe: {formData.sub_commission_rate}%</span>
+                  <span>Você fica com: {((affiliate?.commission_rate || 0) - formData.sub_commission_rate).toFixed(1)}%</span>
+                </div>
               </div>
             </div>
 

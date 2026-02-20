@@ -17,6 +17,8 @@ export interface Affiliate {
   approved_at: string | null;
   total_earnings: number;
   total_referrals: number;
+  parent_affiliate_id: string | null;
+  sub_commission_rate: number;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +43,8 @@ export interface AffiliateCommission {
   affiliate_link_id: string | null;
   amount: number;
   status: string;
+  source: string;
+  sub_affiliate_id: string | null;
   paid_at: string | null;
   created_at: string;
   updated_at: string;
@@ -95,8 +99,23 @@ export const useAffiliate = () => {
     enabled: !!affiliateQuery.data?.id,
   });
 
+  const subAffiliatesQuery = useQuery({
+    queryKey: ["sub-affiliates", affiliateQuery.data?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("affiliates")
+        .select("*")
+        .eq("parent_affiliate_id", affiliateQuery.data!.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data as Affiliate[];
+    },
+    enabled: !!affiliateQuery.data?.id,
+  });
+
   const registerAffiliate = useMutation({
-    mutationFn: async (data: { name: string; email: string; phone?: string; pix_key?: string; pix_key_type?: string }) => {
+    mutationFn: async (data: { name: string; email: string; phone?: string; pix_key?: string; pix_key_type?: string; parent_affiliate_id?: string }) => {
       const { data: affiliate, error } = await supabase
         .from("affiliates")
         .insert({
@@ -106,6 +125,7 @@ export const useAffiliate = () => {
           phone: data.phone || null,
           pix_key: data.pix_key || null,
           pix_key_type: data.pix_key_type || null,
+          parent_affiliate_id: data.parent_affiliate_id || null,
         })
         .select()
         .single();
@@ -171,6 +191,8 @@ export const useAffiliate = () => {
   });
 
   // Calculate stats
+  const indirectEarnings = commissionsQuery.data?.filter(c => c.source === "sub_affiliate").reduce((acc, c) => acc + c.amount, 0) || 0;
+  
   const stats = {
     totalEarnings: affiliateQuery.data?.total_earnings || 0,
     totalReferrals: affiliateQuery.data?.total_referrals || 0,
@@ -181,12 +203,15 @@ export const useAffiliate = () => {
     conversionRate: linksQuery.data?.length 
       ? ((linksQuery.data.reduce((acc, l) => acc + l.conversions, 0) / linksQuery.data.reduce((acc, l) => acc + l.clicks, 0)) * 100) || 0
       : 0,
+    indirectEarnings,
+    totalSubAffiliates: subAffiliatesQuery.data?.length || 0,
   };
 
   return {
     affiliate: affiliateQuery.data,
     links: linksQuery.data || [],
     commissions: commissionsQuery.data || [],
+    subAffiliates: subAffiliatesQuery.data || [],
     stats,
     isLoading: affiliateQuery.isLoading,
     isApproved: affiliateQuery.data?.status === "approved",

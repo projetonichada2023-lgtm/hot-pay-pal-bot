@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAffiliate } from "@/hooks/useAffiliate";
+import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +20,8 @@ import conversyLogo from "@/assets/conversy-logo.png";
 export const AffiliateRegister = () => {
   const { user, signOut } = useAuth();
   const { registerAffiliate } = useAffiliate();
+  const [searchParams] = useSearchParams();
+  const [parentAffiliateId, setParentAffiliateId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: user?.email || "",
@@ -26,9 +30,27 @@ export const AffiliateRegister = () => {
     pix_key_type: "cpf",
   });
 
+  // Detect ref code from URL and find parent affiliate
+  useEffect(() => {
+    const refCode = searchParams.get("ref");
+    if (refCode) {
+      supabase
+        .from("affiliate_links")
+        .select("affiliate_id")
+        .eq("code", refCode)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) setParentAffiliateId(data.affiliate_id);
+        });
+    }
+  }, [searchParams]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await registerAffiliate.mutateAsync(formData);
+    await registerAffiliate.mutateAsync({
+      ...formData,
+      parent_affiliate_id: parentAffiliateId || undefined,
+    });
   };
 
   return (
