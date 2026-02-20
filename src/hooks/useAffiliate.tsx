@@ -212,6 +212,32 @@ export const useAffiliate = () => {
     },
   });
 
+  const updateSubAffiliateStatus = useMutation({
+    mutationFn: async ({ subId, status }: { subId: string; status: "approved" | "rejected" | "suspended" }) => {
+      const updateData: Record<string, unknown> = { status };
+      if (status === "approved") {
+        updateData.approved_at = new Date().toISOString();
+      }
+      const { data: updated, error } = await supabase
+        .from("affiliates")
+        .update(updateData)
+        .eq("id", subId)
+        .eq("parent_affiliate_id", affiliateQuery.data!.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sub-affiliates"] });
+      toast.success("Status do subafiliado atualizado!");
+    },
+    onError: (error) => {
+      toast.error("Erro ao atualizar status: " + error.message);
+    },
+  });
+
   // Calculate stats
   const indirectEarnings = commissionsQuery.data?.filter(c => c.source === "sub_affiliate").reduce((acc, c) => acc + c.amount, 0) || 0;
   
@@ -241,5 +267,6 @@ export const useAffiliate = () => {
     createLink,
     updateProfile,
     updateSubAffiliateRate,
+    updateSubAffiliateStatus,
   };
 };
