@@ -100,9 +100,17 @@ const AffiliateAuth = () => {
     document.documentElement.classList.add('dark');
   }, []);
 
+  // Persist ref code in localStorage so it survives email verification flow
+  useEffect(() => {
+    if (refCode) {
+      localStorage.setItem('affiliate_ref_code', refCode);
+    }
+  }, [refCode]);
+
   useEffect(() => {
     if (user) {
-      const redirectPath = refCode ? `/affiliate?ref=${refCode}` : '/affiliate';
+      const savedRef = refCode || localStorage.getItem('affiliate_ref_code');
+      const redirectPath = savedRef ? `/affiliate?ref=${savedRef}` : '/affiliate';
       navigate(redirectPath);
     }
   }, [user, navigate, refCode]);
