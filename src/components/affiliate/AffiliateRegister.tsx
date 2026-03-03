@@ -30,19 +30,41 @@ export const AffiliateRegister = () => {
     pix_key_type: "cpf",
   });
 
-  // Detect ref code from URL and find parent affiliate
+  // Detect ref code from URL or localStorage and find parent affiliate
   useEffect(() => {
-    const refCode = searchParams.get("ref");
-    if (refCode) {
-      supabase
+    const refCode = searchParams.get("ref") || localStorage.getItem('affiliate_ref_code');
+    if (!refCode) return;
+
+    const findParentAffiliate = async () => {
+      // First try matching in affiliate_links table
+      const { data: linkData } = await supabase
         .from("affiliate_links")
         .select("affiliate_id")
         .eq("code", refCode)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data) setParentAffiliateId(data.affiliate_id);
-        });
-    }
+        .maybeSingle();
+
+      if (linkData) {
+        setParentAffiliateId(linkData.affiliate_id);
+        localStorage.removeItem('affiliate_ref_code');
+        return;
+      }
+
+      // Fallback: try matching by affiliate ID prefix (used when affiliate has no links)
+      const { data: affiliates } = await supabase
+        .from("affiliates")
+        .select("id")
+        .limit(100);
+
+      if (affiliates) {
+        const match = affiliates.find(a => a.id.slice(0, 8).toUpperCase() === refCode.toUpperCase());
+        if (match) {
+          setParentAffiliateId(match.id);
+          localStorage.removeItem('affiliate_ref_code');
+        }
+      }
+    };
+
+    findParentAffiliate();
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
